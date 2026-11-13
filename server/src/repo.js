@@ -151,7 +151,9 @@ function checkDateOrder(r, row) {
   if (Object.keys(errors).length) throw new HttpError(422, 'Dates are out of order', errors);
 }
 
+const TERM = { first: '1st Sem', second: '2nd Sem', summer: 'Summer', other: 'Term' };
 export function displayTitle(r, row) {
+  if (r.key === 'teaching_assignments') return [row.academic_year, TERM[row.semester] || row.semester, row.section && `Sec ${row.section}`].filter(Boolean).join(' · ');
   const t = row[r.title];
   return t === null || t === undefined || t === '' ? `${r.label} #${row.id}` : String(t);
 }

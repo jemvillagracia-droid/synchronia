@@ -16,6 +16,8 @@ import { SettingsPage } from './pages/SettingsPage';
 import { PortfolioOverview, PortfolioCategoryPage } from './pages/PortfolioPage';
 import { CvStudio } from './pages/cv/CvStudio';
 import { CvEditor } from './pages/cv/CvEditor';
+import { AcademicPage } from './pages/academic/AcademicPage';
+import { CoursePage } from './pages/academic/CoursePage';
 import { desktop } from './lib/desktop';
 
 function NotFound() {
@@ -78,16 +80,18 @@ export function App() {
                 <Route path="/portfolio" element={<PortfolioOverview />} />
                 <Route path="/portfolio/profile" element={<ProfilePage />} />
                 <Route path="/portfolio/:category" element={<PortfolioCategoryPage />} />
+                <Route path="/academic" element={<AcademicPage />} />
+                <Route path="/academic/courses/:id" element={<CoursePage />} />
                 <Route path="/cv" element={<CvStudio />} />
                 <Route path="/cv/:id" element={<CvEditor />} />
-                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
+                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Shell>
             {capture && <QuickCapture onClose={() => setCapture(false)} />}
             {search && <SearchPalette onClose={() => setSearch(false)} />}
-            {record && <RecordDrawer key={`${record.type}-${record.id}`} type={record.type} id={record.id} onClose={() => setRecord(null)} />}
+            {record && <RecordDrawer key={`${record.type}-${record.id}`} type={record.type} id={record.id} defaults={record.defaults} onClose={() => setRecord(null)} />}
             <div className="toasts" aria-live="polite">
               {toasts.map((t) => (
                 <div key={t.id} className={`toast ${t.kind}`}>

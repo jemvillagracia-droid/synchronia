@@ -17,7 +17,7 @@ interface Ctx {
   openCapture: () => void;
   openSearch: () => void;
   openRecord: (type: string, id: number) => void;
-  openNew: (type: string) => void;
+  openNew: (type: string, defaults?: Record<string, any>) => void;
 }
 
 const AppCtx = createContext<Ctx | null>(null);
@@ -33,7 +33,7 @@ interface ProviderProps {
     toasts: Toast[];
     capture: boolean; setCapture: (v: boolean) => void;
     search: boolean; setSearch: (v: boolean) => void;
-    record: { type: string; id: number | null } | null; setRecord: (r: { type: string; id: number | null } | null) => void;
+    record: { type: string; id: number | null; defaults?: Record<string, any> } | null; setRecord: (r: { type: string; id: number | null; defaults?: Record<string, any> } | null) => void;
   }) => ReactNode;
 }
 
@@ -44,7 +44,7 @@ export function AppProvider({ user, children }: ProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [capture, setCapture] = useState(false);
   const [search, setSearch] = useState(false);
-  const [record, setRecord] = useState<{ type: string; id: number | null } | null>(null);
+  const [record, setRecord] = useState<{ type: string; id: number | null; defaults?: Record<string, any> } | null>(null);
   const seq = useRef(0);
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export function AppProvider({ user, children }: ProviderProps) {
 
   const toast = useCallback((text: string, kind: Toast['kind'] = 'info', actions?: ToastAction[]) => {
     const id = ++seq.current;
-    setToasts((t) => [...t, { id, kind, text, actions }]);
+    setToasts((t) => [...t, { id, kind, text, actions }].slice(-4)); // keep the four most recent
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), actions?.length ? 10000 : kind === 'error' ? 6000 : 3200);
   }, []);
 
@@ -88,7 +88,7 @@ export function AppProvider({ user, children }: ProviderProps) {
     openCapture: () => setCapture(true),
     openSearch: () => setSearch(true),
     openRecord: (type, id) => setRecord({ type, id }),
-    openNew: (type) => setRecord({ type, id: null }),
+    openNew: (type, defaults) => setRecord({ type, id: null, defaults }),
   };
 
   return <AppCtx.Provider value={value}>{children({ toasts, capture, setCapture, search, setSearch, record, setRecord })}</AppCtx.Provider>;

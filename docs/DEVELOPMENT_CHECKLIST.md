@@ -121,9 +121,46 @@ been run on a Windows machine.
 - **Packaged (asar) build:** generates and analyzes PDFs.
 - **Finding fixed during testing:** Chromium writes small-caps text into PDFs as capitals, so the name is never set in small caps.
 
+## Revisions after Phase 3 ✅
+
+| Request | Status | Notes |
+|---|---|---|
+| Visual compatibility with SOUL ARCHIVE | ✅ | Palette taken from `soul_archive/ui/theme.py` (Evangelion theme): `#080808` backgrounds, NERV orange `#FF5A1F`, EVA purple `#9B6BD3`, text `#F2F2F2`. Solid orange panel title bars, filled active navigation and tabs, orange-edged sidebar, bold letter-spaced labels, accent-coloured figures. Secondary text raised from `#A7A3AD` to `#C2C2C2` and hint text from `#6F6C78` to `#8F8F8F` for legibility |
+| Text wrapping in fields | ✅ | Single-line text fields grow and wrap long values (Enter still submits). Lists, tabs, sidebar and portfolio navigation wrap instead of truncating |
+| Harvard conventions as the CV basis | ✅ | Harvard entry layout: organization **bold** with location right, then position/degree *italic* with dates right. Thesis and adviser under degrees. "Education" heading and Education-first order for academic types. Bold capital headings with a rule; centred name with a • contact line. New Fellowships and Grants and Languages sections. Quality checklist gains a **Harvard CV conventions** check: action-verb bullets, no first-person pronouns, Education first, locations, no photograph, 10–12 pt, 0.5–1 in margins |
+| Export process review | ✅ | Every download now goes through a native Save dialog (starting in Documents\SYNCHRONIA) with Open and Show in folder afterwards. Cancelling says the export stays in the history. **Fixed:** the DOCX defined Title and Heading 1 twice (Word may use the library defaults); now each style is defined once. **Fixed:** manual entries in list sections (e.g. Languages) were not rendered. Verified `&`, `ñ` and curly quotes in DOCX and PDF |
+
+## Phase 4 — Academic Workspace ✅
+
+| Directive item (Section IV) | Status | Notes |
+|---|---|---|
+| A. Course inventory and per-course workspaces | ✅ | Courses with offerings (AY, term, section, schedule, students). Tabs: Classes, Syllabus, Outcomes, Lessons and materials, Assessments, Class records |
+| Syllabus management (versions) | ✅ | Structured editor: description, prerequisites, consultation, weekly instructional plan (week, topics, CLOs, activities, assessment, hours), grading system with a running total, references, policies. Word export with real tables |
+| Course learning outcomes and program alignment | ✅ | CLOs per course; POs shared per program; CLO × PO matrix (Introduced / Enhanced / Demonstrated) |
+| Lesson plans, materials, resources | ✅ | Linked to course, class offering, week and CLOs. Files attached through Evidence (Drive, link or file on this PC) |
+| Assessments, Tables of Specifications, rubrics | ✅ | TOS builder allocates items by teaching hours and Bloom levels (largest remainder, so totals always match) with item placement. Rubric builder: levels × criteria, optional weights. Both export to Word |
+| Class activity records | ✅ | Sessions with attendance; attendance rate per offering |
+| Teaching accomplishment report | ✅ | Per term, Word: summary, teaching load, syllabi, materials, assessments. Only recorded figures |
+| B. Research | ✅ | Pipeline by status with progress, sample collected / target, instrument validation, ethics review, linked publications and presentations |
+| C. Extension and engagement | ✅ | Projects with partner, role, participants, training hours, objectives, narrative, outcomes, evidence. Narrative report export (Word) lists linked evidence and verification status |
+| D. Faculty and professional development | ✅ | Development goals (area, status, progress, target date, linked training) plus this year's trainings, hours, CPD units, certifications and licences |
+| Generated documents archive | ✅ | Every syllabus, TOS, rubric and report is kept and can be saved again |
+
+### Verified (Phase 4)
+
+- **Automated (`npm test`): 37 tests, all passing.** The 7 Phase 4 tests cover the apportionment method, TOS allocation and placement, alignment validation, syllabus cleaning and export, TOS and rubric round-trips and exports, attendance and the teaching report, and the research, extension and development summaries. A Harvard layout test checks special characters in both formats.
+- **End to end in the real Electron app:**
+  - Styling, and field wrapping (a long office name grows to 97 px tall).
+  - Course and offering; CLO, PO and alignment.
+  - Syllabus edited and exported through the Save dialog.
+  - Assessment with TOS and rubric; class session at 95% attendance.
+  - Teaching report; research pipeline card; extension narrative report; development goal.
+  - A Harvard-layout CV exported as PDF through the Save dialog.
+  - Re-running the Phase 3 CV walkthrough found no regressions.
+- **Generated Word documents rendered in LibreOffice to check layout.** Table column widths are fixed so headers don't break mid-word.
+
 ## Upcoming phases
 
-- [ ] **Phase 4 — Academic Workspace**: course workspaces, syllabi, outcomes alignment, TOS, rubrics, research, extension
 - [ ] **Phase 5 — Intelligence**: analytics and evidence-traceable reports (DOCX/PDF/XLSX)
 - [ ] **Phase 6 — Administrative Operations**: correspondence registry, routing, minutes, turnover documentation
 - [ ] **Phase 7 — Integration and Continuity**: Google Drive OAuth, unified timeline, backup/restore, security testing

@@ -730,3 +730,24 @@ body::before { opacity: 0.25; }
 textarea.input.autogrow { display: block; height: auto; min-height: 36px; padding-top: 7px; padding-bottom: 7px; resize: none; overflow: hidden; line-height: 1.45; }
 .select { text-overflow: ellipsis; }
 .cv-title { white-space: normal; overflow-wrap: anywhere; }
+
+/* ───────── Phase 4: Academic Workspace ───────── */
+.pipeline { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: var(--s-3); overflow-x: auto; padding-bottom: var(--s-2); }
+.pipeline-col { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
+.pipeline-head { display: flex; justify-content: space-between; padding: 4px var(--s-2); background: var(--violet); color: var(--text-inverse);
+  font-family: var(--font-cond); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 12px; }
+.pipeline-card { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 2px; padding: var(--s-3); background: var(--bg-1); border: 1px solid var(--line-2); border-left: 3px solid var(--orange); }
+.pipeline-card:hover { border-color: var(--orange); }
+.pipeline-card:focus-visible { outline: 1px solid var(--orange); }
+.pipeline-card .t { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+.pipeline-card .s { color: var(--text-2); font-size: 12px; }
+.edit-table td, .edit-table th { padding: 4px; vertical-align: top; }
+.edit-table .textarea { min-height: 54px; font-size: 13px; }
+.matrix th, .matrix td { text-align: center; }
+.matrix th:first-child, .matrix td:first-child { text-align: left; }
+.matrix .select { min-width: 64px; height: 30px; padding: 0 6px; }
+.crumb .label a { color: var(--text-2); }
+/* Sidebar: wrap long labels instead of truncating them */
+.nav { overflow-x: hidden; }
+.nav a { height: auto; min-height: 38px; padding-top: 7px; padding-bottom: 7px; white-space: normal; line-height: 1.25; }
+.nav a .txt { white-space: normal; overflow-wrap: anywhere; }

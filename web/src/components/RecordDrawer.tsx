@@ -33,7 +33,7 @@ function sectionsFor(type: string, spec: ResourceSpec): FormSection[] {
 }
 
 /** View, create, edit, verify, evidence, delete (to recycle bin) and inspect history of any registered record. */
-export function RecordDrawer({ type, id, onClose, onCreated }: { type: string; id: number | null; onClose: () => void; onCreated?: (r: RecordRow) => void }) {
+export function RecordDrawer({ type, id, onClose, onCreated, defaults }: { type: string; id: number | null; onClose: () => void; onCreated?: (r: RecordRow) => void; defaults?: Record<string, any> }) {
   const isNew = id === null;
   const { schema, toast } = useApp();
   const spec = schema?.[type];
@@ -62,8 +62,8 @@ export function RecordDrawer({ type, id, onClose, onCreated }: { type: string; i
       if (f.type === 'json') continue;
       d[name] = f.type === 'bool' ? false : f.type === 'enum' && f.required ? f.values![0] : name === 'verification' ? 'self_reported' : null;
     }
-    setDraft(d); setEditing(true);
-  }, [isNew, spec, editing]);
+    setDraft({ ...d, ...(defaults || {}) }); setEditing(true);
+  }, [isNew, spec, editing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (tab === 'history' && !isNew) api.get<HistoryItem[]>(`/records/${type}/${id}/history`).then(setHistory).catch(() => setHistory([]));

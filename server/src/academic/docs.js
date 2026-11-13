@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   AlignmentType, BorderStyle, Document, Footer, HeadingLevel, LevelFormat, Packer, PageNumber, Paragraph, ShadingType,
-  Table, TableCell, TableRow, TextRun, WidthType,
+  Table, TableCell, TableLayoutType, TableRow, TextRun, WidthType,
 } from 'docx';
 import { DATA_DIR } from '../config.js';
 
@@ -19,21 +19,26 @@ export const bullet = (text) => new Paragraph({ numbering: { reference: 'doc-bul
 export const field = (label, value) => new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `${label}: `, bold: true }), new TextRun(value == null || value === '' ? '—' : String(value))] });
 
 /** rows: array of arrays of strings; first row is the header. widths: optional percentages. */
-export function table(rows, { widths = null, header = true, center = [] } = {}) {
+export function table(rows, { widths = null, header = true, center = [], contentWidth = 9360 } = {}) {
   const cols = rows[0]?.length || 1;
+  const pct = widths || Array(cols).fill(100 / cols);
+  // Explicit twip column widths with a fixed layout: honoured by Word and LibreOffice alike.
+  const columnWidths = pct.map((w) => Math.round((w / 100) * contentWidth));
   return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: contentWidth, type: WidthType.DXA },
+    columnWidths,
+    layout: TableLayoutType.FIXED,
     rows: rows.map((r, i) => new TableRow({
       tableHeader: header && i === 0,
       cantSplit: true,
       children: r.map((c, j) => new TableCell({
         borders,
-        width: widths ? { size: widths[j], type: WidthType.PERCENTAGE } : { size: Math.floor(100 / cols), type: WidthType.PERCENTAGE },
+        width: { size: columnWidths[j], type: WidthType.DXA },
         shading: header && i === 0 ? { type: ShadingType.CLEAR, color: 'auto', fill: 'E7E6E6' } : undefined,
-        margins: { top: 60, bottom: 60, left: 100, right: 100 },
+        margins: { top: 60, bottom: 60, left: 80, right: 80 },
         children: String(c ?? '').split('\n').map((line) => new Paragraph({
           alignment: center.includes(j) ? AlignmentType.CENTER : AlignmentType.LEFT,
-          children: [new TextRun({ text: line, bold: header && i === 0, size: 20 })],
+          children: [new TextRun({ text: line, bold: header && i === 0, size: header && i === 0 ? 18 : 20 })],
         })),
       })),
     })),

@@ -242,7 +242,7 @@ export async function exportTos(db, userId, id) {
   const children = [
     field('Assessment', t.assessment?.title || t.tos.title), field('Course', course ? `${course.code} — ${course.title}` : null),
     field('Total items', t.total_items), p('Cells show the number of items and, in parentheses, their item numbers.', { run: { italics: true, size: 18 } }),
-    table([head, ...rows, totals], { widths: [22, 7, 6, 5, 6, 9, 9, 9, 9, 9, 9], center: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }),
+    table([head, ...rows, totals], { widths: [22, 7, 6, 5, 6, 9, 9, 9, 9, 9, 9], center: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], contentWidth: 12960 }),
     ...t.warnings.map((w) => p(`Note: ${w}`, { run: { italics: true } })),
   ];
   const buffer = await buildDocument({ title: 'Table of Specifications', subtitle: t.tos.title, children, landscape: true });
@@ -288,7 +288,7 @@ export async function exportRubric(db, userId, id) {
   const head = ['Criterion', ...(summary.weighted ? ['Weight'] : []), ...content.levels.map((l) => `${l.label} (${l.points})`)];
   const rows = content.criteria.map((k) => [k.name, ...(summary.weighted ? [`${k.weight ?? 0}%`] : []), ...k.descriptors]);
   const children = [field('Maximum score', summary.max_points), ...summary.warnings.map((w) => p(`Note: ${w}`, { run: { italics: true } })),
-    content.criteria.length ? table([head, ...rows]) : p('No criteria recorded.')];
+    content.criteria.length ? table([head, ...rows], { contentWidth: content.levels.length > 3 ? 12960 : 9360 }) : p('No criteria recorded.')];
   const buffer = await buildDocument({ title: 'Scoring Rubric', subtitle: rubric.title, children, landscape: content.levels.length > 3 });
   return saveReport(db, userId, { type: 'rubric', title: `Rubric — ${rubric.title}`, buffer, fileStem: `Rubric_${rubric.title}` });
 }
@@ -328,7 +328,7 @@ export async function teachingReport(db, userId, { academic_year: ay, semester }
     h1('Teaching Load'),
     table([['Course', 'Section', 'Schedule', 'Students', 'Status', 'Activities', 'Attendance'],
       ...offerings.map((o) => [`${o.code} — ${o.course_title}`, o.section || '—', o.schedule || '—', o.student_count ?? '—', human(o.status),
-        String(actBy[o.id]?.n || 0), actBy[o.id]?.att != null ? `${actBy[o.id].att}%` : '—'])], { widths: [30, 9, 18, 10, 11, 11, 11], center: [1, 3, 5, 6] }),
+        String(actBy[o.id]?.n || 0), actBy[o.id]?.att != null ? `${actBy[o.id].att}%` : '—'])], { widths: [27, 9, 18, 12, 10, 11, 13], center: [1, 3, 5, 6] }),
     h1('Syllabi'),
     ...(syllabi.length ? [table([['Course', 'Version', 'Status'], ...syllabi.map((s) => [s.code, s.version_label, human(s.status)])], { widths: [40, 30, 30] })] : [p('No syllabi recorded for these courses.')]),
     h1('Instructional Materials'),

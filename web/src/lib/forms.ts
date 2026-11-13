@@ -17,10 +17,11 @@ export const FORMS: Record<string, FormLayout> = {
       { title: 'Degree', fields: ['degree', 'major', 'status'] },
       { title: 'Institution', fields: ['institution', 'location'] },
       { title: 'Dates', fields: ['start_date', 'end_date', 'graduation_date'] },
-      { title: 'Distinctions', fields: ['distinctions'] },
+      { title: 'Thesis and distinctions', fields: ['thesis_title', 'advisor', 'distinctions'] },
       RECORD,
     ],
-    labels: { major: 'Major or specialization', start_date: 'Attendance from', end_date: 'Attendance to', status: 'Completion status', distinctions: 'Academic distinctions' },
+    labels: { major: 'Major or specialization', start_date: 'Attendance from', end_date: 'Attendance to', status: 'Completion status', distinctions: 'Academic distinctions / honors', thesis_title: 'Thesis or dissertation title', advisor: 'Adviser' },
+    hints: { location: 'City, Province / Country — shown on the right of Harvard-style CVs.', distinctions: 'One per line, e.g. Cum laude; Best Thesis Award.' },
     placeholders: { degree: 'e.g. Master of Arts in Education', major: 'e.g. Educational Management', distinctions: 'e.g. Cum laude; Best Thesis' },
   },
   licenses: {
@@ -35,18 +36,18 @@ export const FORMS: Record<string, FormLayout> = {
   },
   employment: {
     sections: [
-      { title: 'Position', fields: ['position', 'employment_type', 'institution', 'office'] },
+      { title: 'Position', fields: ['position', 'employment_type', 'institution', 'office', 'location'] },
       { title: 'Period', fields: ['start_date', 'end_date', 'is_current'] },
       { title: 'Work', fields: ['responsibilities', 'accomplishments'] },
       RECORD,
     ],
     labels: { office: 'Office or department', is_current: 'Current position', employment_type: 'Employment type' },
-    hints: { responsibilities: 'One per line reads best in CVs.', accomplishments: 'Concrete results; one per line.' },
+    hints: { location: 'City, Province / Country', responsibilities: 'One per line, each starting with an action verb (Coordinated, Prepared…).', accomplishments: 'Concrete, quantified results; one per line.' },
     placeholders: { employment_type: 'e.g. Permanent, Contract of Service', position: 'e.g. Administrative Aide IV' },
   },
   appointments: {
     sections: [
-      { title: 'Appointment', fields: ['academic_rank', 'faculty_designation', 'institution', 'department'] },
+      { title: 'Appointment', fields: ['academic_rank', 'faculty_designation', 'institution', 'department', 'location'] },
       { title: 'Period', fields: ['start_date', 'end_date', 'is_current'] },
       { title: 'Teaching', fields: ['teaching_responsibilities'] },
       RECORD,
@@ -117,11 +118,57 @@ export const FORMS: Record<string, FormLayout> = {
   research_projects: {
     sections: [
       { title: 'Project', fields: ['title', 'role', 'status', 'start_date', 'end_date'] },
+      { title: 'Progress', fields: ['progress_pct', 'target_sample', 'collected_sample', 'validation_status', 'ethics_status'] },
       { title: 'Design', fields: ['research_questions', 'objectives', 'methodology', 'instruments'] },
       { title: 'Governance', fields: ['ethics_reference', 'collaborators', 'funding'] },
       RECORD,
     ],
-    labels: { ethics_reference: 'Ethics clearance reference' },
+    labels: { ethics_reference: 'Ethics clearance reference', progress_pct: 'Overall progress (%)', target_sample: 'Target respondents / sample', collected_sample: 'Data collected so far', validation_status: 'Instrument validation', ethics_status: 'Ethics review' },
+  },
+  courses: {
+    sections: [{ title: 'Course', fields: ['code', 'title', 'units', 'program', 'level'] }, { title: 'Description', fields: ['description'] }],
+    labels: { code: 'Course code', units: 'Units' }, placeholders: { code: 'e.g. EDUC 101', program: 'e.g. BSEd' },
+  },
+  teaching_assignments: {
+    sections: [{ title: 'Offering', fields: ['course_id', 'academic_year', 'semester', 'section', 'schedule', 'student_count', 'status', 'appointment_id'] }],
+    labels: { course_id: 'Course', semester: 'Term', student_count: 'Students enrolled', appointment_id: 'Under appointment' }, placeholders: { academic_year: 'e.g. 2026-2027', schedule: 'e.g. MW 1:00–2:30 PM, Room 204' },
+  },
+  syllabi: {
+    sections: [{ title: 'Syllabus version', fields: ['course_id', 'version_label', 'academic_year', 'semester', 'status'] }],
+    labels: { course_id: 'Course', version_label: 'Version label' }, placeholders: { version_label: 'e.g. 2026 revision' },
+  },
+  learning_outcomes: {
+    sections: [{ title: 'Outcome', fields: ['outcome_type', 'code', 'description', 'course_id', 'program', 'sort_order'] }],
+    labels: { outcome_type: 'Type', course_id: 'Course (for CLOs)', program: 'Program (for POs)', sort_order: 'Order' },
+    hints: { outcome_type: 'CLO = course learning outcome; PO = program outcome; ILO = intended learning outcome.' },
+    placeholders: { code: 'e.g. CLO1 or PO-a', description: 'Begin with a measurable verb: Explain, Design, Evaluate…' },
+  },
+  materials: {
+    sections: [{ title: 'Material', fields: ['title', 'material_type', 'status', 'course_id', 'teaching_assignment_id', 'week_no', 'clo_codes', 'event_date'] }, { title: 'Content', fields: ['description'] }],
+    labels: { material_type: 'Type', course_id: 'Course', teaching_assignment_id: 'Class / offering', week_no: 'Week', clo_codes: 'CLOs addressed', event_date: 'Date used' },
+    hints: { description: 'For lesson plans: objectives, materials, procedure (motivation, presentation, practice, assessment) and assignment.', clo_codes: 'e.g. CLO1, CLO2' },
+  },
+  assessments: {
+    sections: [{ title: 'Assessment', fields: ['title', 'assessment_type', 'status', 'course_id', 'teaching_assignment_id', 'scheduled_date', 'item_count', 'total_points', 'clo_codes'] }],
+    labels: { assessment_type: 'Type', course_id: 'Course', teaching_assignment_id: 'Class / offering', item_count: 'Number of items', clo_codes: 'CLOs assessed' },
+  },
+  class_activities: {
+    sections: [{ title: 'Class session', fields: ['teaching_assignment_id', 'activity_date', 'title', 'activity_type', 'present', 'enrolled'] }, { title: 'Notes', fields: ['description', 'notes'] }],
+    labels: { teaching_assignment_id: 'Class / offering', activity_date: 'Date', present: 'Students present', enrolled: 'Students enrolled', description: 'What was done' },
+  },
+  development_goals: {
+    sections: [{ title: 'Goal', fields: ['goal_area', 'title', 'status', 'progress_pct', 'target_date', 'linked_training_id'] }, { title: 'Details', fields: ['description'] }],
+    labels: { goal_area: 'Area', progress_pct: 'Progress (%)', linked_training_id: 'Related training' },
+    placeholders: { title: 'e.g. Earn 24 units toward a PhD in Educational Management' },
+  },
+  extension_projects: {
+    sections: [
+      { title: 'Project', fields: ['title', 'project_type', 'status', 'role', 'partner', 'location', 'start_date', 'end_date'] },
+      { title: 'Reach', fields: ['beneficiaries', 'participants_count', 'training_hours'] },
+      { title: 'Report', fields: ['objectives', 'narrative', 'outcomes'] },
+      RECORD,
+    ],
+    labels: { partner: 'Partner / community', role: 'Your role', participants_count: 'Participants', training_hours: 'Training hours' },
   },
 };
 

@@ -4,7 +4,7 @@
 
 An academic and professional advancement environment for managing teaching, research, extension, professional
 portfolio, curriculum vitae and administrative work in one place. Built in phases per the SYNCHRONIA Master Product
-Directive. **Phases 1–3 (Identity and Foundation, Professional Portfolio, Curriculum Vitae Studio) are complete.** SYNCHRONIA is a Windows
+Directive. **Phases 1–4 (Identity and Foundation, Professional Portfolio, Curriculum Vitae Studio, Academic Workspace) are complete.** SYNCHRONIA is a Windows
 desktop application for a single owner.
 
 ## Installing on Windows
@@ -64,6 +64,7 @@ server/                 Node 22 + Express 5, node:sqlite (runs inside the deskto
   src/nexus.js          Central Nexus aggregation, notifications, global search, quick capture
   src/auth.js           Single-owner access: per-launch key, loopback host guard, CSRF guard
   src/server.js         Starts the service (used by the desktop shell)
+  src/academic/         Academic Workspace: courses, syllabi, outcomes, TOS, rubrics, reports (DOCX)
   src/cv/               CV Studio: sections, composition/versioning, HTML/PDF and DOCX renderers,
                         text extraction, ATS analyzer, photograph pipeline, routes
   src/app.js            HTTP API + static client
@@ -115,6 +116,9 @@ All endpoints are under `/api`, require the launch access key, and require the h
 | `POST /cv/:id/finalize`, `POST /cv/:id/versions` | Approve and freeze; new draft version |
 | `POST /cv/:id/exports`, `GET /cv/exports/:id/download` | DOCX / PDF / ATS exports and history |
 | `GET/POST /images`, `PUT /images/:id/optimized`, `GET /images/:id/file` | Photograph library (raw uploads ≤ 100 MB) |
+| `GET /academic/overview`, `GET /academic/courses/:id`, `PUT /academic/courses/:id/alignments` | Academic Workspace |
+| `/academic/syllabi/:id`, `/academic/tos/:id`, `/academic/rubrics/:id` (+ `/export`) | Structured syllabus, TOS and rubric editors and Word exports |
+| `POST /academic/reports/teaching`, `POST /academic/extension/:id/report`, `GET /academic/reports` | Accomplishment and narrative reports |
 | `GET /recycle-bin`, `GET /audit`, `GET /export` | Recovery, audit trail, full JSON export |
 
 See [`docs/DEVELOPMENT_CHECKLIST.md`](docs/DEVELOPMENT_CHECKLIST.md) for phase status and verified workflows.
