@@ -576,3 +576,71 @@ html[data-desktop] input, html[data-desktop] textarea, html[data-desktop] .dl dd
 
 /* Desktop: keep the drawer clear of the window controls drawn over the title bar */
 html[data-desktop] .drawer { margin-top: var(--topbar-h); height: calc(100% - var(--topbar-h)); }
+
+/* ───────── Phase 3: CV Studio ───────── */
+.cv-editor { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.cv-editor-head { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4); flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.cv-title { all: unset; display: block; width: 100%; font-family: var(--font-display); font-variation-settings: 'wdth' 62.5, 'wght' 800; font-size: 30px; line-height: 1.1; color: var(--text); margin: 2px 0 0; }
+input.cv-title:hover { box-shadow: inset 0 -1px 0 var(--line-3); }
+input.cv-title:focus { box-shadow: inset 0 -1px 0 var(--violet); }
+.export-menu { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.cv-editor-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(380px, 520px) minmax(0, 1fr); }
+.cv-left { overflow-y: auto; padding: var(--s-4); border-right: 1px solid var(--line-2); background: var(--bg-1); min-width: 0; }
+.cv-preview { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: #1a1a1f; }
+.cv-preview-bar { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--line); background: var(--bg-1); flex-wrap: wrap; }
+.cv-preview-scroll { flex: 1; overflow: auto; padding: var(--s-5) var(--s-4); transition: opacity var(--dur) var(--ease); }
+.cv-preview-scroll.is-rendering { opacity: 0.6; }
+.pdf-pages { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pdf-page { background: #fff; box-shadow: 0 10px 30px -10px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.06); }
+.pdf-label { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); margin-bottom: var(--s-4); }
+.extracted { white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; color: var(--text); background: var(--bg-1); border: 1px solid var(--line-2); padding: var(--s-4); margin: 0; }
+
+.cv-section { border: 1px solid var(--line-2); background: var(--bg-2); }
+.cv-section.hidden-section { opacity: 0.55; }
+.cv-section.drop, .cv-entry.drop { outline: 1px solid var(--orange); }
+.cv-section-head { display: flex; align-items: center; gap: var(--s-1); padding: 4px var(--s-2); }
+.cv-section-title { all: unset; cursor: pointer; flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--s-2); padding: 6px 4px; color: var(--text); font-weight: 500; }
+.cv-section-title span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-section-title:focus-visible { outline: 1px solid var(--orange); }
+.cv-section-body { padding: var(--s-3); border-top: 1px solid var(--line); background: var(--bg-1); }
+.grip { cursor: grab; display: grid; place-items: center; width: 16px; }
+.cv-entries > li { display: block; }
+.cv-entry.excluded .t, .cv-entry.excluded .s { color: var(--text-3); text-decoration: line-through; text-decoration-color: rgba(255,255,255,.2); }
+.entry-edit { margin: var(--s-3) 0 0 46px; padding: var(--s-3); border: 1px solid var(--line-2); background: var(--bg-2); }
+.pending-box { border: 1px solid var(--violet-line); background: var(--violet-dim); padding: var(--s-3); font-size: 13px; }
+.check-items { margin: 4px 0 0; padding-left: 1.1em; color: var(--text-3); font-size: 12px; }
+
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--s-2); margin-top: var(--s-2); }
+.tpl-card { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: var(--s-3); border: 1px solid var(--line-2); background: var(--bg-2); }
+.tpl-card:hover { border-color: var(--line-3); }
+.tpl-card.selected { border-color: var(--violet); box-shadow: inset 2px 0 0 var(--violet); background: var(--violet-dim); }
+.tpl-card:focus-visible { outline: 1px solid var(--orange); }
+.tpl-card .t { color: var(--text); font-weight: 500; font-size: 13px; }
+.tpl-card .s { color: var(--text-3); font-size: 11.5px; line-height: 1.4; }
+fieldset:disabled .tpl-card { cursor: default; opacity: .7; }
+
+.dropzone { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-4); border: 1px dashed var(--line-3); background: var(--bg-2); flex-wrap: wrap; }
+.dropzone > div { flex: 1; min-width: 180px; }
+.dropzone.over { border-color: var(--orange); background: var(--orange-dim); }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-3); }
+.photo-card { display: flex; flex-direction: column; border: 1px solid var(--line-2); background: var(--bg-2); min-width: 0; }
+.photo-card.selected { border-color: var(--violet); box-shadow: 0 0 0 1px var(--violet); }
+.photo-card.none { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; border: 1px solid var(--line-2); background: var(--bg-2); }
+.photo-card.none.selected { border-color: var(--violet); }
+.photo-thumb { all: unset; cursor: pointer; display: grid; place-items: center; aspect-ratio: 4 / 5; background: var(--bg-3); overflow: hidden; color: var(--text-3); }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.photo-thumb:focus-visible { outline: 1px solid var(--orange); outline-offset: -1px; }
+.photo-meta { padding: var(--s-2); display: flex; flex-direction: column; min-width: 0; }
+.photo-meta .t { color: var(--text); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.photo-meta .s { color: var(--text-3); font-size: 11px; }
+.crop-stage { display: grid; place-items: center; background: #000; }
+.crop-box { position: relative; background-size: 100% 100%; touch-action: none; }
+.crop-rect { position: absolute; cursor: move; outline: 2px solid var(--orange); box-shadow: 0 0 0 9999px rgba(0,0,0,.55); }
+.crop-rect:focus-visible { outline-color: var(--violet-2); }
+.crop-box { overflow: hidden; }
+
+@media (max-width: 1100px) {
+  .cv-editor-body { grid-template-columns: 1fr; }
+  .cv-left { border-right: 0; border-bottom: 1px solid var(--line-2); max-height: none; }
+  .cv-preview { min-height: 70vh; }
+}

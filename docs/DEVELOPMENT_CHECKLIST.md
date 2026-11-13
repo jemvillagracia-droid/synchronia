@@ -84,12 +84,45 @@ Nexus and settings screens.
 **Packaged build.** The bundled (asar) app launches. Data is created in the configured folder, menu and dev tools
 are off, and a request to the data service from outside the window gets 401.
 
-**Not verified here:** the Windows installer was built on Linux (with Wine) and its contents inspected, but it has not
+**Not verified here:** the Windows installers were built on Linux (with Wine) and their contents inspected, but have not
 been run on a Windows machine.
+
+## Phase 3 — Curriculum Vitae Studio ✅
+
+| Directive item (Section VI and UI/UX directive III–VIII) | Status | Notes |
+|---|---|---|
+| A. CV profiles | ✅ | Academic, professional, faculty, research, administrative, short biography and customized application CVs, all drawing on one portfolio |
+| B. Comprehensive sections | ✅ | 22 standard sections plus custom ones. Reorder by drag or arrows, show/hide, hide empty sections, rename, page break before |
+| Manual editing | ✅ | Per-CV wording overrides, with "Use portfolio wording" to undo. Manual entries in any section |
+| C. Template engine | ✅ | Seven presets: Harvard-inspired (not an official Harvard template), traditional, modern, research, faculty and teaching, comprehensive, minimalist ATS. Switching templates keeps all content |
+| Layout controls | ✅ | Letter, A4 or folio (8.5×13) page; margins; font; size; spacing; reverse or chronological order; date format; page numbers; footer text; optional photograph |
+| D. Photographs | ✅ | Drag-and-drop or file picker, upload progress, 100 MB limit enforced while streaming. Server checks file signature, declared type and header dimensions. Crop and reposition with aspect presets; decoding and optimizing run in a Web Worker so the app never freezes. Original kept byte-for-byte; optimized JPEG used in CVs; multiple photographs; per-CV selection; replace and remove |
+| E. Portfolio-to-CV sync | ✅ | Entries reference portfolio records (no copies). New records are offered per section (Add / Not on this CV) and also raised as notifications. Never applied silently; never applied to finalized CVs |
+| Duplicates, inclusion, versions | ✅ | Each record links once per section. Include/exclude per entry. Draft and finalized versions; "New draft version" copies everything |
+| F. Export | ✅ | Genuine DOCX (Heading 1 and Title styles, real bullets, tab-stop dates, no tables or text boxes); tagged, text-based PDF printed by Chromium; ATS DOCX and PDF; re-export any time; descriptive filenames; export history |
+| ATS mode | ✅ | Single column, conventional headings (sections merged where they share one), no photograph, rules or colour |
+| ATS compatibility analyzer | ✅ | Text extraction, heading recognition, section organization, reading order, chronology, date association, font, graphics, image-only text, structure, duplicates, publication details, keyword relevance, essential information. No compatibility guarantee claimed |
+| AI-readability validation | ✅ | Extracted-text preview of what a parser reads from the PDF and from the Word file |
+| AI-assisted review | — | Not available offline; the app says so. Nothing is generated or invented |
+| Two-panel editor and live preview | ✅ | Content, Design, and Check & approve tabs. Page-by-page preview of the actual PDF (pdf.js), with Academic / ATS / Extracted text views and zoom |
+| Quality control and approval | ✅ | Checklist separates complete, incomplete, missing and not applicable. Explicit approval freezes the version as a snapshot; later portfolio edits never change it |
+
+### Verified (Phase 3)
+
+- **Automated (`npm test`): 29 tests, all passing.** The 9 CV tests cover section assembly, sync offers and dismissals, overrides and ordering, settings validation, and DOCX structure (no tables or text boxes). They also cover ATS headings, PDF text extraction and analyzer results, and photo validation (type mismatch, garbage data, wrong format, over 100 MB). Finalization is tested too: the frozen snapshot, new versions, and licence-number visibility.
+- **End to end in the real Electron app.** Steps covered:
+  - Seed the portfolio, create a CV, and see a 2-page live preview.
+  - Reword an entry, then check the ATS preview and the extracted text.
+  - Switch templates; upload, crop and place a photograph.
+  - Get a new portfolio record offered and add it.
+  - Run the checks and approve.
+  - Export all four formats with descriptive filenames, then create a new draft version.
+- **Exported DOCX opened in LibreOffice:** the layout matches the PDF preview.
+- **Packaged (asar) build:** generates and analyzes PDFs.
+- **Finding fixed during testing:** Chromium writes small-caps text into PDFs as capitals, so the name is never set in small caps.
 
 ## Upcoming phases
 
-- [ ] **Phase 3 — Curriculum Vitae Studio**: profiles, templates, 100 MB photo upload with backend validation, portfolio sync, DOCX/PDF export, ATS analyzer
 - [ ] **Phase 4 — Academic Workspace**: course workspaces, syllabi, outcomes alignment, TOS, rubrics, research, extension
 - [ ] **Phase 5 — Intelligence**: analytics and evidence-traceable reports (DOCX/PDF/XLSX)
 - [ ] **Phase 6 — Administrative Operations**: correspondence registry, routing, minutes, turnover documentation

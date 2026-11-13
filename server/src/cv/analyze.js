@@ -69,11 +69,14 @@ export function analyzeAts(model, { pdf, docx, style }) {
 
   // 5. Chronological consistency and date association
   const undated = entries.filter((e) => e.kind === 'item' && !e.manual && SECTION_BY_KEY[e.section.key]?.source && !['skills', 'references'].includes(e.section.key) && !e.dates);
+  // A title can also occur elsewhere (e.g. the summary mentions a position); accept a match at any occurrence.
   const dateMisses = entries.filter((e) => e.dates && probe(e)).filter((e) => {
-    const i = text.indexOf(probe(e));
-    if (i === -1) return true;
-    const window = text.slice(Math.max(0, i - 120), i + probe(e).length + 400);
-    return !window.includes(norm(e.dates).split(' - ')[0]);
+    const p = probe(e);
+    const d = norm(e.dates).split(' - ')[0];
+    for (let i = text.indexOf(p); i !== -1; i = text.indexOf(p, i + 1)) {
+      if (text.slice(Math.max(0, i - 120), i + p.length + 400).includes(d)) return false;
+    }
+    return true;
   });
   if (undated.length) add('chronology', 'Chronological consistency', 'warn', `${undated.length} dated entr${undated.length === 1 ? 'y has' : 'ies have'} no dates.`, undated.map((e) => `${e.section.heading}: ${e.title}`));
   else add('chronology', 'Chronological consistency', 'pass', `Dates use one format (${model.settings.date_style === 'year' ? 'YYYY' : 'Mon YYYY'}) and ${model.settings.date_order === 'reverse' ? 'reverse-' : ''}chronological order.`);

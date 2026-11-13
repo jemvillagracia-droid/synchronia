@@ -239,7 +239,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const [ctxOpen, setCtxOpen] = useState<boolean | null>(null);
   const location = useLocation();
   const collapsed = !!prefs?.sidebar_collapsed;
-  const contextOpen = ctxOpen ?? (prefs ? prefs.context_panel_open && window.innerWidth > 1180 : false);
+  const wideWorkspace = /^\/cv\/\d+/.test(location.pathname); // the CV editor needs the full width
+  const contextOpen = !wideWorkspace && (ctxOpen ?? (prefs ? prefs.context_panel_open && window.innerWidth > 1180 : false));
 
   useEffect(() => { setMobileNav(false); }, [location.pathname]);
 

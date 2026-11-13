@@ -14,6 +14,8 @@ import { ModulePage } from './pages/ModulePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PortfolioOverview, PortfolioCategoryPage } from './pages/PortfolioPage';
+import { CvStudio } from './pages/cv/CvStudio';
+import { CvEditor } from './pages/cv/CvEditor';
 import { desktop } from './lib/desktop';
 
 function NotFound() {
@@ -76,7 +78,9 @@ export function App() {
                 <Route path="/portfolio" element={<PortfolioOverview />} />
                 <Route path="/portfolio/profile" element={<ProfilePage />} />
                 <Route path="/portfolio/:category" element={<PortfolioCategoryPage />} />
-                {MODULES.filter((m) => m.id !== 'nexus' && m.id !== 'portfolio').map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
+                <Route path="/cv" element={<CvStudio />} />
+                <Route path="/cv/:id" element={<CvEditor />} />
+                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

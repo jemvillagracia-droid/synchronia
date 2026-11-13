@@ -443,7 +443,8 @@ function resolveEntries(db, userId, cv, s, def, settings, p) {
       id: e.id, included: !!e.included, sort_order: e.sort_order, manual: !e.source_type, overridden: !!(override && e.source_type),
       kind: def?.kind || 'item', source, missing, override: e.source_type ? override : null,
       title: content.title || null, subtitle: content.subtitle || null, dates: content.dates || null, note: content.note || null,
-      details: content.details || [], text: content.text || null, items: content.items || null, sortDate: base.sortDate || null,
+      details: def?.kind === 'list' ? [] : content.details || [], text: content.text || null,
+      items: def?.kind === 'list' && override?.details ? override.details : content.items || null, sortDate: base.sortDate || null,
     };
   });
 }
