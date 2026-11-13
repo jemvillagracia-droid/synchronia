@@ -1,13 +1,84 @@
 {
   "name": "synchronia",
+  "productName": "SYNCHRONIA",
   "private": true,
-  "version": "0.1.0",
-  "description": "SYNCHRONIA — The Academic Ascension System",
-  "workspaces": ["server", "web"],
+  "version": "0.2.0",
+  "description": "SYNCHRONIA \u2014 The Academic Ascension System. Synchronize. Evolve. Transcend.",
+  "author": "SYNCHRONIA",
+  "type": "module",
+  "main": "desktop/main.mjs",
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
-    "dev": "npm run dev -w server & npm run dev -w web",
-    "build": "npm run build -w web",
-    "start": "npm run start -w server",
-    "test": "npm test -w server"
+    "start": "npm run build && electron .",
+    "dev": "concurrently -k -n api,web,app \"npm:dev:server\" \"npm:dev:web\" \"npm:dev:desktop\"",
+    "dev:server": "SYNCHRONIA_ACCESS_TOKEN=dev-access-token-dev-access-token-0001 node --disable-warning=ExperimentalWarning --watch server/src/index.js",
+    "dev:web": "vite web",
+    "dev:desktop": "wait-on tcp:127.0.0.1:5173 tcp:127.0.0.1:4317 && SYNCHRONIA_DEV_URL=http://127.0.0.1:5173 SYNCHRONIA_ACCESS_TOKEN=dev-access-token-dev-access-token-0001 electron .",
+    "build": "tsc -p web/tsconfig.json --noEmit && vite build web",
+    "test": "node --disable-warning=ExperimentalWarning --test server/test/*.test.js",
+    "dist:win": "npm run build && electron-builder --win --x64 --publish never"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@fontsource-variable/noto-serif-display": "5.1.1",
+    "@fontsource/ibm-plex-mono": "5.1.1",
+    "@fontsource/ibm-plex-sans": "5.1.1",
+    "@fontsource/ibm-plex-sans-condensed": "5.1.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "9.1.0",
+    "electron": "38.8.6",
+    "electron-builder": "26.0.12",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.28.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "wait-on": "8.0.1"
+  },
+  "build": {
+    "appId": "app.synchronia.desktop",
+    "productName": "SYNCHRONIA",
+    "copyright": "SYNCHRONIA",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "package.json",
+      "desktop/**",
+      "server/src/**",
+      "server/migrations/**",
+      "web/dist/**",
+      "!**/*.map"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "SYNCHRONIA-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SYNCHRONIA",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": null
   }
 }

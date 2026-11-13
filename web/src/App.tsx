@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
 import { api, onUnauthorized } from './lib/api';
-import type { AuthState, User } from './lib/types';
+import type { User } from './lib/types';
 import { MODULES } from './lib/modules';
 import { AppProvider } from './components/AppContext';
 import { Shell } from './components/Shell';
@@ -9,11 +9,12 @@ import { QuickCapture } from './components/QuickCapture';
 import { SearchPalette } from './components/SearchPalette';
 import { RecordDrawer } from './components/RecordDrawer';
 import { BrandMark } from './components/Icon';
-import { AuthScreen } from './pages/AuthScreen';
 import { NexusPage } from './pages/Nexus';
 import { ModulePage } from './pages/ModulePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
+import { PortfolioOverview, PortfolioCategoryPage } from './pages/PortfolioPage';
+import { desktop } from './lib/desktop';
 
 function NotFound() {
   return (
@@ -36,32 +37,46 @@ function Boot() {
   );
 }
 
+function Locked() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 'var(--s-6)' }}>
+      <div className="stack" style={{ alignItems: 'center', textAlign: 'center', maxWidth: 440 }}>
+        <BrandMark className="brand-mark" />
+        <h1 className="display" style={{ fontSize: 48, margin: 0 }}>SYNCHRONIA</h1>
+        <p className="muted">Your records are only available inside the SYNCHRONIA desktop app. Open it from the Start menu or desktop shortcut.</p>
+      </div>
+    </div>
+  );
+}
+
+if (desktop) document.documentElement.dataset.desktop = desktop.platform;
+
 export function App() {
-  const [auth, setAuth] = useState<AuthState | null>(null);
+  const [auth, setAuth] = useState<{ user: User | null } | null>(null);
   const [bootError, setBootError] = useState('');
 
   const refresh = useCallback(() => {
-    api.get<AuthState>('/auth/state').then(setAuth).catch(() => setBootError('The SYNCHRONIA server is not responding.'));
+    api.get<{ user: User | null }>('/auth/state').then(setAuth).catch(() => setBootError('The SYNCHRONIA server is not responding.'));
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => onUnauthorized(() => setAuth((a) => (a ? { ...a, user: null } : a))), []);
+  useEffect(() => onUnauthorized(() => setAuth({ user: null })), []);
 
-  if (bootError) return <div className="page"><div className="alert">{bootError} Start it with <code>npm run dev</code> and reload.</div></div>;
+  if (bootError) return <div className="page"><div className="alert">{bootError} Restart SYNCHRONIA.</div></div>;
   if (!auth) return <Boot />;
-  if (!auth.user) {
-    return <AuthScreen setup={auth.setupRequired} onAuthed={(user: User) => setAuth({ setupRequired: false, user })} />;
-  }
+  if (!auth.user) return <Locked />;
 
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AppProvider key={auth.user.id} user={auth.user} onLogout={() => setAuth({ setupRequired: false, user: null })}>
+      <AppProvider key={auth.user.id} user={auth.user}>
         {({ toasts, capture, setCapture, search, setSearch, record, setRecord }) => (
           <>
             <Shell>
               <Routes>
                 <Route path="/" element={<NexusPage />} />
+                <Route path="/portfolio" element={<PortfolioOverview />} />
                 <Route path="/portfolio/profile" element={<ProfilePage />} />
-                {MODULES.filter((m) => m.id !== 'nexus').map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
+                <Route path="/portfolio/:category" element={<PortfolioCategoryPage />} />
+                {MODULES.filter((m) => m.id !== 'nexus' && m.id !== 'portfolio').map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -11,11 +11,13 @@ const { openDatabase } = await import('../src/db.js');
 const { createApp } = await import('../src/app.js');
 const { rebuildSearchIndex } = await import('../src/repo.js');
 
+const TOKEN = 'test-access-token-'.padEnd(48, 'x');
 let server, base, db, cookie = '';
 
 async function call(method, url, body, { auth = true, headers = {} } = {}) {
   const res = await fetch(base + url, {
     method,
+    redirect: 'manual',
     headers: {
       'Content-Type': 'application/json',
       'X-Synchronia': '1',
@@ -27,12 +29,14 @@ async function call(method, url, body, { auth = true, headers = {} } = {}) {
   const setCookie = res.headers.get('set-cookie');
   if (setCookie) cookie = setCookie.split(';')[0];
   const text = await res.text();
-  return { status: res.status, body: text ? JSON.parse(text) : null };
+  let parsed = null;
+  try { parsed = text ? JSON.parse(text) : null; } catch { parsed = text; }
+  return { status: res.status, body: parsed, headers: res.headers };
 }
 
 before(async () => {
   db = openDatabase(':memory:');
-  server = createApp(db).listen(0);
+  server = createApp(db, { accessToken: TOKEN }).listen(0, '127.0.0.1');
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}/api`;
 });
@@ -45,18 +49,38 @@ test('schema migrates and seeds CV templates', () => {
     assert.ok(tables.includes(t), `missing table ${t}`);
   }
   assert.equal(db.prepare('SELECT COUNT(*) n FROM cv_templates').get().n, 7);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM schema_migrations').get().n, 2);
 });
 
-test('first-run setup, auth state, and protection', async () => {
-  assert.equal((await call('GET', '/auth/state', undefined, { auth: false })).body.setupRequired, true);
+test('no sign-in: the launch access key opens the app; everything else is refused', async () => {
+  assert.equal((await call('GET', '/auth/state', undefined, { auth: false })).body.user, null);
   assert.equal((await call('GET', '/nexus', undefined, { auth: false })).status, 401);
-  const weak = await call('POST', '/auth/setup', { email: 'a@b.co', password: 'short' });
-  assert.equal(weak.status, 422);
-  const ok = await call('POST', '/auth/setup', { email: 'owner@example.edu', password: 'correct horse battery', full_name: 'Juan Dela Cruz' });
-  assert.equal(ok.status, 201);
-  assert.ok(cookie.startsWith('sync_session='));
-  const again = await call('POST', '/auth/setup', { email: 'x@example.edu', password: 'another long password' });
-  assert.equal(again.status, 409, 'setup must be one-time');
+  assert.equal((await call('GET', '/open?token=wrong', undefined, { auth: false })).status, 401);
+  assert.equal((await call('GET', '/nexus', undefined, { headers: { Cookie: 'sync_access=wrong' } })).status, 401);
+  const open = await call('GET', `/open?token=${TOKEN}&next=/portfolio`, undefined, { auth: false });
+  assert.equal(open.status, 303);
+  assert.equal(open.headers.get('location'), '/portfolio');
+  assert.ok(cookie.startsWith('sync_access='));
+  assert.match(open.headers.get('set-cookie'), /HttpOnly; SameSite=Strict/);
+  assert.ok((await call('GET', '/auth/state')).body.user.id > 0);
+  assert.equal((await call('GET', '/nexus')).status, 200);
+  const evil = await call('GET', `/open?token=${TOKEN}&next=//evil.example`, undefined, { auth: false });
+  assert.equal(evil.headers.get('location'), '/', 'open redirect blocked');
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM users').get().n, 1, 'single owner');
+  await call('PUT', '/profile', { full_name: 'Juan Dela Cruz' });
+});
+
+test('requests addressed to other host names are refused (DNS rebinding)', async () => {
+  // fetch() ignores a custom Host header, so use the raw http client.
+  const http = await import('node:http');
+  const status = (host) => new Promise((resolve, reject) => {
+    const u = new URL(base + '/nexus');
+    http.get({ hostname: '127.0.0.1', port: u.port, path: u.pathname, headers: { Host: host, Cookie: cookie } }, (res) => { res.resume(); resolve(res.statusCode); }).on('error', reject);
+  });
+  assert.equal(await status('attacker.example'), 421);
+  assert.equal(await status('attacker.example:80'), 421);
+  assert.equal(await status(`127.0.0.1:${new URL(base).port}`), 200);
+  assert.equal(await status(`localhost:${new URL(base).port}`), 200);
 });
 
 test('CSRF header required on writes', async () => {
@@ -64,16 +88,6 @@ test('CSRF header required on writes', async () => {
     method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: cookie }, body: JSON.stringify({ kind: 'idea', title: 'x' }),
   });
   assert.equal(res.status, 403);
-});
-
-test('login / logout / wrong password', async () => {
-  const saved = cookie;
-  assert.equal((await call('POST', '/auth/login', { email: 'owner@example.edu', password: 'nope nope nope' }, { auth: false })).status, 401);
-  assert.equal((await call('POST', '/auth/login', { email: 'OWNER@example.edu', password: 'correct horse battery' }, { auth: false })).status, 200);
-  await call('POST', '/auth/logout');
-  assert.equal((await call('GET', '/nexus')).status, 401);
-  cookie = saved;
-  assert.equal((await call('GET', '/nexus')).status, 200, 'other session still valid');
 });
 
 test('quick capture writes tasks and activities', async () => {
@@ -196,17 +210,116 @@ test('preferences: mode, layout customisation and reset', async () => {
   assert.equal((await call('PUT', '/preferences', { academic_mode: 'wizard' })).status, 422);
 });
 
-test('users cannot read each other\'s records', async () => {
-  // Create a second account directly (setup is one-time) and check isolation.
-  const { hashPassword } = await import('../src/secrets.js');
-  const u = db.prepare('INSERT INTO users (email, password_hash) VALUES (?, ?)').run('other@example.edu', hashPassword('other password 123'));
-  db.prepare('INSERT INTO user_profiles (user_id) VALUES (?)').run(u.lastInsertRowid);
-  db.prepare('INSERT INTO professional_profiles (user_id) VALUES (?)').run(u.lastInsertRowid);
-  const mine = (await call('GET', '/records/courses')).body.items[0];
-  const saved = cookie;
-  await call('POST', '/auth/login', { email: 'other@example.edu', password: 'other password 123' }, { auth: false });
-  assert.equal((await call('GET', `/records/courses/${mine.id}`)).status, 404);
-  assert.equal((await call('GET', '/records/courses')).body.total, 0);
-  assert.equal((await call('GET', '/search?q=Foundations')).body.results.length, 0);
-  cookie = saved;
+test('quick-captured accomplishments land in the portfolio as self-reported', async () => {
+  const a = await call('POST', '/capture', { kind: 'accomplishment', title: 'Secretariat, 2026 Academic Council', body: 'Prepared minutes' });
+  assert.equal(a.status, 201);
+  assert.equal(a.body._type, 'portfolio_entries');
+  assert.equal(a.body.verification, 'self_reported');
+  assert.equal(a.body.description, 'Prepared minutes');
+});
+
+test('date fields must be chronological, including on partial updates', async () => {
+  const bad = await call('POST', '/records/employment', { position: 'Clerk', institution: 'X', start_date: '2024-05-01', end_date: '2023-01-01' });
+  assert.equal(bad.status, 422);
+  assert.ok(bad.body.details.end_date);
+  const ok = await call('POST', '/records/employment', { position: 'Clerk', institution: 'X', start_date: '2020-05-01', end_date: '2023-01-01' });
+  assert.equal((await call('PATCH', `/records/employment/${ok.body.id}`, { start_date: '2024-01-01' })).status, 422);
+  const lic = await call('POST', '/records/licenses', { license_type: 'Civil Service Eligibility', issuing_authority: 'CSC', registration_date: '2022-01-01', valid_until: '2021-01-01' });
+  assert.equal(lic.status, 422);
+});
+
+test('per-record completeness lists missing recommended fields', async () => {
+  const t = await call('POST', '/records/trainings', { title: 'Research Ethics Seminar' });
+  assert.deepEqual(t.body._missing, ['organizer', 'start_date', 'hours']);
+  const u = await call('PATCH', `/records/trainings/${t.body.id}`, { organizer: 'University Research Office', start_date: '2025-08-01', hours: 8 });
+  assert.deepEqual(u.body._missing, []);
+  const lic = (await call('GET', '/records/licenses')).body.items.find((l) => l.license_type === 'Professional Teacher');
+  assert.ok(!lic._missing.includes('registration_number'), 'encrypted fields count as filled');
+  const schema = (await call('GET', '/schema')).body;
+  assert.deepEqual(schema.trainings.recommended, ['organizer', 'start_date', 'hours']);
+});
+
+test('evidence: attach (Drive link, web link, local file), verify, detach resets verification', async () => {
+  const award = await call('POST', '/records/awards', { title: 'Best Paper Award', issuer: 'Regional Research Congress', date_received: '2025-11-20' });
+  const id = award.body.id;
+  assert.equal(award.body._evidence_count, 0);
+
+  const notDrive = await call('POST', `/records/awards/${id}/evidence`, { provider: 'google_drive', title: 'Certificate', url: 'https://example.com/x' });
+  assert.equal(notDrive.status, 422);
+  const drive = await call('POST', `/records/awards/${id}/evidence`, {
+    provider: 'google_drive', title: 'Certificate (Drive)', url: 'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUv/view?usp=sharing',
+  });
+  assert.equal(drive.status, 201);
+  assert.equal(drive.body[0].external_id, '1AbCdEfGhIjKlMnOpQrStUv');
+  const web = await call('POST', `/records/awards/${id}/evidence`, { provider: 'url', title: 'Congress announcement', url: 'https://congress.example.edu/awards' });
+  assert.equal(web.body.length, 2);
+  const local = await call('POST', `/records/awards/${id}/evidence`, { provider: 'local_path', title: 'Scanned plaque', url: 'C:\\Users\\Maria\\Documents\\plaque.pdf' });
+  assert.equal(local.body.length, 3);
+  // Re-link an existing reference to a second record (no duplicate file references)
+  const entry = await call('POST', '/records/portfolio_entries', { title: 'Presented at Regional Research Congress' });
+  const relink = await call('POST', `/records/portfolio_entries/${entry.body.id}/evidence`, { file_ref_id: drive.body[0].id });
+  assert.equal(relink.status, 201);
+  assert.equal((await call('POST', `/records/portfolio_entries/${entry.body.id}/evidence`, { file_ref_id: drive.body[0].id })).status, 409);
+
+  assert.equal((await call('GET', `/records/awards/${id}`)).body._evidence_count, 3);
+  const verified = await call('PATCH', `/records/awards/${id}`, { verification: 'evidence_verified' });
+  assert.equal(verified.status, 200);
+
+  const items = (await call('GET', `/records/awards/${id}/evidence`)).body;
+  for (const [i, link] of items.entries()) {
+    const out = await call('DELETE', `/records/awards/${id}/evidence/${link.link_id}`);
+    assert.equal(out.status, 200);
+    assert.equal(out.body.record.verification, i < items.length - 1 ? 'evidence_verified' : 'self_reported');
+  }
+  const hist = (await call('GET', `/records/awards/${id}/history`)).body;
+  assert.ok(hist.some((h) => /Verification reset/.test(h.summary)));
+  assert.equal((await call('GET', '/records/tasks/1/evidence')).status, 400, 'tasks do not take evidence');
+});
+
+test('licence numbers can be revealed by the owner, and the reveal is audited', async () => {
+  const lic = (await call('GET', '/records/licenses')).body.items.find((l) => l.license_type === 'Professional Teacher');
+  const r = await call('GET', `/records/licenses/${lic.id}/secret/registration_number`);
+  assert.equal(r.body.value, '1234567');
+  assert.equal((await call('GET', `/records/licenses/${lic.id}/secret/license_type`)).status, 404);
+  assert.ok((await call('GET', '/audit')).body.some((a) => /Revealed registration number/.test(a.summary)));
+});
+
+test('expiring licences raise notifications', async () => {
+  const soon = new Date(Date.now() + 20 * 864e5).toISOString().slice(0, 10);
+  await call('POST', '/records/licenses', { license_type: 'Driver License', issuing_authority: 'LTO', valid_until: soon });
+  const n = (await call('GET', '/notifications')).body.items;
+  assert.ok(n.some((i) => i.type === 'licenses' && i.level === 'warning'));
+});
+
+test('portfolio summary: categories, evidence, confirmation and attention list', async () => {
+  const s = (await call('GET', '/portfolio/summary')).body;
+  assert.deepEqual(s.categories.map((c) => c.key),
+    ['education', 'licenses', 'employment', 'appointments', 'research', 'development', 'service', 'awards', 'accomplishments']);
+  const acc = s.categories.find((c) => c.key === 'accomplishments');
+  assert.equal(acc.total, 2);
+  assert.equal(acc.evidenced, 1, 'the re-linked Drive file counts');
+  assert.ok(s.totals.total >= s.totals.evidenced);
+  assert.ok(s.attention.length > 0 && s.attention.every((a) => a.title));
+  assert.equal(s.licences.expiring, 1);
+  assert.ok(s.development.hours >= 8);
+});
+
+test('migration 002 moves Phase 1 captured accomplishments into the portfolio', async () => {
+  const { DatabaseSync } = await import('node:sqlite');
+  const file = path.join(tmp, 'm.db');
+  const d = new DatabaseSync(file);
+  d.exec(fs.readFileSync(new URL('../migrations/001_foundation.sql', import.meta.url), 'utf8'));
+  d.exec(`CREATE TABLE schema_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT 'x');
+          INSERT INTO schema_migrations (name) VALUES ('001_foundation.sql');
+          INSERT INTO users (email, password_hash) VALUES ('a@b.c', 'x');
+          INSERT INTO activities (user_id, kind, title, body, event_date, source) VALUES (1, 'accomplishment', 'Old win', 'detail', '2026-01-05', 'quick_capture');
+          INSERT INTO activities (user_id, kind, title, source) VALUES (1, 'idea', 'Keep me', 'quick_capture');`);
+  d.close();
+  const migrated = openDatabase(file);
+  const pe = migrated.prepare('SELECT * FROM portfolio_entries').all();
+  assert.equal(pe.length, 1);
+  assert.equal(pe[0].title, 'Old win');
+  assert.equal(pe[0].event_date, '2026-01-05');
+  assert.equal(migrated.prepare('SELECT COUNT(*) n FROM activities WHERE deleted_at IS NULL').get().n, 1);
+  migrated.close();
 });

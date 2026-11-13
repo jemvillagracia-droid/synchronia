@@ -23,8 +23,8 @@ const LONG = new Set(['biography', 'description', 'responsibilities', 'accomplis
 export const isLongField = (name: string, spec: FieldSpec) => spec.type === 'text' && ((spec.max || 0) > 2000 || LONG.has(name));
 
 /** Renders an input for a registry field spec. */
-export function SpecInput({ name, spec, value, onChange, refOptions }: {
-  name: string; spec: FieldSpec; value: any; onChange: (v: any) => void; refOptions?: { id: number; label: string }[];
+export function SpecInput({ name, spec, value, onChange, refOptions, placeholder }: {
+  name: string; spec: FieldSpec; value: any; onChange: (v: any) => void; refOptions?: { id: number; label: string }[]; placeholder?: string;
 }) {
   const id = `f-${name}`;
   switch (spec.type) {
@@ -59,11 +59,10 @@ export function SpecInput({ name, spec, value, onChange, refOptions }: {
       return <input id={id} type="number" className="input" min={spec.min} step={spec.type === 'int' ? 1 : 'any'} value={value ?? ''}
         onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))} />;
     case 'secret':
-      return <input id={id} type="password" autoComplete="off" className="input" value={value ?? ''} placeholder="Leave blank to keep current value"
-        onChange={(e) => onChange(e.target.value)} />;
+      return <input id={id} type="password" autoComplete="off" className="input mono" value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
     default:
       return isLongField(name, spec)
-        ? <textarea id={id} className="textarea" maxLength={spec.max} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
-        : <input id={id} className="input" maxLength={spec.max} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
+        ? <textarea id={id} className="textarea" maxLength={spec.max} value={value ?? ''} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+        : <input id={id} className="input" maxLength={spec.max} value={value ?? ''} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />;
   }
 }

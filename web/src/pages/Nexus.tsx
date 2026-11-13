@@ -161,7 +161,7 @@ export function NexusPage() {
             <ul className="list mt-2" style={{ fontSize: 13 }}>
               {d.groups.map((g) => (
                 <li key={g.key} style={{ padding: '3px 0', border: 0 }}>
-                  <span className="grow" style={{ color: g.count ? 'var(--text-2)' : 'var(--text-3)' }}>{g.label}</span>
+                  <Link className="grow" to={`/portfolio/${g.key}`} style={{ color: g.count ? 'var(--text-2)' : 'var(--text-3)' }}>{g.label}</Link>
                   <span className="num" style={{ color: g.count ? 'var(--text)' : 'var(--text-3)' }}>{g.count}</span>
                 </li>
               ))}

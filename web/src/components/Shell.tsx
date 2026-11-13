@@ -142,24 +142,24 @@ function ModeSwitch() {
 }
 
 function ProfileMenu() {
-  const { user, profileName, logout } = useApp();
+  const { profileName } = useApp();
   const [open, setOpen] = useState(false);
   const ref = useClickAway(open, () => setOpen(false));
   return (
     <div style={{ position: 'relative' }} ref={ref}>
       <button className="icon-btn" style={{ width: 'auto', padding: 0 }} aria-label="Account menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <span className="avatar">{initials(profileName, user.email[0].toUpperCase())}</span>
+        <span className="avatar">{initials(profileName, 'S')}</span>
       </button>
       {open && (
         <div className="popover" style={{ width: 260 }}>
           <div className="popover-head" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
             <span style={{ color: 'var(--text)' }}>{profileName || 'Unnamed profile'}</span>
-            <span className="faint" style={{ fontSize: 12 }}>{user.email}</span>
+            <span className="faint" style={{ fontSize: 12 }}>Owner · this computer</span>
           </div>
           <ul className="menu" onClick={() => setOpen(false)}>
             <li><Link to="/portfolio/profile"><Icon name="user" />Professional profile</Link></li>
+            <li><Link to="/portfolio"><Icon name="portfolio" />Professional portfolio</Link></li>
             <li><Link to="/settings"><Icon name="settings" />Settings</Link></li>
-            <li><button onClick={logout}><Icon name="logout" />Sign out</button></li>
           </ul>
         </div>
       )}

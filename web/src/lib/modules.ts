@@ -31,7 +31,7 @@ export const MODULES: ModuleDef[] = [
     id: 'portfolio', path: '/portfolio', label: 'Professional Portfolio', code: '02', icon: 'portfolio', phase: 2,
     summary: 'The master database of your professional identity. Every record editable, searchable, classifiable and linkable to supporting evidence — nothing shown as verified without evidence or your confirmation.',
     capabilities: [
-      { title: 'Identity', items: ['Professional profile (available now)', 'Educational background', 'Professional licenses — registration numbers encrypted'] },
+      { title: 'Identity', items: ['Professional profile', 'Educational background', 'Professional licenses — registration numbers encrypted'] },
       { title: 'Career', items: ['Employment history', 'Academic appointments', 'Institutional service and committees'] },
       { title: 'Achievement', items: ['Research and publications', 'Professional development with hours and CPD units', 'Awards and recognition'] },
       { title: 'Evidence', items: ['Evidence completeness indicators', 'Google Drive / link references per record', 'Verification status on every entry'] },

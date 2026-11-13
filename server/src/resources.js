@@ -28,6 +28,7 @@ export const RESOURCES = {
   education: {
     table: 'education_records', label: 'Education', module: 'portfolio', group: 'education',
     title: 'degree', subtitle: ['institution', 'major'], date: 'graduation_date',
+    recommended: ['major', 'location', 'graduation_date'],
     fields: {
       degree: text(req), major: text(), institution: text(req), location: text(),
       start_date: date(), end_date: date(), graduation_date: date(),
@@ -37,6 +38,7 @@ export const RESOURCES = {
   licenses: {
     table: 'licenses', label: 'Professional License', module: 'portfolio', group: 'licenses',
     title: 'license_type', subtitle: ['issuing_authority'], date: 'registration_date',
+    recommended: ['registration_number', 'registration_date', 'valid_until'],
     fields: {
       license_type: text(req), registration_number: secret(), issuing_authority: text(req),
       registration_date: date(), valid_until: date(), ...verification,
@@ -45,6 +47,7 @@ export const RESOURCES = {
   employment: {
     table: 'employment_records', label: 'Employment', module: 'portfolio', group: 'employment',
     title: 'position', subtitle: ['institution', 'office'], date: 'start_date',
+    recommended: ['office', 'start_date', 'responsibilities'],
     fields: {
       position: text(req), institution: text(req), office: text(), employment_type: text(),
       start_date: date(), end_date: date(), is_current: bool(),
@@ -54,6 +57,7 @@ export const RESOURCES = {
   appointments: {
     table: 'academic_appointments', label: 'Academic Appointment', module: 'portfolio', group: 'appointments',
     title: 'academic_rank', subtitle: ['institution', 'department'], date: 'start_date',
+    recommended: ['faculty_designation', 'department', 'start_date', 'teaching_responsibilities'],
     fields: {
       academic_rank: text(req), faculty_designation: text(), institution: text(req), department: text(),
       start_date: date(), end_date: date(), is_current: bool(), teaching_responsibilities: long(), ...verification,
@@ -62,6 +66,7 @@ export const RESOURCES = {
   trainings: {
     table: 'training_records', label: 'Professional Development', module: 'portfolio', group: 'development',
     title: 'title', subtitle: ['organizer', 'training_type'], date: 'start_date',
+    recommended: ['organizer', 'start_date', 'hours'],
     fields: {
       title: text(req),
       training_type: oneOf(['training', 'seminar', 'workshop', 'conference', 'webinar', 'course', 'certification', 'other']),
@@ -73,11 +78,13 @@ export const RESOURCES = {
   awards: {
     table: 'awards', label: 'Award', module: 'portfolio', group: 'awards',
     title: 'title', subtitle: ['issuer'], date: 'date_received',
+    recommended: ['issuer', 'date_received', 'description'],
     fields: { title: text(req), issuer: text(), date_received: date(), level: text(), description: long(), ...verification },
   },
   memberships: {
     table: 'professional_memberships', label: 'Professional Affiliation', module: 'portfolio', group: 'service',
     title: 'organization', subtitle: ['membership_type'], date: 'start_date',
+    recommended: ['membership_type', 'start_date'],
     fields: {
       organization: text(req), membership_type: text(), member_id: text(),
       start_date: date(), end_date: date(), is_current: bool(), ...verification,
@@ -86,6 +93,7 @@ export const RESOURCES = {
   committees: {
     table: 'committee_assignments', label: 'Institutional Service', module: 'portfolio', group: 'service',
     title: 'committee', subtitle: ['role', 'institution'], date: 'start_date',
+    recommended: ['role', 'institution', 'start_date'],
     fields: {
       committee: text(req), role: text(), institution: text(),
       assignment_type: oneOf(['committee', 'secretariat', 'administrative', 'institutional_project', 'academic_service', 'leadership']),
@@ -95,6 +103,7 @@ export const RESOURCES = {
   portfolio_entries: {
     table: 'portfolio_entries', label: 'Accomplishment', module: 'portfolio', group: 'accomplishments',
     title: 'title', subtitle: ['category'], date: 'event_date',
+    recommended: ['event_date', 'description'],
     fields: { category: text(), title: text(req), description: long(), event_date: date(), verification: oneOf(VERIFICATION) },
   },
 
@@ -154,6 +163,7 @@ export const RESOURCES = {
   research_projects: {
     table: 'research_projects', label: 'Research Project', module: 'academic', group: 'research',
     title: 'title', subtitle: ['status', 'role'], date: 'start_date',
+    recommended: ['role', 'start_date', 'objectives', 'methodology'],
     fields: {
       title: text(req), role: text(),
       status: oneOf(['idea', 'proposal', 'approved', 'data_collection', 'analysis', 'writing', 'completed', 'discontinued']),
@@ -164,6 +174,7 @@ export const RESOURCES = {
   publications: {
     table: 'publications', label: 'Publication', module: 'academic', group: 'research',
     title: 'title', subtitle: ['venue', 'status'], date: 'publication_date',
+    recommended: ['venue', 'publication_date'],
     fields: {
       research_project_id: ref('research_projects'), title: text(req), authors: text({ required: true, max: 2000 }),
       publication_type: oneOf(['journal_article', 'book', 'book_chapter', 'conference_paper', 'report', 'thesis', 'other']),
@@ -175,6 +186,7 @@ export const RESOURCES = {
   presentations: {
     table: 'conference_presentations', label: 'Conference Presentation', module: 'academic', group: 'research',
     title: 'title', subtitle: ['conference'], date: 'presentation_date',
+    recommended: ['location', 'presentation_date'],
     fields: {
       research_project_id: ref('research_projects'), title: text(req), authors: text({ max: 2000 }), conference: text(req),
       location: text(), presentation_date: date(),
@@ -182,7 +194,7 @@ export const RESOURCES = {
     },
   },
   extension_projects: {
-    table: 'extension_projects', label: 'Extension Project', module: 'academic', group: 'extension',
+    table: 'extension_projects', label: 'Extension Project', module: 'academic',
     title: 'title', subtitle: ['partner', 'status'], date: 'start_date',
     fields: {
       title: text(req),
@@ -242,16 +254,20 @@ for (const [key, r] of Object.entries(RESOURCES)) {
   r.searchFields = Object.entries(r.fields).filter(([, f]) => f.type === 'text').map(([n]) => n);
 }
 
+// Professional Portfolio categories (Directive Section V, B–I, plus general accomplishments).
 export const PORTFOLIO_GROUPS = [
-  { key: 'education', label: 'Educational Background' },
-  { key: 'licenses', label: 'Professional Licenses' },
-  { key: 'employment', label: 'Employment History' },
-  { key: 'appointments', label: 'Academic Appointments' },
-  { key: 'research', label: 'Research and Publications' },
-  { key: 'development', label: 'Professional Development' },
-  { key: 'service', label: 'Institutional Service' },
-  { key: 'awards', label: 'Awards and Recognition' },
-  { key: 'extension', label: 'Extension and Engagement' },
+  { key: 'education', label: 'Educational Background', resources: ['education'] },
+  { key: 'licenses', label: 'Professional Licenses', resources: ['licenses'] },
+  { key: 'employment', label: 'Employment History', resources: ['employment'] },
+  { key: 'appointments', label: 'Academic Appointments', resources: ['appointments'] },
+  { key: 'research', label: 'Research and Publications', resources: ['publications', 'presentations', 'research_projects'] },
+  { key: 'development', label: 'Professional Development', resources: ['trainings'] },
+  { key: 'service', label: 'Institutional Service', resources: ['committees', 'memberships'] },
+  { key: 'awards', label: 'Awards and Recognition', resources: ['awards'] },
+  { key: 'accomplishments', label: 'Accomplishments', resources: ['portfolio_entries'] },
 ];
+
+/** Pairs of date fields that must be in chronological order when both are present. */
+export const DATE_ORDER = [['start_date', 'end_date'], ['registration_date', 'valid_until']];
 
 export const byTable = Object.fromEntries(Object.values(RESOURCES).map((r) => [r.table, r]));

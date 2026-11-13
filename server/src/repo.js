@@ -1,7 +1,7 @@
 // Generic, registry-driven data access: validation, ownership scoping, soft delete,
 // audit trail (which doubles as version history) and full-text index maintenance.
-import { RESOURCES } from './resources.js';
-import { encrypt } from './secrets.js';
+import { RESOURCES, DATE_ORDER } from './resources.js';
+import { encrypt, decrypt } from './secrets.js';
 import { tx } from './db.js';
 
 export class HttpError extends Error {
@@ -112,7 +112,42 @@ export function present(r, row) {
   }
   out._type = r.key;
   out._title = displayTitle(r, row);
+  if (r.recommended) out._missing = missingRecommended(r, row);
   return out;
+}
+
+/** Recommended fields that are still empty — drives per-record completeness indicators. */
+export function missingRecommended(r, row) {
+  return (r.recommended || []).filter((n) => {
+    const v = r.fields[n]?.type === 'secret' ? row[`${n}_enc`] : row[n];
+    return v === null || v === undefined || v === '';
+  });
+}
+
+const hasVerification = (r) => !!r.fields.verification;
+
+/** Number of active evidence references linked to each of the given record ids. */
+export function evidenceCounts(db, r, ids) {
+  if (!ids.length || !hasVerification(r)) return {};
+  const rows = db.prepare(`SELECT e.entity_id id, COUNT(*) n FROM evidence_links e
+      JOIN external_file_references f ON f.id = e.file_ref_id AND f.deleted_at IS NULL
+      WHERE e.entity_type = ? AND e.entity_id IN (${ids.map(() => '?').join(',')}) GROUP BY e.entity_id`).all(r.key, ...ids);
+  return Object.fromEntries(rows.map((x) => [x.id, x.n]));
+}
+
+function withEvidence(db, r, items) {
+  if (!hasVerification(r)) return items;
+  const counts = evidenceCounts(db, r, items.map((i) => i.id));
+  for (const i of items) i._evidence_count = counts[i.id] || 0;
+  return items;
+}
+
+function checkDateOrder(r, row) {
+  const errors = {};
+  for (const [a, b] of DATE_ORDER) {
+    if (r.fields[a] && r.fields[b] && row[a] && row[b] && row[b] < row[a]) errors[b] = `Must be on or after ${a.replace(/_/g, ' ')}`;
+  }
+  if (Object.keys(errors).length) throw new HttpError(422, 'Dates are out of order', errors);
 }
 
 export function displayTitle(r, row) {
@@ -199,7 +234,7 @@ export function list(db, userId, key, { deleted = false, limit = 50, offset = 0,
   const total = db.prepare(`SELECT COUNT(*) n FROM ${r.table} WHERE ${sqlWhere}`).get(...params).n;
   const rows = db.prepare(`SELECT * FROM ${r.table} WHERE ${sqlWhere} ORDER BY ${col} ${dir}, id DESC LIMIT ? OFFSET ?`)
     .all(...params, lim, off);
-  return { total, items: rows.map((row) => present(r, row)) };
+  return { total, items: withEvidence(db, r, rows.map((row) => present(r, row))) };
 }
 
 function getRaw(db, userId, r, id, { includeDeleted = false } = {}) {
@@ -211,13 +246,13 @@ function getRaw(db, userId, r, id, { includeDeleted = false } = {}) {
 
 export function get(db, userId, key, id) {
   const r = getResource(key);
-  return present(r, getRaw(db, userId, r, id));
+  return withEvidence(db, r, [present(r, getRaw(db, userId, r, id))])[0];
 }
 
 /** A record may only be marked evidence_verified when supporting evidence is actually linked. */
 function guardVerification(db, r, values, id) {
   if (values.verification !== 'evidence_verified') return;
-  const n = id ? db.prepare('SELECT COUNT(*) n FROM evidence_links WHERE entity_type = ? AND entity_id = ?').get(r.key, Number(id)).n : 0;
+  const n = id ? (evidenceCounts(db, r, [Number(id)])[Number(id)] || 0) : 0;
   if (!n) {
     throw new HttpError(422, 'Link supporting evidence before marking this record as evidence-verified.', {
       verification: 'Requires linked supporting evidence — use “User confirmed” instead',
@@ -229,6 +264,7 @@ export function create(db, userId, key, input) {
   const r = getResource(key);
   const values = validate(db, userId, r, input);
   guardVerification(db, r, values, null);
+  checkDateOrder(r, values);
   const cols = ['user_id', ...Object.keys(values)];
   try {
     return tx(db, () => {
@@ -237,7 +273,7 @@ export function create(db, userId, key, input) {
       const row = getRaw(db, userId, r, res.lastInsertRowid);
       reindex(db, r, row);
       audit(db, userId, key, row.id, 'create', `Created ${r.label.toLowerCase()}: ${displayTitle(r, row)}`, diff(null, values));
-      return present(r, row);
+      return withEvidence(db, r, [present(r, row)])[0];
     });
   } catch (err) { throw translateConstraint(err); }
 }
@@ -250,15 +286,16 @@ export function update(db, userId, key, id, input) {
   try {
     return tx(db, () => {
       const before = getRaw(db, userId, r, id);
+      checkDateOrder(r, { ...before, ...values });
       const changes = diff(before, values);
-      if (!Object.keys(changes).length) return present(r, before);
+      if (!Object.keys(changes).length) return withEvidence(db, r, [present(r, before)])[0];
       const sets = [...Object.keys(values).map((c) => `${c} = ?`), 'updated_at = ?'];
       db.prepare(`UPDATE ${r.table} SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`)
         .run(...Object.values(values), now(), before.id, userId);
       const row = getRaw(db, userId, r, id);
       reindex(db, r, row);
       audit(db, userId, key, row.id, 'update', `Updated ${r.label.toLowerCase()}: ${displayTitle(r, row)}`, changes);
-      return present(r, row);
+      return withEvidence(db, r, [present(r, row)])[0];
     });
   } catch (err) { throw translateConstraint(err); }
 }
@@ -297,4 +334,79 @@ export function history(db, userId, key, id) {
   return db.prepare('SELECT id, action, summary, changes_json, at FROM audit_logs WHERE user_id = ? AND entity_type = ? AND entity_id = ? ORDER BY id DESC')
     .all(userId, key, Number(id))
     .map((a) => ({ ...a, changes: a.changes_json ? JSON.parse(a.changes_json) : null, changes_json: undefined }));
+}
+
+// ───────────────────────── Evidence ─────────────────────────
+
+/** Extract a Google Drive file id from common share-link shapes. */
+export function driveFileId(url) {
+  const m = /\/d\/([\w-]{10,})/.exec(url || '') || /[?&]id=([\w-]{10,})/.exec(url || '');
+  return m ? m[1] : null;
+}
+
+export function listEvidence(db, userId, key, id) {
+  const r = getResource(key);
+  if (!hasVerification(r)) throw new HttpError(400, `${r.label} records do not take evidence`);
+  getRaw(db, userId, r, id);
+  return db.prepare(`SELECT e.id AS link_id, e.created_at AS linked_at, f.id, f.provider, f.external_id, f.url, f.title, f.mime_type, f.created_at
+      FROM evidence_links e JOIN external_file_references f ON f.id = e.file_ref_id
+      WHERE e.user_id = ? AND e.entity_type = ? AND e.entity_id = ? AND f.deleted_at IS NULL ORDER BY e.id`).all(userId, key, Number(id));
+}
+
+/** Link an existing file reference ({ file_ref_id }) or create a new one ({ provider, title, url, ... }). */
+export function attachEvidence(db, userId, key, id, body) {
+  const r = getResource(key);
+  if (!hasVerification(r)) throw new HttpError(400, `${r.label} records do not take evidence`);
+  const target = getRaw(db, userId, r, id);
+  let refId = Number(body?.file_ref_id);
+  if (!refId) {
+    const input = { ...body };
+    delete input.file_ref_id;
+    if (input.provider === 'google_drive') {
+      if (!input.url || !/^https:\/\/(drive|docs)\.google\.com\//.test(input.url)) {
+        throw new HttpError(422, 'Paste a Google Drive share link', { url: 'Must be a drive.google.com or docs.google.com link' });
+      }
+      input.external_id = driveFileId(input.url);
+    }
+    if (input.provider === 'url' && !/^https?:\/\//i.test(input.url || '')) throw new HttpError(422, 'Enter a web address', { url: 'Must start with http:// or https://' });
+    if (input.provider === 'local_path' && !input.url) throw new HttpError(422, 'Choose a file', { url: 'Required' });
+    refId = create(db, userId, 'file_references', input).id;
+  } else {
+    const ref = db.prepare('SELECT id FROM external_file_references WHERE id = ? AND user_id = ? AND deleted_at IS NULL').get(refId, userId);
+    if (!ref) throw new HttpError(404, 'File reference not found');
+  }
+  try {
+    db.prepare('INSERT INTO evidence_links (user_id, file_ref_id, entity_type, entity_id) VALUES (?, ?, ?, ?)').run(userId, refId, key, target.id);
+  } catch (err) {
+    if (String(err.message).includes('UNIQUE')) throw new HttpError(409, 'That file is already linked to this record.');
+    throw err;
+  }
+  audit(db, userId, key, target.id, 'update', `Linked evidence to ${r.label.toLowerCase()}: ${displayTitle(r, target)}`, { evidence: [null, refId] });
+  return listEvidence(db, userId, key, id);
+}
+
+/** Unlink evidence. If no evidence remains, an "evidence verified" record falls back to self-reported. */
+export function detachEvidence(db, userId, key, id, linkId) {
+  const r = getResource(key);
+  return tx(db, () => {
+    const target = getRaw(db, userId, r, id);
+    const res = db.prepare('DELETE FROM evidence_links WHERE id = ? AND user_id = ? AND entity_type = ? AND entity_id = ?').run(Number(linkId), userId, key, target.id);
+    if (!res.changes) throw new HttpError(404, 'Evidence link not found');
+    audit(db, userId, key, target.id, 'update', `Removed evidence from ${r.label.toLowerCase()}: ${displayTitle(r, target)}`);
+    const remaining = evidenceCounts(db, r, [target.id])[target.id] || 0;
+    if (!remaining && target.verification === 'evidence_verified') {
+      db.prepare(`UPDATE ${r.table} SET verification = 'self_reported', updated_at = ? WHERE id = ?`).run(now(), target.id);
+      audit(db, userId, key, target.id, 'update', 'Verification reset: no supporting evidence remains', { verification: ['evidence_verified', 'self_reported'] });
+    }
+    return { items: listEvidence(db, userId, key, id), record: get(db, userId, key, id) };
+  });
+}
+
+/** Decrypt an encrypted field for the owner (e.g. to copy a licence number into an application). Audited. */
+export function revealSecret(db, userId, key, id, field) {
+  const r = getResource(key);
+  if (r.fields[field]?.type !== 'secret') throw new HttpError(404, 'No such protected field');
+  const row = getRaw(db, userId, r, id);
+  audit(db, userId, key, row.id, 'export', `Revealed ${field.replace(/_/g, ' ')} of ${displayTitle(r, row)}`);
+  return { value: decrypt(row[`${field}_enc`]) };
 }

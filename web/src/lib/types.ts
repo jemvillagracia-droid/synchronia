@@ -1,7 +1,6 @@
 export type Mode = 'administrative' | 'instructor' | 'researcher' | 'faculty_development';
 
 export interface User { id: number; email: string }
-export interface AuthState { setupRequired: boolean; user: User | null }
 
 export interface LayoutItem { id: string; visible: boolean }
 export interface Preferences {
@@ -22,12 +21,14 @@ export interface FieldSpec {
 }
 export interface ResourceSpec {
   label: string; module: string; title: string; subtitle: string[]; date: string | null;
+  group: string | null; recommended: string[];
   fields: Record<string, FieldSpec>;
 }
 export type Schema = Record<string, ResourceSpec>;
 
 export interface RecordRow {
   id: number; _type: string; _title: string; created_at: string; updated_at: string; deleted_at?: string | null;
+  _missing?: string[]; _evidence_count?: number;
   [k: string]: any;
 }
 
@@ -75,3 +76,13 @@ export interface Nexus {
 
 export interface SearchResult { type: string; id: number; title: string; title_highlighted?: string; snippet: string; label: string; module: string }
 export interface Notification { id: string; type: string; entity_id: number; level: 'critical' | 'warning' | 'info'; title: string; detail: string }
+
+export interface PortfolioSummary {
+  today: string;
+  totals: { total: number; evidenced: number; confirmed: number; incomplete: number };
+  categories: { key: string; label: string; resources: string[]; total: number; evidenced: number; confirmed: number; incomplete: number; last_updated: string | null; attention_count: number }[];
+  attention: { type: string; id: number; title: string; label: string; missing: string[]; has_evidence: boolean; verification: string; category: string }[];
+  profile: { full_name: string | null; professional_title: string | null; completeness: { filled: number; total: number } };
+  development: { hours: number; cpd_units: number };
+  licences: { expired: number; expiring: number };
+}

@@ -1,11 +1,11 @@
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
-import { authRouter, sessionMiddleware, requireAuth, csrfGuard } from './auth.js';
+import { accessMiddleware, hostGuard, requireAuth, csrfGuard, openHandler } from './auth.js';
 import * as repo from './repo.js';
 import { HttpError, audit } from './repo.js';
 import { RESOURCES } from './resources.js';
-import { nexus, notifications, search, capture, normaliseLayout, profileRow, WIDGETS } from './nexus.js';
+import { nexus, notifications, search, capture, normaliseLayout, profileRow, portfolioSummary, WIDGETS } from './nexus.js';
 import { decrypt } from './secrets.js';
 import { tx } from './db.js';
 import { ROOT, APP_NAME, APP_TAGLINE, APP_VERSION } from './config.js';
@@ -17,27 +17,32 @@ const PROFILE_FIELDS = {
 };
 const MODES = ['administrative', 'instructor', 'researcher', 'faculty_development'];
 
-export function createApp(db) {
+export function createApp(db, { accessToken } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
   app.use((_req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Referrer-Policy', 'same-origin');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Content-Security-Policy',
+      "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
     next();
   });
+  app.use(hostGuard);
   app.use(express.json({ limit: '1mb' }));
-  app.use(sessionMiddleware(db));
+  app.use(accessMiddleware(db, accessToken));
 
   const api = express.Router();
   api.use(csrfGuard);
   api.get('/meta', (_req, res) => res.json({ name: APP_NAME, tagline: APP_TAGLINE, version: APP_VERSION }));
-  api.use('/auth', authRouter(db));
+  api.get('/open', openHandler(accessToken));
+  api.get('/auth/state', (req, res) => res.json({ user: req.user || null }));
   api.use(requireAuth);
 
   // ── Central Nexus ─────────────────────────────────────────
   api.get('/nexus', (req, res) => res.json(nexus(db, req.user.id)));
+  api.get('/portfolio/summary', (req, res) => res.json(portfolioSummary(db, req.user.id)));
   api.get('/notifications', (req, res) => res.json(notifications(db, req.user.id)));
   api.get('/search', (req, res) => res.json(search(db, req.user.id, req.query.q, req.query.limit)));
   api.post('/capture', (req, res) => res.status(201).json(capture(db, req.user.id, req.body)));
@@ -126,6 +131,7 @@ export function createApp(db) {
     for (const r of Object.values(RESOURCES)) {
       out[r.key] = {
         label: r.label, module: r.module, title: r.title, subtitle: r.subtitle || [], date: r.date || null,
+        group: r.group || null, recommended: r.recommended || [],
         fields: Object.fromEntries(Object.entries(r.fields).map(([n, f]) => [n, {
           type: f.type, required: !!f.required, values: f.values, resource: f.resource, max: f.max, min: f.min,
         }])),
@@ -195,6 +201,13 @@ export function createApp(db) {
   api.patch('/records/:type/:id', (req, res) => res.json(repo.update(db, req.user.id, req.params.type, req.params.id, req.body)));
   api.delete('/records/:type/:id', (req, res) => res.json(repo.remove(db, req.user.id, req.params.type, req.params.id)));
   api.post('/records/:type/:id/restore', (req, res) => res.json(repo.restore(db, req.user.id, req.params.type, req.params.id)));
+  api.get('/records/:type/:id/evidence', (req, res) => res.json(repo.listEvidence(db, req.user.id, req.params.type, req.params.id)));
+  api.post('/records/:type/:id/evidence', (req, res) => res.status(201).json(repo.attachEvidence(db, req.user.id, req.params.type, req.params.id, req.body)));
+  api.delete('/records/:type/:id/evidence/:linkId', (req, res) => res.json(repo.detachEvidence(db, req.user.id, req.params.type, req.params.id, req.params.linkId)));
+  api.get('/records/:type/:id/secret/:field', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(repo.revealSecret(db, req.user.id, req.params.type, req.params.id, req.params.field));
+  });
   api.get('/records/:type/:id/history', (req, res) => res.json(repo.history(db, req.user.id, req.params.type, req.params.id)));
 
   api.use((_req, _res, next) => next(new HttpError(404, 'Not found')));

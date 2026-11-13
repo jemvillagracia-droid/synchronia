@@ -1,7 +1,7 @@
 // Central Nexus: dashboard aggregation, notifications, global search and quick capture.
 // Every number here is computed from stored records — nothing is estimated or invented.
 import { RESOURCES, PORTFOLIO_GROUPS } from './resources.js';
-import { HttpError, create } from './repo.js';
+import { HttpError, create, missingRecommended } from './repo.js';
 
 export const WIDGETS = [
   { id: 'profile', title: 'Professional Profile' },
@@ -54,6 +54,13 @@ const count = (db, table, userId, extra = '', ...params) =>
 const groupCount = (db, table, col, userId) =>
   Object.fromEntries(db.prepare(`SELECT ${col} k, COUNT(*) n FROM ${table} WHERE user_id = ? AND deleted_at IS NULL GROUP BY ${col}`).all(userId).map((r) => [r.k, r.n]));
 
+function evidencedCount(db, r, userId) {
+  return db.prepare(`SELECT COUNT(DISTINCT e.entity_id) n FROM evidence_links e
+       JOIN ${r.table} x ON x.id = e.entity_id
+       JOIN external_file_references f ON f.id = e.file_ref_id AND f.deleted_at IS NULL
+       WHERE e.entity_type = ? AND x.user_id = ? AND x.deleted_at IS NULL`).get(r.key, userId).n;
+}
+
 const PROFILE_FIELDS = ['full_name', 'professional_title', 'academic_designation', 'biography', 'email', 'phone', 'specialization', 'research_interests', 'current_position', 'current_institution'];
 
 export function profileRow(db, userId) {
@@ -78,15 +85,14 @@ export function nexus(db, userId) {
   // Development progress: portfolio coverage + evidence + verification
   const portfolioResources = Object.values(RESOURCES).filter((r) => r.group);
   const groups = PORTFOLIO_GROUPS.map((g) => ({
-    ...g,
-    count: portfolioResources.filter((r) => r.group === g.key).reduce((s, r) => s + count(db, r.table, userId), 0),
+    key: g.key, label: g.label,
+    count: g.resources.reduce((s, k) => s + count(db, RESOURCES[k].table, userId), 0),
   }));
   let totalRecords = 0, evidenced = 0;
   const verificationTotals = { self_reported: 0, user_confirmed: 0, evidence_verified: 0 };
   for (const r of portfolioResources) {
     totalRecords += count(db, r.table, userId);
-    evidenced += db.prepare(`SELECT COUNT(DISTINCT e.entity_id) n FROM evidence_links e JOIN ${r.table} x ON x.id = e.entity_id
-       WHERE e.entity_type = ? AND x.user_id = ? AND x.deleted_at IS NULL`).get(r.key, userId).n;
+    evidenced += evidencedCount(db, r, userId);
     for (const [k, n] of Object.entries(groupCount(db, r.table, 'verification', userId))) verificationTotals[k] = (verificationTotals[k] || 0) + n;
   }
 
@@ -153,7 +159,7 @@ export function nexus(db, userId) {
   };
 
   // Recently updated portfolio & academic records
-  const recentSources = Object.values(RESOURCES).filter((r) => r.group || ['courses', 'syllabi', 'materials', 'assessments'].includes(r.key));
+  const recentSources = Object.values(RESOURCES).filter((r) => r.group || ['courses', 'syllabi', 'materials', 'assessments', 'extension_projects'].includes(r.key));
   const recent_records = db.prepare(recentSources.map((r) =>
     `SELECT '${r.key}' AS type, id, ${r.title} AS title, updated_at, created_at FROM ${r.table} WHERE user_id = ${Number(userId)} AND deleted_at IS NULL`,
   ).join(' UNION ALL ') + ' ORDER BY updated_at DESC LIMIT 8').all()
@@ -229,7 +235,65 @@ export function notifications(db, userId) {
       title: c.subject, detail: c.due_date < t ? `Follow-up overdue since ${c.due_date}` : `Follow-up due ${c.due_date}`,
     });
   }
+  const expiryHorizon = addDays(t, 60);
+  for (const l of db.prepare(`SELECT id, license_type, valid_until FROM licenses WHERE user_id = ? AND deleted_at IS NULL
+      AND valid_until IS NOT NULL AND valid_until <= ? ORDER BY valid_until`).all(userId, expiryHorizon)) {
+    items.push({
+      id: `lic-${l.id}`, type: 'licenses', entity_id: l.id, level: l.valid_until < t ? 'critical' : 'warning',
+      title: l.license_type, detail: l.valid_until < t ? `License expired ${l.valid_until}` : `License valid until ${l.valid_until} — renew soon`,
+    });
+  }
   return { items };
+}
+
+/** Professional Portfolio overview: per-category counts, verification, evidence and completeness. */
+export function portfolioSummary(db, userId) {
+  const t = today();
+  const categories = PORTFOLIO_GROUPS.map((g) => {
+    let total = 0, evidenced = 0, confirmed = 0, incomplete = 0, lastUpdated = null;
+    const attention = [];
+    for (const key of g.resources) {
+      const r = RESOURCES[key];
+      const rows = db.prepare(`SELECT * FROM ${r.table} WHERE user_id = ? AND deleted_at IS NULL`).all(userId);
+      const evidencedIds = new Set(db.prepare(`SELECT DISTINCT e.entity_id id FROM evidence_links e
+          JOIN external_file_references f ON f.id = e.file_ref_id AND f.deleted_at IS NULL
+          WHERE e.entity_type = ? AND e.user_id = ?`).all(key, userId).map((x) => x.id));
+      for (const row of rows) {
+        total += 1;
+        const hasEvidence = evidencedIds.has(row.id);
+        if (hasEvidence) evidenced += 1;
+        if (row.verification === 'user_confirmed' || row.verification === 'evidence_verified') confirmed += 1;
+        const missing = missingRecommended(r, row);
+        if (missing.length) incomplete += 1;
+        if (!lastUpdated || row.updated_at > lastUpdated) lastUpdated = row.updated_at;
+        if (!hasEvidence || missing.length) {
+          attention.push({ type: key, id: row.id, title: row[r.title], label: r.label, missing, has_evidence: hasEvidence, verification: row.verification });
+        }
+      }
+    }
+    return { key: g.key, label: g.label, resources: g.resources, total, evidenced, confirmed, incomplete, last_updated: lastUpdated, attention };
+  });
+  const totals = categories.reduce((a, c) => ({
+    total: a.total + c.total, evidenced: a.evidenced + c.evidenced, confirmed: a.confirmed + c.confirmed, incomplete: a.incomplete + c.incomplete,
+  }), { total: 0, evidenced: 0, confirmed: 0, incomplete: 0 });
+  const hours = db.prepare('SELECT COALESCE(SUM(hours),0) h, COALESCE(SUM(cpd_units),0) c FROM training_records WHERE user_id = ? AND deleted_at IS NULL').get(userId);
+  const licences = db.prepare('SELECT valid_until FROM licenses WHERE user_id = ? AND deleted_at IS NULL').all(userId);
+  const p = profileRow(db, userId) || {};
+  return {
+    today: t,
+    totals,
+    categories: categories.map(({ attention, ...c }) => ({ ...c, attention_count: attention.length })),
+    attention: categories.flatMap((c) => c.attention.map((a) => ({ ...a, category: c.key }))).slice(0, 12),
+    profile: {
+      full_name: p.full_name || null, professional_title: p.professional_title || null,
+      completeness: { filled: PROFILE_FIELDS.filter((f) => p[f] && String(p[f]).trim()).length, total: PROFILE_FIELDS.length },
+    },
+    development: { hours: hours.h, cpd_units: hours.c },
+    licences: {
+      expired: licences.filter((l) => l.valid_until && l.valid_until < t).length,
+      expiring: licences.filter((l) => l.valid_until && l.valid_until >= t && l.valid_until <= addDays(t, 60)).length,
+    },
+  };
 }
 
 /** Full-text search across every structured record the user owns. */
@@ -266,6 +330,12 @@ export function capture(db, userId, body) {
   if (kind === 'task') {
     return create(db, userId, 'tasks', {
       title, notes: text, due_date, priority: priority || 'normal', module: module || 'general', is_deadline: !!is_deadline,
+    });
+  }
+  if (kind === 'accomplishment') {
+    // Accomplishments go straight into the Professional Portfolio, self-reported until confirmed or evidenced.
+    return create(db, userId, 'portfolio_entries', {
+      title, description: text, event_date: event_date || today(), category: 'accomplishment', verification: 'self_reported',
     });
   }
   const activityModules = RESOURCES.activities.fields.module.values;

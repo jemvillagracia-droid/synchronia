@@ -4,54 +4,66 @@
 
 An academic and professional advancement environment for managing teaching, research, extension, professional
 portfolio, curriculum vitae and administrative work in one place. Built in phases per the SYNCHRONIA Master Product
-Directive. **Phase 1 (Identity and Foundation) is complete.**
+Directive. **Phase 1 (Identity and Foundation) and Phase 2 (Professional Portfolio) are complete.** SYNCHRONIA is a Windows
+desktop application for a single owner.
 
-## Running it
+## Installing on Windows
 
-Requires **Node.js 22.13+**. The database is SQLite built into Node, so there is nothing else to install.
+Run **`SYNCHRONIA-Setup-<version>.exe`**. It installs per user (no administrator rights needed) and adds Start-menu and
+desktop shortcuts. SYNCHRONIA opens straight into your workspace; there is no sign-in.
+
+Your data lives in `%APPDATA%\SYNCHRONIA\data` (Settings › Application › *Show in Explorer*). Back up that folder: it
+holds `synchronia.db` and `secret.key`, the key that decrypts licence numbers. Uninstalling does not delete it.
+Settings › Data & recovery also exports every record as JSON.
+
+### How access is protected without a sign-in
+
+The desktop app starts its data service on `127.0.0.1` (never the network) and creates a new random access key at
+every launch. Only the app's own window receives that key, as an HttpOnly, SameSite=Strict cookie. Requests without it
+are refused. Requests addressed to any host name other than localhost are refused, which blocks DNS-rebinding.
+Writes also need a custom header, which blocks cross-site requests. Developer tools and the menu bar are disabled in
+the installed app.
+
+## Building
+
+Requires **Node.js 22.13+**.
 
 ```bash
 npm install
 ```
 
 ```bash
-npm run build && npm start
+npm test
 ```
 
-Open <http://127.0.0.1:4317>. On first run you create the owner account.
+```bash
+npm start
+```
 
-For development with hot reload, run the API on :4317 and the Vite client on :5173 (it proxies `/api`):
+`npm start` builds the interface and opens the desktop app. To produce the Windows installer in `release/`:
+
+```bash
+npm run dist:win
+```
+
+On Linux, building the Windows installer additionally needs Wine with 32-bit support (`wine64` and `wine32:i386`).
+For development with hot reload (API, Vite and Electron together):
 
 ```bash
 npm run dev
 ```
 
-```bash
-npm test
-```
-
-### Configuration (environment variables)
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `PORT` | `4317` | HTTP port |
-| `HOST` | `127.0.0.1` | Bind address (local only by default) |
-| `SYNCHRONIA_DATA_DIR` | `./data` | Database and encryption key location |
-| `SYNCHRONIA_DB` | `<data>/synchronia.db` | Database file |
-| `SYNCHRONIA_SECRET_KEY` | generated into `<data>/secret.key` | 64-hex-char AES-256 key for sensitive fields |
-
-**Back up `data/` (both `synchronia.db` and `secret.key`).** Without the key, encrypted licence numbers cannot be read.
-Settings › Data & recovery also exports every record as JSON.
-
 ## Architecture
 
 ```
-server/                 Node 22 + Express 5, node:sqlite
+desktop/                Electron shell: starts the data service, window, native file picker / open-file bridge
+server/                 Node 22 + Express 5, node:sqlite (runs inside the desktop app)
   migrations/           Versioned SQL; 001_foundation.sql holds the full Section XI schema
   src/resources.js      Registry describing every record type (fields, validation, search, module)
   src/repo.js           Generic data layer: validation, ownership, soft delete, audit, search indexing
   src/nexus.js          Central Nexus aggregation, notifications, global search, quick capture
-  src/auth.js           Owner setup, sessions (scrypt + HttpOnly SameSite=Strict cookies), CSRF guard
+  src/auth.js           Single-owner access: per-launch key, loopback host guard, CSRF guard
+  src/server.js         Starts the service (used by the desktop shell)
   src/app.js            HTTP API + static client
   test/                 API tests (node:test)
 web/                    React 18 + TypeScript + Vite
@@ -76,7 +88,7 @@ web/                    React 18 + TypeScript + Vite
 
 ## API overview
 
-All endpoints are under `/api`, require a session, and require the header `X-Synchronia: 1` on writes.
+All endpoints are under `/api`, require the launch access key, and require the header `X-Synchronia: 1` on writes.
 
 | Endpoint | Purpose |
 |---|---|
@@ -90,7 +102,11 @@ All endpoints are under `/api`, require a session, and require the header `X-Syn
 | `GET/PATCH/DELETE /records/:type/:id` | Read / update / move to recycle bin |
 | `POST /records/:type/:id/restore` | Restore from recycle bin |
 | `GET /records/:type/:id/history` | Version history |
-| `GET /schema` | Field definitions for every record type |
+| `GET /schema` | Field definitions (and recommended fields) for every record type |
+| `GET /portfolio/summary` | Per-category counts, evidence, confirmation, completeness, attention list |
+| `GET/POST /records/:type/:id/evidence` | List / link evidence (Google Drive link, web link, file on this PC, or an existing reference) |
+| `DELETE /records/:type/:id/evidence/:linkId` | Unlink evidence; with none left, "evidence verified" falls back to self-reported |
+| `GET /records/:type/:id/secret/:field` | Reveal an encrypted field (audited) |
 | `GET /recycle-bin`, `GET /audit`, `GET /export` | Recovery, audit trail, full JSON export |
 
 See [`docs/DEVELOPMENT_CHECKLIST.md`](docs/DEVELOPMENT_CHECKLIST.md) for phase status and verified workflows.

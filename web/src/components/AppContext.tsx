@@ -16,7 +16,6 @@ interface Ctx {
   openSearch: () => void;
   openRecord: (type: string, id: number) => void;
   openNew: (type: string) => void;
-  logout: () => Promise<void>;
 }
 
 const AppCtx = createContext<Ctx | null>(null);
@@ -28,7 +27,6 @@ export const useApp = () => {
 
 interface ProviderProps {
   user: User;
-  onLogout: () => void;
   children: (ui: {
     toasts: Toast[];
     capture: boolean; setCapture: (v: boolean) => void;
@@ -37,7 +35,7 @@ interface ProviderProps {
   }) => ReactNode;
 }
 
-export function AppProvider({ user, onLogout, children }: ProviderProps) {
+export function AppProvider({ user, children }: ProviderProps) {
   const [prefs, setPrefs] = useState<Preferences | null>(null);
   const [schema, setSchema] = useState<Schema | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
@@ -65,12 +63,8 @@ export function AppProvider({ user, onLogout, children }: ProviderProps) {
     return next;
   }, []);
 
-  const logout = useCallback(async () => {
-    try { await api.post('/auth/logout'); } finally { onLogout(); }
-  }, [onLogout]);
-
   const value: Ctx = {
-    user, prefs, schema, profileName, setProfileName, updatePrefs, toast, logout,
+    user, prefs, schema, profileName, setProfileName, updatePrefs, toast,
     openCapture: () => setCapture(true),
     openSearch: () => setSearch(true),
     openRecord: (type, id) => setRecord({ type, id }),

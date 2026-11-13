@@ -1,18 +1,11 @@
-import { openDatabase } from './db.js';
-import { createApp } from './app.js';
-import { rebuildSearchIndex } from './repo.js';
-import { DB_PATH, PORT, APP_NAME, APP_TAGLINE } from './config.js';
+// Development entry point: runs the API on a fixed port for the Vite dev server / Electron in dev mode.
+import { startServer } from './server.js';
+import { PORT, APP_NAME } from './config.js';
 
-const db = openDatabase(DB_PATH);
-rebuildSearchIndex(db);
-const app = createApp(db);
-
-const host = process.env.HOST || '127.0.0.1';
-const server = app.listen(PORT, host, () => {
-  console.log(`${APP_NAME} — ${APP_TAGLINE}`);
-  console.log(`API listening on http://${host}:${PORT}  (database: ${DB_PATH})`);
-});
-
-for (const sig of ['SIGINT', 'SIGTERM']) {
-  process.on(sig, () => server.close(() => { db.close(); process.exit(0); }));
+const accessToken = process.env.SYNCHRONIA_ACCESS_TOKEN || undefined;
+const srv = await startServer({ port: PORT, accessToken });
+console.log(`${APP_NAME} API on http://127.0.0.1:${srv.port}  (database: ${srv.dbPath})`);
+if (!process.env.SYNCHRONIA_ACCESS_TOKEN) {
+  console.log(`Open in a browser for debugging: http://127.0.0.1:${srv.port}/api/open?token=${srv.accessToken}`);
 }
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => srv.close().then(() => process.exit(0)));

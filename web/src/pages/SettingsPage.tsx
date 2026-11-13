@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { api, ApiError, dataChanged, onDataChanged } from '../lib/api';
+import { useCallback, useEffect, useState } from 'react';
+import { desktop } from '../lib/desktop';
+import { api, dataChanged, onDataChanged } from '../lib/api';
 import { fmtDateTime, humanize, MODE_DESC, MODE_LABEL } from '../lib/format';
 import type { Mode } from '../lib/types';
 import { useApp } from '../components/AppContext';
-import { Field } from '../components/Field';
 import { Icon } from '../components/Icon';
 
-type Tab = 'workspace' | 'account' | 'data';
+type Tab = 'workspace' | 'application' | 'data';
 
 function Workspace() {
   const { prefs, updatePrefs, toast } = useApp();
@@ -47,47 +47,25 @@ function Workspace() {
   );
 }
 
-function Account() {
-  const { user, toast, logout } = useApp();
-  const [cur, setCur] = useState('');
-  const [next, setNext] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false);
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (next !== confirm) { setErrors({ confirm: 'Passwords do not match' }); return; }
-    setBusy(true); setErrors({});
-    try {
-      await api.post('/auth/password', { current_password: cur, new_password: next });
-      setCur(''); setNext(''); setConfirm(''); toast('Password changed. Other sessions were signed out.', 'ok');
-    } catch (err) {
-      if (err instanceof ApiError) setErrors(err.details || { new_password: err.message });
-    } finally { setBusy(false); }
-  }
+function Application() {
   return (
     <div className="stack">
       <section className="panel">
-        <header className="panel-head"><span className="code">ACC</span><h2>Account</h2></header>
-        <div className="panel-body between wrap">
-          <div><div className="label">Signed in as</div><div className="mt-2">{user.email}</div></div>
-          <button className="btn" onClick={logout}><Icon name="logout" />Sign out</button>
+        <header className="panel-head"><span className="code">APP</span><h2>SYNCHRONIA desktop</h2></header>
+        <div className="panel-body">
+          <dl className="dl">
+            <dt>Version</dt><dd className="mono">{desktop?.version || 'development build'}</dd>
+            <dt>Access</dt><dd>Single owner on this computer — no sign-in. A new private access key is created each time the app starts, and the data service only answers inside this app.</dd>
+            <dt>Data folder</dt>
+            <dd className="mono selectable">{desktop?.dataDir || '—'}
+              {desktop && <button className="linkbtn" onClick={() => desktop!.showDataFolder()}>Show in Explorer</button>}
+            </dd>
+          </dl>
+          <p className="faint" style={{ fontSize: 13, marginBottom: 0 }}>
+            Back up the whole data folder — it holds your database (<span className="mono">synchronia.db</span>) and the key that decrypts
+            license numbers (<span className="mono">secret.key</span>). Uninstalling SYNCHRONIA does not delete it.
+          </p>
         </div>
-      </section>
-      <section className="panel">
-        <header className="panel-head"><span className="code">SEC</span><h2>Change password</h2></header>
-        <form className="panel-body form-grid" onSubmit={submit}>
-          <Field label="Current password" error={errors.current_password} className="span-2">
-            <input className="input" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} required />
-          </Field>
-          <Field label="New password" hint="At least 10 characters." error={errors.new_password || errors.password}>
-            <input className="input" type="password" autoComplete="new-password" minLength={10} value={next} onChange={(e) => setNext(e.target.value)} required />
-          </Field>
-          <Field label="Confirm new password" error={errors.confirm}>
-            <input className="input" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
-          </Field>
-          <div className="span-2"><button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button></div>
-        </form>
       </section>
     </div>
   );
@@ -179,12 +157,12 @@ export function SettingsPage() {
         </div>
       </div>
       <div className="tabs" role="tablist">
-        {(['workspace', 'account', 'data'] as Tab[]).map((t) => (
+        {(['workspace', 'data', 'application'] as Tab[]).map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t === 'data' ? 'Data & recovery' : humanize(t)}</button>
         ))}
       </div>
       {tab === 'workspace' && <Workspace />}
-      {tab === 'account' && <Account />}
+      {tab === 'application' && <Application />}
       {tab === 'data' && <Data />}
     </div>
   );

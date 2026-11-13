@@ -4,6 +4,7 @@ import { fmtDateTime } from '../lib/format';
 import { useApp } from '../components/AppContext';
 import { Field } from '../components/Field';
 import { Icon } from '../components/Icon';
+import { PortfolioShell } from './PortfolioPage';
 
 type Profile = Record<string, string | null> & { updated_at?: string };
 
@@ -66,14 +67,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 1080 }}>
-      <div className="page-head">
-        <div>
-          <div className="crumb"><span className="bar" /><span className="label">02 · Professional Portfolio · Profile</span></div>
-          <h1 className="display">Professional Profile</h1>
-          <div className="sub">The foundation of your academic identity. Your CVs and reports will draw on it in later phases.</div>
-        </div>
-      </div>
+    <PortfolioShell title="Professional Profile" crumb="Profile" sub="The foundation of your academic identity. CVs and reports draw on it. Professional photographs are managed in the CV Studio (Phase 3).">
       {!profile ? <div className="skeleton" style={{ height: 200 }} /> : (
         <form onSubmit={save} className="stack">
           {SECTIONS.map((s) => (
@@ -103,6 +97,6 @@ export function ProfilePage() {
           </div>
         </form>
       )}
-    </div>
+    </PortfolioShell>
   );
 }
