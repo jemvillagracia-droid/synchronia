@@ -67,7 +67,7 @@ test('course workspace: offerings, outcomes, alignment, syllabus content', async
   assert.equal(w.pos.length, 1, 'program outcomes shared by program');
   assert.equal((await call('PUT', `/academic/courses/${courseId}/alignments`, { pairs: [{ clo_id: clo1, po_id: po1, level: 'X' }] })).status, 422);
   w = (await call('PUT', `/academic/courses/${courseId}/alignments`, { pairs: [{ clo_id: clo1, po_id: po1, level: 'E' }] })).body;
-  assert.deepEqual(w.alignments.map((x) => x.level), ['E']);
+  assert.deepEqual(w.alignments.map((x) => x.level), ['P'], 'legacy Enhanced is stored as Practiced');
 
   syllabusId = (await call('POST', '/records/syllabi', { course_id: courseId, version_label: 'v2026', academic_year: '2026-2027', semester: 'first' })).body.id;
   const s = (await call('PUT', `/academic/syllabi/${syllabusId}/content`, {
@@ -86,7 +86,8 @@ test('syllabus export: real tables and an honest note when weights do not total 
   assert.equal(x.status, 201);
   assert.match(x.body.file_name, /^Syllabus_EDUC_101_v2026_\d{4}-\d{2}-\d{2}\.docx$/);
   const text = await docText(x.body.download);
-  assert.match(text, /CLO1 Explain the philosophical foundations/);
+  assert.match(text, /CLO1\. Explain the philosophical foundations/);
+  assert.match(text, /COURSE SYLLABUS.*Vision, Mission and Goals.*Program Outcomes.*Course Intended Learning Outcomes.*Mapping.*Legend: I – Introductory\s+P – Practiced\s+D – Demonstrative.*Course Outline.*Prepared by:.*Reviewed by:.*Approved by:/);
   assert.match(text, /grading weights total 90%/);
 });
 

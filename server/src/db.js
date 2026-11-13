@@ -50,14 +50,21 @@ function migrate(db, file = ':memory:') {
 }
 
 /** Run fn inside a transaction. */
+const depth = new WeakMap();
+/** Run fn atomically. Nested calls use savepoints, so an outer transaction can group several record writes. */
 export function tx(db, fn) {
-  db.exec('BEGIN');
+  const d = depth.get(db) || 0;
+  const sp = `sp_${d}`;
+  db.exec(d ? `SAVEPOINT ${sp}` : 'BEGIN');
+  depth.set(db, d + 1);
   try {
     const out = fn();
-    db.exec('COMMIT');
+    db.exec(d ? `RELEASE ${sp}` : 'COMMIT');
     return out;
   } catch (err) {
-    db.exec('ROLLBACK');
+    db.exec(d ? `ROLLBACK TO ${sp}; RELEASE ${sp}` : 'ROLLBACK');
     throw err;
+  } finally {
+    depth.set(db, d);
   }
 }

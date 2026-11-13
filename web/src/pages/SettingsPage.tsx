@@ -5,8 +5,9 @@ import { fmtDateTime, humanize, MODE_DESC, MODE_LABEL } from '../lib/format';
 import type { Mode } from '../lib/types';
 import { useApp } from '../components/AppContext';
 import { Icon } from '../components/Icon';
+import { InstitutionSettings } from './InstitutionSettings';
 
-type Tab = 'workspace' | 'application' | 'data';
+type Tab = 'workspace' | 'institution' | 'application' | 'data';
 
 function Workspace() {
   const { prefs, updatePrefs, toast } = useApp();
@@ -214,11 +215,12 @@ export function SettingsPage() {
         </div>
       </div>
       <div className="tabs" role="tablist">
-        {(['workspace', 'data', 'application'] as Tab[]).map((t) => (
+        {(['workspace', 'institution', 'data', 'application'] as Tab[]).map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t === 'data' ? 'Data & recovery' : humanize(t)}</button>
         ))}
       </div>
       {tab === 'workspace' && <Workspace />}
+      {tab === 'institution' && <InstitutionSettings />}
       {tab === 'application' && <Application />}
       {tab === 'data' && <Data />}
     </div>

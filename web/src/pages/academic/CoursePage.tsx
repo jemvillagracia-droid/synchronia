@@ -20,15 +20,21 @@ const offeringLabel = (o: any) => `${o.academic_year} · ${TERM[o.semester] || o
 
 // ─────────────────────────── Syllabus ───────────────────────────
 
+type Week = { week: string; hours: number | null; ilos: string; clo_codes: string; assessment: string; content: string; activities: string; resources: string };
 interface SyllabusContent {
-  description: string; prerequisites: string; consultation: string; policies: string;
-  weeks: { week: string; topics: string; clo_codes: string; activities: string; assessment: string; hours: number | null }[];
-  grading: { component: string; weight: number }[]; references: string[];
+  description: string; prerequisites: string; learner_term: string; consultation: string; policies: string;
+  weeks: Week[]; grading: { component: string; weight: number }[]; references: string[];
+  signatories: Record<string, string>;
 }
+const SIGNATORIES: [string, string][] = [['prepared_by', 'Prepared by'], ['reviewed_by', 'Reviewed by'], ['approved_by', 'Approved by']];
+const WEEK_COLS: [keyof Week, string, number][] = [
+  ['ilos', 'Intended learning outcomes (OBE-aligned ILOs)', 3], ['assessment', 'Outcome-based assessment (OBA)', 2],
+  ['content', 'Content', 3], ['activities', 'Teaching & learning activities (TLA)', 3], ['resources', 'Learning resources', 2],
+];
 
 function SyllabusEditor({ id, onClose }: { id: number; onClose: () => void }) {
   const { toast, openRecord } = useApp();
-  const [data, setData] = useState<{ syllabus: any; content: SyllabusContent; clos: any[] } | null>(null);
+  const [data, setData] = useState<{ syllabus: any; content: SyllabusContent; clos: any[]; course: any; signatory_defaults: Record<string, string> } | null>(null);
   const [c, setC] = useState<SyllabusContent | null>(null);
   const [refs, setRefs] = useState('');
   useEffect(() => { api.get<any>(`/academic/syllabi/${id}`).then((d) => { setData(d); setC(d.content); setRefs(d.content.references.join('\n')); }); }, [id]);
@@ -36,8 +42,10 @@ function SyllabusEditor({ id, onClose }: { id: number; onClose: () => void }) {
   const auto = useAutosave(`syllabus-${id}`, payload, async (v) => { const d = await api.put<any>(`/academic/syllabi/${id}/content`, v); setData(d); dataChanged(); });
   if (!data || !c) return <div className="skeleton" style={{ height: 200 }} />;
   const set = (patch: Partial<SyllabusContent>) => setC({ ...c, ...patch });
-  const setWeek = (i: number, patch: Record<string, any>) => set({ weeks: c.weeks.map((w, j) => (j === i ? { ...w, ...patch } : w)) });
+  const setWeek = (i: number, patch: Partial<Week>) => set({ weeks: c.weeks.map((w, j) => (j === i ? { ...w, ...patch } : w)) });
+  const setSig = (k: string, v: string) => set({ signatories: { ...c.signatories, [k]: v } });
   const total = c.grading.reduce((n, g) => n + (Number(g.weight) || 0), 0);
+  const blankWeek = (): Week => ({ week: String(c.weeks.length + 1), hours: 3, ilos: '', clo_codes: '', assessment: '', content: '', activities: '', resources: '' });
   async function save() { if (await auto.flush()) toast('Syllabus saved', 'ok'); }
   return (
     <section className="panel">
@@ -45,40 +53,45 @@ function SyllabusEditor({ id, onClose }: { id: number; onClose: () => void }) {
         <button className="btn btn-sm" onClick={() => openRecord('syllabi', id)}>Version details</button>
         <button className="icon-btn sm" onClick={() => { auto.flush().then((ok) => { if (ok) onClose(); }); }} aria-label="Close syllabus"><Icon name="close" /></button></header>
       <div className="panel-body stack" style={{ gap: 'var(--s-5)' }}>
+        <p className="faint" style={{ margin: 0, fontSize: 13.5 }}>Exports in the University outcomes-based format on 8.5 × 13 landscape, with your letterhead and the vision, mission and goals from Settings → Institution.</p>
         <div className="form-grid">
           <Field label="Course description" className="span-2"><textarea className="textarea" rows={4} value={c.description} onChange={(e) => set({ description: e.target.value })} spellCheck /></Field>
           <Field label="Prerequisites"><AutoText value={c.prerequisites} onChange={(v) => set({ prerequisites: v })} placeholder="None" /></Field>
-          <Field label="Consultation hours"><AutoText value={c.consultation} onChange={(v) => set({ consultation: v })} placeholder="e.g. Fridays 1:00–3:00 PM, Faculty Room" /></Field>
+          <Field label="Learners are called" hint="“At the end of the course, the … can:”"><AutoText value={c.learner_term} onChange={(v) => set({ learner_term: v })} placeholder="students" /></Field>
+          <Field label="Consultation hours" className="span-2"><AutoText value={c.consultation} onChange={(v) => set({ consultation: v })} placeholder="e.g. TTh 2:00–4:00 PM, Faculty Room" /></Field>
         </div>
         <div>
-          <h3 className="label">Course learning outcomes</h3>
+          <h3 className="label">Course intended learning outcomes</h3>
           {data.clos.length ? <ul className="list">{data.clos.map((o) => <li key={o.id}><span className="tag orange">{o.code}</span><span className="grow">{o.description}</span></li>)}</ul>
-            : <div className="faint" style={{ fontSize: 13 }}>Add CLOs in the Outcomes tab; they appear here and in the exported syllabus.</div>}
+            : <div className="faint" style={{ fontSize: 13 }}>Add CILOs in the Outcomes tab; they appear here and in the exported syllabus.</div>}
         </div>
         <div>
-          <div className="between"><h3 className="label" style={{ margin: 0 }}>Weekly instructional plan</h3>
-            <button className="btn btn-sm" onClick={() => set({ weeks: [...c.weeks, { week: String(c.weeks.length + 1), topics: '', clo_codes: '', activities: '', assessment: '', hours: 3 }] })}><Icon name="plus" />Add week</button></div>
-          <div className="table-wrap mt-2">
-            <table className="table edit-table">
-              <thead><tr><th style={{ width: 60 }}>Week</th><th>Topics</th><th style={{ width: 90 }}>CLOs</th><th>Teaching–learning activities</th><th>Assessment</th><th style={{ width: 70 }}>Hours</th><th /></tr></thead>
-              <tbody>
-                {c.weeks.map((w, i) => (
-                  <tr key={i}>
-                    <td><AutoText value={w.week} onChange={(v) => setWeek(i, { week: v })} aria-label={`Week ${i + 1}`} /></td>
-                    <td><textarea className="textarea" rows={2} value={w.topics} onChange={(e) => setWeek(i, { topics: e.target.value })} aria-label="Topics" /></td>
-                    <td><AutoText value={w.clo_codes} onChange={(v) => setWeek(i, { clo_codes: v })} aria-label="CLOs" /></td>
-                    <td><textarea className="textarea" rows={2} value={w.activities} onChange={(e) => setWeek(i, { activities: e.target.value })} aria-label="Activities" /></td>
-                    <td><textarea className="textarea" rows={2} value={w.assessment} onChange={(e) => setWeek(i, { assessment: e.target.value })} aria-label="Assessment" /></td>
-                    <td><input className="input" type="number" min={0} value={w.hours ?? ''} onChange={(e) => setWeek(i, { hours: e.target.value === '' ? null : Number(e.target.value) })} aria-label="Hours" /></td>
-                    <td><button className="icon-btn sm" onClick={() => set({ weeks: c.weeks.filter((_, j) => j !== i) })} aria-label="Remove week"><Icon name="trash" /></button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="between"><h3 className="label" style={{ margin: 0 }}>Course outline</h3>
+            <button className="btn btn-sm" onClick={() => set({ weeks: [...c.weeks, blankWeek()] })} disabled={c.weeks.length >= 30}><Icon name="plus" />Add week</button></div>
+          <div className="week-cards mt-2">
+            {c.weeks.map((w, i) => (
+              <div className="week-card" key={i}>
+                <div className="week-card-head">
+                  <label className="row" style={{ gap: 6 }}><span className="label" style={{ margin: 0 }}>Week</span>
+                    <input className="input" style={{ width: 80 }} value={w.week} onChange={(e) => setWeek(i, { week: e.target.value })} aria-label={`Week number, row ${i + 1}`} /></label>
+                  <label className="row" style={{ gap: 6 }}><span className="label" style={{ margin: 0 }}>Hours</span>
+                    <input className="input" style={{ width: 80 }} type="number" min={0} max={40} value={w.hours ?? ''} onChange={(e) => setWeek(i, { hours: e.target.value === '' ? null : Number(e.target.value) })} aria-label={`Hours, week ${w.week}`} /></label>
+                  <label className="row grow" style={{ gap: 6 }}><span className="label" style={{ margin: 0 }}>CILOs</span>
+                    <AutoText value={w.clo_codes} onChange={(v) => setWeek(i, { clo_codes: v })} aria-label={`CILOs, week ${w.week}`} placeholder="e.g. CILO 1–2" /></label>
+                  <button className="icon-btn sm" onClick={() => set({ weeks: c.weeks.filter((_, j) => j !== i) })} aria-label={`Remove week ${w.week}`}><Icon name="trash" /></button>
+                </div>
+                <div className="week-card-grid">
+                  {WEEK_COLS.map(([k, label, rows]) => (
+                    <Field key={k} label={label}><textarea className="textarea" rows={rows} value={(w[k] as string) || ''} onChange={(e) => setWeek(i, { [k]: e.target.value } as Partial<Week>)} spellCheck /></Field>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {!c.weeks.length && <div className="empty">No weeks yet. Add the first week, or import an existing syllabus from the Teaching tab.</div>}
           </div>
         </div>
         <div>
-          <div className="between"><h3 className="label" style={{ margin: 0 }}>Grading system</h3>
+          <div className="between"><h3 className="label" style={{ margin: 0 }}>Grading policy</h3>
             <span className={`tag ${total === 100 ? 'ok' : 'orange'}`}>Total {total}%</span></div>
           {c.grading.map((g, i) => (
             <div key={i} className="row mt-2">
@@ -90,8 +103,20 @@ function SyllabusEditor({ id, onClose }: { id: number; onClose: () => void }) {
           <button className="btn btn-sm btn-ghost mt-2" onClick={() => set({ grading: [...c.grading, { component: '', weight: 0 }] })}><Icon name="plus" />Add component</button>
         </div>
         <div className="form-grid">
-          <Field label="References (one per line)" className="span-2"><textarea className="textarea" rows={4} value={refs} onChange={(e) => setRefs(e.target.value)} spellCheck /></Field>
-          <Field label="Course policies" className="span-2"><textarea className="textarea" rows={4} value={c.policies} onChange={(e) => set({ policies: e.target.value })} spellCheck /></Field>
+          <Field label="References (one per line, APA)" className="span-2"><textarea className="textarea" rows={5} value={refs} onChange={(e) => setRefs(e.target.value)} spellCheck /></Field>
+          <Field label="Course policies (one per line; numbered on export)" className="span-2"><textarea className="textarea" rows={6} value={c.policies} onChange={(e) => set({ policies: e.target.value })} spellCheck /></Field>
+        </div>
+        <div>
+          <h3 className="label">Signatories</h3>
+          <div className="form-grid three">
+            {SIGNATORIES.map(([k, label]) => (
+              <div key={k} className="stack" style={{ gap: 'var(--s-2)' }}>
+                <Field label={`${label} — name`}><AutoText value={c.signatories[`${k}_name`] || ''} onChange={(v) => setSig(`${k}_name`, v)} placeholder={data.signatory_defaults[`${k}_name`] || 'Name, degree'} /></Field>
+                <Field label={`${label} — position`}><AutoText value={c.signatories[`${k}_title`] || ''} onChange={(v) => setSig(`${k}_title`, v)} placeholder={data.signatory_defaults[`${k}_title`] || 'Position'} /></Field>
+              </div>
+            ))}
+          </div>
+          <p className="faint" style={{ fontSize: 12.5, margin: '6px 0 0' }}>Blank fields use your profile name and the program head and dean saved under Settings → Institution.</p>
         </div>
         <div className="row wrap">
           <button className="btn btn-primary" onClick={save}><Icon name="check" />Save now</button>
@@ -117,24 +142,26 @@ function Outcomes({ w, reload }: { w: Workspace; reload: () => void }) {
   return (
     <div className="stack" style={{ gap: 'var(--s-5)' }}>
       <div className="form-grid">
-        <section className="panel"><header className="panel-head"><h2>Course learning outcomes</h2>
-          <button className="btn btn-sm" onClick={() => openNew('learning_outcomes', { outcome_type: 'CLO', course_id: w.course.id, code: `CLO${w.clos.length + 1}` })}><Icon name="plus" />Add</button></header>
+        <section className="panel"><header className="panel-head"><h2>Course intended learning outcomes (CILOs)</h2>
+          <button className="btn btn-sm" onClick={() => openNew('learning_outcomes', { outcome_type: 'CLO', course_id: w.course.id, code: `CILO ${w.clos.length + 1}` })}><Icon name="plus" />Add</button></header>
           <div className="panel-body">{w.clos.length ? <ul className="list">{w.clos.map((o) => <li key={o.id}><span className="tag orange">{o.code}</span><button className="rowlink" onClick={() => openRecord('learning_outcomes', o.id)}><span className="t">{o.description}</span></button></li>)}</ul>
             : <div className="empty">State what students will be able to do, beginning with a measurable verb.</div>}</div></section>
         <section className="panel accent-violet"><header className="panel-head"><h2>Program outcomes {w.course.program ? `· ${w.course.program}` : ''}</h2>
           <button className="btn btn-sm" onClick={() => openNew('learning_outcomes', { outcome_type: 'PO', program: w.course.program || null, code: `PO-${String.fromCharCode(97 + w.pos.length)}` })}><Icon name="plus" />Add</button></header>
-          <div className="panel-body">{w.pos.length ? <ul className="list">{w.pos.map((o) => <li key={o.id}><span className="tag violet">{o.code}</span><button className="rowlink" onClick={() => openRecord('learning_outcomes', o.id)}><span className="t">{o.description}</span></button></li>)}</ul>
+          <div className="panel-body">{w.pos.length ? <ul className="list">{w.pos.map((o, i) => <li key={o.id} className={o.group_label && o.group_label !== w.pos[i - 1]?.group_label ? 'group-start' : undefined}>
+            {o.group_label && o.group_label !== w.pos[i - 1]?.group_label && <div className="group-label">{o.group_label}</div>}
+            <span className="tag violet">{o.code}</span><button className="rowlink" onClick={() => openRecord('learning_outcomes', o.id)}><span className="t">{o.description}</span></button></li>)}</ul>
             : <div className="empty">Program outcomes are shared by every course in the same program.</div>}</div></section>
       </div>
       {w.clos.length > 0 && w.pos.length > 0 && (
-        <section className="panel"><header className="panel-head"><h2>Alignment matrix (I = introduced · E = enhanced · D = demonstrated)</h2></header>
+        <section className="panel"><header className="panel-head"><h2>Curriculum map</h2><span className="faint" style={{ fontSize: 13 }}>I – Introductory · P – Practiced · D – Demonstrative</span></header>
           <div className="panel-body">
             <div className="table-wrap"><table className="table matrix">
-              <thead><tr><th>CLO \ PO</th>{w.pos.map((p) => <th key={p.id} title={p.description}>{p.code}</th>)}</tr></thead>
+              <thead><tr><th>CILO \ PO</th>{w.pos.map((p) => <th key={p.id} title={p.description}>{p.code}</th>)}</tr></thead>
               <tbody>{w.clos.map((c) => (
                 <tr key={c.id}><th title={c.description}>{c.code}</th>{w.pos.map((p) => (
                   <td key={p.id}><select className="select" value={m[key(c.id, p.id)] || ''} aria-label={`${c.code} to ${p.code}`} onChange={(e) => setM({ ...m, [key(c.id, p.id)]: e.target.value })}>
-                    <option value="">—</option><option value="I">I</option><option value="E">E</option><option value="D">D</option></select></td>
+                    <option value="">—</option><option value="I">I</option><option value="P">P</option><option value="D">D</option></select></td>
                 ))}</tr>
               ))}</tbody>
             </table></div>
@@ -274,7 +301,7 @@ export function CoursePage() {
   const { openNew, openRecord, toast } = useApp();
   const [w, setW] = useState<Workspace | null>(null);
   const [error, setError] = useState('');
-  const [openSyllabus, setOpenSyllabus] = useState<number | null>(null);
+  const [openSyllabus, setOpenSyllabus] = useState<number | null>(params.get('open') ? Number(params.get('open')) : null);
   const [openTos, setOpenTos] = useState<number | null>(null);
   const [openRubric, setOpenRubric] = useState<number | null>(null);
   const [offering, setOffering] = useState<number | null>(null);
@@ -333,7 +360,7 @@ export function CoursePage() {
             <ul className="list">{w.syllabi.map((s) => (
               <li key={s.id}><span className={`tag ${s.status === 'approved' ? 'ok' : ''}`}>{humanize(s.status)}</span>
                 <button className="rowlink" onClick={() => setOpenSyllabus(s.id)}><span className="t">{s.version_label}</span>
-                  <span className="s">{[s.academic_year, s.semester, `${s.weeks} weekly rows`, s.grading_total ? `grading ${s.grading_total}%` : null].filter(Boolean).join(' · ')}</span></button>
+                  <span className="s">{[s.academic_year, TERM[s.semester] || s.semester, `${s.weeks} weekly rows`, s.grading_total ? `grading ${s.grading_total}%` : null].filter(Boolean).join(' · ')}</span></button>
                 <button className="btn btn-sm" onClick={() => setOpenSyllabus(s.id)}><Icon name="edit" />Open</button>
                 <button className="btn btn-sm" onClick={() => exportAndSave(`/academic/syllabi/${s.id}/export`, toast)}><Icon name="download" />Word</button></li>
             ))}</ul>

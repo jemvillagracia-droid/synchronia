@@ -109,7 +109,7 @@ export const RESOURCES = {
 
   courses: {
     table: 'courses', label: 'Course', module: 'academic', title: 'title', subtitle: ['code', 'program'],
-    fields: { code: text(req), title: text(req), description: long(), units: real({ min: 0 }), program: text(), level: text() },
+    fields: { code: text(req), title: text(req), description: long(), units: real({ min: 0 }), contact_hours: int({ min: 0, max: 1000 }), program: text(), level: text() },
   },
   teaching_assignments: {
     table: 'teaching_assignments', label: 'Teaching Assignment', module: 'academic',
@@ -131,7 +131,7 @@ export const RESOURCES = {
     table: 'learning_outcomes', label: 'Learning Outcome', module: 'academic', title: 'code', subtitle: ['description'],
     fields: {
       course_id: ref('courses'), syllabus_id: ref('syllabi'), outcome_type: oneOf(['CLO', 'PO', 'ILO'], req),
-      code: text(req), description: long(req), program: text(), sort_order: int(),
+      code: text(req), description: long(req), program: text(), group_label: text(), sort_order: int(),
     },
   },
   materials: {

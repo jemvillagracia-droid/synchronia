@@ -6,6 +6,7 @@ import { download } from '../../lib/download';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
 import { VERIFICATION_INFO } from '../../lib/forms';
+import { SyllabusImportButton } from './SyllabusImport';
 
 export interface Overview {
   teaching: {
@@ -45,6 +46,7 @@ function Teaching({ o }: { o: Overview }) {
     <div className="stack" style={{ gap: 'var(--s-5)' }}>
       <div className="row wrap">
         <button className="btn btn-primary" onClick={() => openNew('courses')}><Icon name="plus" />Add course</button>
+        <SyllabusImportButton />
         <span style={{ flex: 1 }} />
         {o.teaching.terms.length > 0 && (
           <div className="row wrap">

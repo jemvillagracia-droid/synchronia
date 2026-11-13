@@ -1,7 +1,10 @@
 // Academic Workspace: teaching (course workspaces, syllabi, outcomes, materials, assessments, TOS, rubrics,
 // class records), research, extension and faculty development. Every figure comes from stored records.
 import { HttpError, get as getRecord, update as updateRecord } from '../repo.js';
-import { buildDocument, bullet, field, h1, h2, p, saveReport, table } from './docs.js';
+import { tx } from '../db.js';
+import { Paragraph, TextRun, AlignmentType } from 'docx';
+import { buildDocument, bullet, field, h1, h2, numbered, p, pageGeometry, saveReport, table } from './docs.js';
+import { getInstitution, letterheadFor } from './institution.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const parse = (j, d) => { try { return j ? JSON.parse(j) : d; } catch { return d; } };
@@ -59,7 +62,7 @@ export function overview(db, userId) {
 
 // ───────────────────────── Course workspace ─────────────────────────
 
-function programOutcomes(db, userId, course) {
+export function programOutcomes(db, userId, course) {
   return db.prepare(`SELECT * FROM learning_outcomes WHERE user_id = ? AND deleted_at IS NULL AND outcome_type = 'PO'
       AND (course_id = ? OR (course_id IS NULL AND IFNULL(program, '') = IFNULL(?, ''))) ORDER BY sort_order, code`).all(userId, course.id, course.program);
 }
@@ -99,15 +102,14 @@ export function setAlignments(db, userId, courseId, pairs) {
   const pos = new Set(programOutcomes(db, userId, course).map((r) => r.id));
   for (const pr of pairs) {
     if (!clos.has(Number(pr.clo_id)) || !pos.has(Number(pr.po_id))) throw new HttpError(422, 'Alignment refers to an outcome that is not part of this course');
-    if (!['I', 'E', 'D'].includes(pr.level)) throw new HttpError(422, 'Level must be I (introduced), E (enhanced) or D (demonstrated)');
+    if (pr.level === 'E') pr.level = 'P';
+    if (!['I', 'P', 'D'].includes(pr.level)) throw new HttpError(422, 'Level must be I (introductory), P (practiced) or D (demonstrative)');
   }
-  db.exec('BEGIN');
-  try {
+  tx(db, () => {
     if (clos.size) db.prepare(`DELETE FROM outcome_alignments WHERE course_outcome_id IN (${[...clos].map(() => '?').join(',')})`).run(...clos);
     for (const pr of pairs) db.prepare('INSERT INTO outcome_alignments (course_outcome_id, program_outcome_id, level) VALUES (?, ?, ?)').run(Number(pr.clo_id), Number(pr.po_id), pr.level);
     db.prepare("INSERT INTO audit_logs (user_id, entity_type, entity_id, action, summary) VALUES (?, 'courses', ?, 'update', ?)").run(userId, course.id, `Updated outcome alignment for ${course.code} (${pairs.length} links)`);
-    db.exec('COMMIT');
-  } catch (e) { db.exec('ROLLBACK'); throw e; }
+  });
   return courseWorkspace(db, userId, course.id);
 }
 
@@ -115,22 +117,35 @@ export function setAlignments(db, userId, courseId, pairs) {
 
 const str = (v, max = 4000) => (typeof v === 'string' ? v.slice(0, max) : v == null ? '' : String(v).slice(0, max));
 
+const SIGN_KEYS = ['prepared_by_name', 'prepared_by_title', 'reviewed_by_name', 'reviewed_by_title', 'approved_by_name', 'approved_by_title'];
+
+/** URS outcomes-based syllabus content. Older content (week.topics) is read as week.content. */
 export function cleanSyllabus(c) {
   if (!c || typeof c !== 'object') throw new HttpError(422, 'Syllabus content must be an object');
   const weeks = Array.isArray(c.weeks) ? c.weeks : [];
   const grading = Array.isArray(c.grading) ? c.grading : [];
   if (weeks.length > 30) throw new HttpError(422, 'At most 30 weekly rows');
+  const sig = c.signatories && typeof c.signatories === 'object' ? c.signatories : {};
+  const policies = Array.isArray(c.policies) ? c.policies.join('\n') : c.policies;
   return {
     description: str(c.description, 8000),
     prerequisites: str(c.prerequisites, 500),
+    learner_term: str(c.learner_term, 80),
     weeks: weeks.map((w, i) => ({
-      week: str(w.week || String(i + 1), 20), topics: str(w.topics), clo_codes: str(w.clo_codes, 200),
-      activities: str(w.activities), assessment: str(w.assessment, 1000), hours: w.hours === '' || w.hours == null ? null : Math.max(0, Math.min(40, Number(w.hours) || 0)),
+      week: str(w.week || String(i + 1), 20),
+      hours: w.hours === '' || w.hours == null ? null : Math.max(0, Math.min(40, Number(w.hours) || 0)),
+      ilos: str(w.ilos, 2000),
+      assessment: str(w.assessment, 1000),
+      content: str(w.content ?? w.topics, 4000),
+      activities: str(w.activities, 4000),
+      resources: str(w.resources, 2000),
+      clo_codes: str(w.clo_codes, 200),
     })),
     grading: grading.map((g) => ({ component: str(g.component, 200), weight: Math.max(0, Math.min(100, Number(g.weight) || 0)) })).filter((g) => g.component),
-    references: (Array.isArray(c.references) ? c.references : []).map((r) => str(r, 1000)).filter(Boolean).slice(0, 60),
-    policies: str(c.policies, 8000),
+    references: (Array.isArray(c.references) ? c.references : []).map((r) => str(r, 1000)).filter(Boolean).slice(0, 80),
+    policies: str(policies, 12000),
     consultation: str(c.consultation, 500),
+    signatories: Object.fromEntries(SIGN_KEYS.map((k) => [k, str(sig[k], 200)])),
   };
 }
 
@@ -138,7 +153,19 @@ export function getSyllabus(db, userId, id) {
   const s = owned(db, userId, 'syllabi', id, 'Syllabus');
   const course = owned(db, userId, 'courses', s.course_id, 'Course');
   const clos = db.prepare("SELECT id, code, description FROM learning_outcomes WHERE course_id = ? AND user_id = ? AND deleted_at IS NULL AND outcome_type IN ('CLO','ILO') ORDER BY sort_order, code").all(course.id, userId);
-  return { syllabus: { ...s, content_json: undefined }, content: cleanSyllabus(parse(s.content_json, {})), course, clos };
+  const pos = programOutcomes(db, userId, course).map(({ id: poId, code, description, group_label }) => ({ id: poId, code, description, group_label }));
+  const content = cleanSyllabus(parse(s.content_json, {}));
+  const inst = getInstitution(db, userId);
+  const prof = db.prepare('SELECT full_name FROM professional_profiles WHERE user_id = ?').get(userId) || {};
+  // Signatory defaults: the faculty member, and the program head / dean from the institution profile.
+  const sg = content.signatories;
+  const defaults = {
+    prepared_by_name: prof.full_name || '', prepared_by_title: 'Faculty',
+    reviewed_by_name: inst.program_head_name, reviewed_by_title: inst.program_head_title || (course.program ? `Program Head, ${course.program}` : 'Program Head'),
+    approved_by_name: inst.dean_name, approved_by_title: inst.dean_title || 'College Dean',
+  };
+  return { syllabus: { ...s, content_json: undefined }, content, course, clos, pos, institution: inst, signatory_defaults: defaults,
+    effective_signatories: Object.fromEntries(SIGN_KEYS.map((k) => [k, sg[k] || defaults[k] || ''])) };
 }
 
 export function saveSyllabus(db, userId, id, content) {
@@ -147,27 +174,84 @@ export function saveSyllabus(db, userId, id, content) {
   return getSyllabus(db, userId, id);
 }
 
+/** Signatory names in capitals, leaving post-nominal degrees (", PhD", ", EdD") as written. */
+const signName = (n) => { const [name, ...rest] = String(n || '').split(','); return [name.toUpperCase(), ...rest].join(','); };
+
+const SEM_BOX = { first: '1st sem', second: '2nd sem', summer: 'Summer' };
+
+/** Export in the University of Rizal System outcomes-based syllabus format, on 8.5 × 13 landscape with the letterhead. */
 export async function exportSyllabus(db, userId, id) {
-  const { syllabus: s, content: c, course, clos } = getSyllabus(db, userId, id);
-  const prof = db.prepare('SELECT * FROM professional_profiles WHERE user_id = ?').get(userId) || {};
-  const total = c.grading.reduce((n, g) => n + g.weight, 0);
+  const S = getSyllabus(db, userId, id);
+  const { syllabus: s, content: c, course, clos, pos, institution: inst, effective_signatories: sig } = S;
+  const g = pageGeometry('folio', true);
+  const W = g.contentWidth;
+  const T = (rows, opts = {}) => table(rows, { contentWidth: W, size: 19, ...opts });
+  const P = (text, o = {}) => new Paragraph({ spacing: { after: 60 }, ...o, children: [new TextRun({ text: String(text ?? ''), font: 'Arial', size: o.size || 20, bold: o.bold, italics: o.italics })] });
+  const H = (text) => new Paragraph({ spacing: { before: 200, after: 80 }, keepNext: true, children: [new TextRun({ text, font: 'Arial', size: 21, bold: true })] });
+  const total = c.grading.reduce((n, x) => n + x.weight, 0);
+  const sem = s.semester && SEM_BOX[s.semester] ? s.semester : (String(s.semester || '').match(/^(1|first)/i) ? 'first' : String(s.semester || '').match(/^(2|second)/i) ? 'second' : String(s.semester || '').match(/summer/i) ? 'summer' : null);
+  const box = (k) => `( ${sem === k ? '✓' : '  '} ) ${SEM_BOX[k]}`;
+  const alignments = clos.length ? db.prepare(`SELECT * FROM outcome_alignments WHERE course_outcome_id IN (${clos.map(() => '?').join(',')})`).all(...clos.map((o) => o.id)) : [];
+  const lvl = (cloId, poId) => alignments.find((a) => a.course_outcome_id === cloId && a.program_outcome_id === poId)?.level || '–';
+  // Map columns: only outcomes this course addresses (all when nothing is mapped yet). "PILO n" reads as "Pn" as in
+  // the URS curriculum map, unless other PO families also appear, in which case codes are kept distinct.
+  const mapPos = alignments.length ? pos.filter((po) => alignments.some((x) => x.program_outcome_id === po.id)) : pos;
+  const oneFamily = new Set(mapPos.map((po) => (/^[A-Za-z]+/.exec(po.code) || [''])[0].toUpperCase())).size <= 1;
+  const shortPo = (code) => (oneFamily ? code.replace(/^(PILO|PO)\s*/i, 'P') : code).replace(/\s+/g, '');
+  const groups = [];
+  for (const po of pos) { const label = po.group_label || ''; let gr = groups.find((x) => x.label === label); if (!gr) groups.push(gr = { label, items: [] }); gr.items.push(po); }
+
   const children = [
-    field('Course', `${course.code} — ${course.title}`), field('Units', course.units), field('Program', course.program),
-    field('Academic year and term', [s.academic_year, s.semester].filter(Boolean).join(', ')), field('Prerequisites', c.prerequisites || 'None'),
-    field('Instructor', prof.full_name), field('Consultation', c.consultation), field('Status', human(s.status)),
-    h1('Course Description'), p(c.description || course.description || '—'),
-    h1('Course Learning Outcomes'),
-    ...(clos.length ? [table([['Code', 'At the end of the course, students will be able to…'], ...clos.map((o) => [o.code, o.description])], { widths: [15, 85] })] : [p('No course learning outcomes recorded.')]),
-    h1('Weekly Instructional Plan'),
-    ...(c.weeks.length ? [table([['Week', 'Topics', 'CLOs', 'Teaching and learning activities', 'Assessment', 'Hours'],
-      ...c.weeks.map((w) => [w.week, w.topics, w.clo_codes, w.activities, w.assessment, w.hours ?? ''])], { widths: [8, 27, 9, 28, 20, 8], center: [0, 2, 5] })] : [p('No weekly plan recorded.')]),
-    h1('Grading System'),
-    ...(c.grading.length ? [table([['Component', 'Weight (%)'], ...c.grading.map((g) => [g.component, String(g.weight)]), ['Total', String(total)]], { widths: [75, 25], center: [1] })] : [p('No grading components recorded.')]),
-    ...(c.grading.length && total !== 100 ? [p(`Note: grading weights total ${total}%, not 100%.`, { run: { italics: true } })] : []),
-    h1('References'), ...(c.references.length ? c.references.map((r) => bullet(r)) : [p('—')]),
-    h1('Course Policies'), p(c.policies || '—'),
+    P(inst.college || '', { alignment: AlignmentType.CENTER, bold: true, size: 26 }),
+    P(`SY ${s.academic_year || '________'}     ${box('first')}     ${box('second')}     ${box('summer')}`, { alignment: AlignmentType.CENTER, size: 20 }),
+    P('COURSE SYLLABUS', { alignment: AlignmentType.CENTER, bold: true, size: 24, spacing: { before: 120, after: 160 } }),
+    T([['Course Title', course.title, 'Course Code', course.code],
+      ['Contact Hours', course.contact_hours ?? '', 'Credit Units', course.units ?? ''],
+      ['Pre-requisites', c.prerequisites || 'None', 'Program', course.program || '']], { header: false, widths: [15, 45, 15, 25], boldCols: [0, 2] }),
+    H('Vision, Mission and Goals'),
+    T([
+      ['Vision', inst.vision || '—'], ['Mission', inst.mission || '—'],
+      ['Goals', [inst.goals_national && `National: ${inst.goals_national}`, inst.goals_regional && `Regional: ${inst.goals_regional}`, inst.goals_university && `University: ${inst.goals_university}`].filter(Boolean).join('\n') || '—'],
+      ['Core Values', inst.core_values || '—'], ['Graduate Attributes', inst.graduate_attributes || '—'], ['Program', course.program || '—'],
+    ], { header: false, widths: [18, 82], boldFirstCol: true }),
+    H('Program Outcomes'),
+    P('The graduates have the ability to:', { italics: true }),
+    ...(pos.length ? groups.flatMap((gr) => [...(gr.label ? [P(gr.label, { bold: true, spacing: { before: 80, after: 40 } })] : []),
+      ...gr.items.map((po) => new Paragraph({ indent: { left: 900, hanging: 900 }, spacing: { after: 40 }, children: [new TextRun({ text: `${po.code}.\t`, font: 'Arial', size: 20, bold: true }), new TextRun({ text: po.description, font: 'Arial', size: 20 })], tabStops: [{ type: 'left', position: 900 }] }))])
+      : [P('No program outcomes recorded.')]),
+    H('Course Intended Learning Outcomes'),
+    P(`At the end of the course, the ${c.learner_term || 'students'} can:`, { italics: true }),
+    ...(clos.length ? clos.map((o) => new Paragraph({ indent: { left: 900, hanging: 900 }, spacing: { after: 40 }, children: [new TextRun({ text: `${o.code}.\t`, font: 'Arial', size: 20, bold: true }), new TextRun({ text: o.description, font: 'Arial', size: 20 })], tabStops: [{ type: 'left', position: 900 }] }))
+      : [P('No course intended learning outcomes recorded.')]),
+    H('Course Description'), P(c.description || course.description || '—'),
+    ...(clos.length && pos.length ? [
+      H('Mapping of Course Intended Learning Outcomes to Program Outcomes'),
+      T([['CILO', ...mapPos.map((po) => shortPo(po.code))], ...clos.map((o) => [`${o.code}. ${o.description}`, ...mapPos.map((po) => lvl(o.id, po.id))])],
+        { widths: [Math.max(30, 100 - mapPos.length * 4), ...mapPos.map(() => (100 - Math.max(30, 100 - mapPos.length * 4)) / mapPos.length)], center: mapPos.map((_, i) => i + 1), size: 17 }),
+      P('Legend: I – Introductory   P – Practiced   D – Demonstrative', { italics: true, size: 18 }),
+    ] : []),
+    H('Course Outline'),
+    ...(c.weeks.length ? [T([['Week / Time Allotment', 'Intended Learning Outcomes (OBE-Aligned ILOs)', 'Outcome-Based Assessment (OBA)', 'Content', 'Teaching and Learning Activities (TLA)', 'Learning Resources'],
+      ...c.weeks.map((w) => [`Week ${w.week}${w.hours != null ? `\n${w.hours} hrs` : ''}`, [w.ilos, w.clo_codes && `(${w.clo_codes})`].filter(Boolean).join(' '), w.assessment, w.content, w.activities, w.resources])],
+    { widths: [9, 22, 15, 20, 19, 15], center: [0], size: 18 })] : [P('No course outline recorded.')]),
+    H('References'),
+    ...(c.references.length ? c.references.map((r) => new Paragraph({ indent: { left: 720, hanging: 720 }, spacing: { after: 60 }, children: [new TextRun({ text: r, font: 'Arial', size: 20 })] })) : [P('—')]),
+    H('Course Policies'),
+    ...(c.policies ? c.policies.split('\n').map((x) => x.trim()).filter(Boolean).map((x) => (/^(first|second|third|fourth) offense/i.test(x)
+      ? new Paragraph({ indent: { left: 1100 }, spacing: { after: 30 }, children: [new TextRun({ text: x, font: 'Arial', size: 20 })] }) : numbered(x))) : [P('—')]),
+    H('Grading Policy'),
+    ...(c.grading.length ? [T([['Component', 'Weight'], ...c.grading.map((x) => [x.component, `${x.weight}%`]), ['Total', `${total}%`]], { widths: [40, 15], center: [1], contentWidth: Math.round(W * 0.55) })] : [P('—')]),
+    ...(c.grading.length && total !== 100 ? [P(`Note: grading weights total ${total}%, not 100%.`, { italics: true })] : []),
+    H('Consultation Hours'), P(c.consultation || '—'),
+    new Paragraph({ spacing: { before: 360 }, children: [] }),
+    table([
+      ['Prepared by:', 'Reviewed by:', 'Approved by:'],
+      ['\n\n', '\n\n', '\n\n'],
+      [signName(sig.prepared_by_name), signName(sig.reviewed_by_name), signName(sig.approved_by_name)],
+      [sig.prepared_by_title, sig.reviewed_by_title, sig.approved_by_title],
+    ], { header: false, contentWidth: W, widths: [33, 34, 33], size: 20, center: [0, 1, 2], noBorders: true, boldRow: 2 }),
   ];
-  const buffer = await buildDocument({ title: 'Course Syllabus', subtitle: `${course.code} ${course.title} · ${s.version_label}`, children, landscape: false });
+  const buffer = await buildDocument({ title: `Syllabus — ${course.code}`, children, pageSize: 'folio', landscape: true, letterhead: letterheadFor(db, userId), showTitle: false, font: 'Arial' });
   return saveReport(db, userId, { type: 'syllabus', title: `Syllabus — ${course.code} ${s.version_label}`, buffer, fileStem: `Syllabus_${course.code}_${s.version_label}` });
 }
 
@@ -245,7 +329,7 @@ export async function exportTos(db, userId, id) {
     table([head, ...rows, totals], { widths: [22, 7, 6, 5, 6, 9, 9, 9, 9, 9, 9], center: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], contentWidth: 12960 }),
     ...t.warnings.map((w) => p(`Note: ${w}`, { run: { italics: true } })),
   ];
-  const buffer = await buildDocument({ title: 'Table of Specifications', subtitle: t.tos.title, children, landscape: true });
+  const buffer = await buildDocument({ title: 'Table of Specifications', subtitle: t.tos.title, children, landscape: true, letterhead: letterheadFor(db, userId) });
   return saveReport(db, userId, { type: 'tos', title: `TOS — ${t.tos.title}`, buffer, fileStem: `TOS_${t.tos.title}` });
 }
 
@@ -289,7 +373,7 @@ export async function exportRubric(db, userId, id) {
   const rows = content.criteria.map((k) => [k.name, ...(summary.weighted ? [`${k.weight ?? 0}%`] : []), ...k.descriptors]);
   const children = [field('Maximum score', summary.max_points), ...summary.warnings.map((w) => p(`Note: ${w}`, { run: { italics: true } })),
     content.criteria.length ? table([head, ...rows], { contentWidth: content.levels.length > 3 ? 12960 : 9360 }) : p('No criteria recorded.')];
-  const buffer = await buildDocument({ title: 'Scoring Rubric', subtitle: rubric.title, children, landscape: content.levels.length > 3 });
+  const buffer = await buildDocument({ title: 'Scoring Rubric', subtitle: rubric.title, children, landscape: content.levels.length > 3, letterhead: letterheadFor(db, userId) });
   return saveReport(db, userId, { type: 'rubric', title: `Rubric — ${rubric.title}`, buffer, fileStem: `Rubric_${rubric.title}` });
 }
 
@@ -339,7 +423,7 @@ export async function teachingReport(db, userId, { academic_year: ay, semester }
     { widths: [12, 30, 14, 14, 12, 9, 9], center: [5, 6] })] : [p('No assessments recorded.')]),
     p(`Prepared from SYNCHRONIA records on ${today()}. Figures include only what has been recorded in the application.`, { run: { italics: true, size: 18 } }),
   ];
-  const buffer = await buildDocument({ title: 'Teaching Accomplishment Report', subtitle: `${SEM[semester]}, AY ${ay}`, children, landscape: false });
+  const buffer = await buildDocument({ title: 'Teaching Accomplishment Report', subtitle: `${SEM[semester]}, AY ${ay}`, children, landscape: false, letterhead: letterheadFor(db, userId) });
   return saveReport(db, userId, { type: 'teaching_accomplishment', title: `Teaching Accomplishment Report — ${SEM[semester]}, AY ${ay}`, buffer,
     fileStem: `Teaching_Accomplishment_${ay}_${semester}`, params: { academic_year: ay, semester } });
 }
@@ -361,6 +445,6 @@ export async function extensionReport(db, userId, id) {
     h1('Supporting Evidence'), ...(evidence.length ? evidence.map((v) => bullet(`${v.title}${v.url ? ` — ${v.url}` : ''}`)) : [p('No supporting evidence linked yet.')]),
     h2('Verification'), p(e.verification === 'evidence_verified' ? 'Supporting evidence is linked to this record.' : e.verification === 'user_confirmed' ? 'Confirmed by the proponent.' : 'Self-reported; not yet confirmed or evidenced.'),
   ];
-  const buffer = await buildDocument({ title: 'Extension Narrative Report', subtitle: e.title, children });
+  const buffer = await buildDocument({ title: 'Extension Narrative Report', subtitle: e.title, children, letterhead: letterheadFor(db, userId) });
   return saveReport(db, userId, { type: 'extension_narrative', title: `Extension Narrative Report — ${e.title}`, buffer, fileStem: `Extension_Report_${e.title}`, periodStart: e.start_date, periodEnd: e.end_date });
 }

@@ -4,6 +4,12 @@ import express from 'express';
 import { DATA_DIR } from '../config.js';
 import { HttpError, audit } from '../repo.js';
 import * as a from './service.js';
+import * as inst from './institution.js';
+import { importSyllabus, parseSyllabusDocx } from './importer.js';
+
+const docx = express.raw({ type: () => true, limit: '25mb' });
+const fileName = (req) => { try { return decodeURIComponent(String(req.get('X-Filename') || 'document.docx')); } catch { return 'document.docx'; } };
+const needBody = (req) => { if (!Buffer.isBuffer(req.body) || !req.body.length) throw new HttpError(422, 'Choose a .docx file to import.'); };
 
 export function academicRouter(db) {
   const r = express.Router();
@@ -13,6 +19,19 @@ export function academicRouter(db) {
   r.get('/courses/:id', (req, res) => res.json(a.courseWorkspace(db, u(req), req.params.id)));
   r.put('/courses/:id/alignments', (req, res) => res.json(a.setAlignments(db, u(req), req.params.id, req.body?.pairs)));
 
+  r.get('/institution', (req, res) => res.json(inst.getInstitution(db, u(req))));
+  r.put('/institution', (req, res) => res.json(inst.saveInstitution(db, u(req), req.body || {})));
+  r.post('/institution/letterhead', docx, async (req, res) => { needBody(req); res.status(201).json(await inst.importLetterhead(db, u(req), req.body, fileName(req))); });
+  r.delete('/institution/letterhead', (req, res) => res.json(inst.removeLetterhead(db, u(req))));
+  r.get('/institution/letterhead/:part', (req, res) => {
+    const lh = inst.getInstitution(db, u(req)).letterhead;
+    const part = ['header', 'footer'].includes(req.params.part) && lh?.[req.params.part];
+    if (!part) throw new HttpError(404, 'No letterhead image');
+    res.set('Cache-Control', 'no-store').type(part.mime).sendFile(path.join(DATA_DIR, part.file));
+  });
+
+  r.post('/syllabi/import', docx, async (req, res) => { needBody(req); res.json(await parseSyllabusDocx(req.body, fileName(req))); });
+  r.post('/syllabi/import/commit', (req, res) => res.status(201).json(importSyllabus(db, u(req), req.body)));
   r.get('/syllabi/:id', (req, res) => res.json(a.getSyllabus(db, u(req), req.params.id)));
   r.put('/syllabi/:id/content', (req, res) => res.json(a.saveSyllabus(db, u(req), req.params.id, req.body)));
   r.post('/syllabi/:id/export', async (req, res) => res.status(201).json(await a.exportSyllabus(db, u(req), req.params.id)));

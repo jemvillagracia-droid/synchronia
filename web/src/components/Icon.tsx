@@ -30,6 +30,8 @@ const P: Record<string, JSX.Element> = {
   trash: <><path d="M4 6.5h16M9.5 6.5V4h5v2.5M6 6.5l1 14h10l1-14" /></>,
   restore: <><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5" /><path d="M4 4v4.5h4.5" /></>,
   download: <><path d="M12 3.5v12M7 11l5 5 5-5M4 20.5h16" /></>,
+  upload: <><path d="M12 16.5v-12M7 9l5-5 5 5M4 20.5h16" /></>,
+  file: <><path d="M6 2.5h8l4 4v15H6zM14 2.5v4h4M9 12h6M9 16h6" /></>,
   clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>,
   alert: <><path d="M12 3.5 22 20.5H2z" /><path d="M12 10v4.5M12 17.2v.3" /></>,
   sliders: <><path d="M4 6.5h9M17 6.5h3M4 12h3M11 12h9M4 17.5h11M19 17.5h1" /><path d="M15 4.5v4M9 10v4M17 15.5v4" /></>,

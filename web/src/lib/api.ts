@@ -41,3 +41,19 @@ export const api = {
 const dataListeners = new Set<Listener>();
 export const onDataChanged = (fn: Listener) => { dataListeners.add(fn); return () => { dataListeners.delete(fn); }; };
 export const dataChanged = () => dataListeners.forEach((l) => l());
+
+/** Send a file's raw bytes (e.g. a .docx) to an import endpoint. */
+export async function uploadFile<T>(url: string, file: File): Promise<T> {
+  if (!/\.docx$/i.test(file.name)) throw new ApiError(415, `“${file.name}” is not a Word (.docx) document. Open it in Word and use Save As → .docx.`);
+  if (file.size > 25 * 1048576) throw new ApiError(413, `“${file.name}” is larger than 25 MB.`);
+  const res = await fetch(`/api${url}`, {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/octet-stream', 'X-Synchronia': '1', 'X-Filename': encodeURIComponent(file.name) },
+    body: file,
+  });
+  const text = await res.text();
+  let data: any = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+  if (!res.ok) throw new ApiError(res.status, data?.error || `Upload failed (${res.status})`, data?.details);
+  return data as T;
+}
