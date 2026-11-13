@@ -5,6 +5,7 @@ export interface CvEntry {
   source: { type: string; id: number; verification?: string | null } | null;
   missing: string[]; override: Record<string, any> | null;
   title: string | null; subtitle: string | null; dates: string | null; note: string | null;
+  org?: string | null; role?: string | null; location?: string | null;
   details: string[]; text: string | null; items: string[] | null;
 }
 export interface CvSection {

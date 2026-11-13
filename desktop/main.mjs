@@ -1,6 +1,6 @@
 // SYNCHRONIA desktop shell (Electron).
 // Starts the local data service on the loopback interface with a fresh access key, then opens the app window.
-import { app, BrowserWindow, Menu, dialog, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, Menu, dialog, ipcMain, session, shell } from 'electron';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -57,6 +57,36 @@ if (!app.requestSingleInstanceLock()) {
     if (typeof url === 'string' && /^https?:\/\//i.test(url)) await shell.openExternal(url);
   });
   ipcMain.handle('synchronia:show-data-folder', () => shell.openPath(dataDir));
+  ipcMain.handle('synchronia:show-item', (_e, p) => {
+    if (typeof p === 'string' && path.isAbsolute(p) && fs.existsSync(p)) shell.showItemInFolder(p);
+  });
+
+  // Every download (CV exports, JSON export) goes through a native Save dialog that starts in Documents\SYNCHRONIA,
+  // and the window is told where the file landed so it can offer Open / Show in folder.
+  const FILTERS = {
+    pdf: [{ name: 'PDF document', extensions: ['pdf'] }],
+    docx: [{ name: 'Word document', extensions: ['docx'] }],
+    json: [{ name: 'JSON data', extensions: ['json'] }],
+  };
+  function handleDownloads() {
+    session.defaultSession.on('will-download', (_e, item) => {
+      const name = item.getFilename();
+      const ext = path.extname(name).slice(1).toLowerCase();
+      const folder = path.join(app.getPath('documents'), 'SYNCHRONIA');
+      try { fs.mkdirSync(folder, { recursive: true }); } catch { /* fall back to the dialog's default */ }
+      const target = dialog.showSaveDialogSync(win, {
+        title: 'Save exported file', defaultPath: path.join(folder, name),
+        filters: [...(FILTERS[ext] || []), { name: 'All files', extensions: ['*'] }],
+      });
+      if (!target) {
+        item.cancel();
+        win?.webContents.send('synchronia:download', { state: 'cancelled', name });
+        return;
+      }
+      item.setSavePath(target);
+      item.once('done', (_ev, state) => win?.webContents.send('synchronia:download', { state, name, path: target }));
+    });
+  }
   ipcMain.on('synchronia:info', (e) => { e.returnValue = { version: app.getVersion(), dataDir, platform: process.platform }; });
 
   async function createWindow() {
@@ -111,6 +141,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(async () => {
     if (!isDev) Menu.setApplicationMenu(null);
+    handleDownloads();
     try {
       await createWindow();
     } catch (err) {

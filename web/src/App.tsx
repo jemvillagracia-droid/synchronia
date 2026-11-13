@@ -89,7 +89,12 @@ export function App() {
             {search && <SearchPalette onClose={() => setSearch(false)} />}
             {record && <RecordDrawer key={`${record.type}-${record.id}`} type={record.type} id={record.id} onClose={() => setRecord(null)} />}
             <div className="toasts" aria-live="polite">
-              {toasts.map((t) => <div key={t.id} className={`toast ${t.kind}`}>{t.text}</div>)}
+              {toasts.map((t) => (
+                <div key={t.id} className={`toast ${t.kind}`}>
+                  <span className="selectable" style={{ overflowWrap: 'anywhere' }}>{t.text}</span>
+                  {t.actions && <div className="row" style={{ marginTop: 8 }}>{t.actions.map((a) => <button key={a.label} className="btn btn-sm" onClick={a.run}>{a.label}</button>)}</div>}
+                </div>
+              ))}
             </div>
           </>
         )}

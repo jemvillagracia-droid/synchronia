@@ -8,6 +8,7 @@ import { RESOURCES } from './resources.js';
 import { nexus, notifications, search, capture, normaliseLayout, profileRow, portfolioSummary, WIDGETS } from './nexus.js';
 import { decrypt } from './secrets.js';
 import { cvRouter, imageRouter } from './cv/routes.js';
+import { academicRouter } from './academic/routes.js';
 import { tx } from './db.js';
 import { ROOT, APP_NAME, APP_TAGLINE, APP_VERSION } from './config.js';
 
@@ -195,6 +196,7 @@ export function createApp(db, { accessToken, pdfRenderer } = {}) {
   // ── Curriculum Vitae Studio and photograph library ───────
   api.use('/cv', cvRouter(db, { pdfRenderer }));
   api.use('/images', imageRouter(db));
+  api.use('/academic', academicRouter(db));
 
   // ── Generic record API for every registered type ──────────
   api.get('/records/:type', (req, res) => {

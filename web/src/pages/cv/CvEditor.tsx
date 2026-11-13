@@ -23,27 +23,44 @@ function EntryEditor({ entry, kind, onSave, onCancel, onReset }: {
   const [dates, setDates] = useState(entry?.dates || '');
   const [details, setDetails] = useState((entry?.details || []).join('\n'));
   const [text, setText] = useState(entry?.text || (entry?.items || []).join('; '));
+  const [org, setOrg] = useState(entry?.org || '');
+  const [location, setLocation] = useState(entry?.location || '');
+  const [role, setRole] = useState(entry?.role || '');
   const textual = kind === 'text' || kind === 'citation' || kind === 'list';
+  const harvard = !textual && !!entry?.org; // organization / location / role lines (Harvard layout)
   return (
     <div className="entry-edit stack" style={{ gap: 'var(--s-3)' }}>
       {textual ? (
         <Field label={kind === 'citation' ? 'Citation as it should appear' : kind === 'list' ? 'Items (separate with semicolons)' : 'Text'}>
           <textarea className="textarea" rows={kind === 'text' ? 5 : 3} value={text} onChange={(e) => setText(e.target.value)} spellCheck />
         </Field>
+      ) : harvard ? (
+        <>
+          <div className="form-grid">
+            <Field label="Organization (bold, first line)"><AutoText value={org} onChange={setOrg} /></Field>
+            <Field label="Location (right)"><AutoText value={location} onChange={setLocation} placeholder="City, Province / Country" /></Field>
+            <Field label="Position or degree (italic, second line)"><AutoText value={role} onChange={setRole} /></Field>
+            <Field label="Dates (right)"><AutoText value={dates} onChange={setDates} placeholder="e.g. Jun 2021 – Present" /></Field>
+          </div>
+          <Field label="Bullet points (one per line)" hint="Harvard style: begin with an action verb (Coordinated, Prepared, Developed), quantify results, avoid “I” and “Responsible for”.">
+            <textarea className="textarea" rows={4} value={details} onChange={(e) => setDetails(e.target.value)} spellCheck />
+          </Field>
+        </>
       ) : (
         <>
           <Field label="Title"><AutoText value={title} onChange={setTitle} /></Field>
           <div className="form-grid">
             <Field label="Institution / details line"><AutoText value={subtitle} onChange={setSubtitle} /></Field>
-            <Field label="Dates"><input className="input" value={dates} onChange={(e) => setDates(e.target.value)} placeholder="e.g. Jun 2021 – Present" /></Field>
+            <Field label="Dates"><AutoText value={dates} onChange={setDates} placeholder="e.g. Jun 2021 – Present" /></Field>
           </div>
-          <Field label="Bullet points (one per line)"><textarea className="textarea" rows={4} value={details} onChange={(e) => setDetails(e.target.value)} spellCheck /></Field>
+          <Field label="Bullet points (one per line)" hint="Begin with an action verb; avoid “I” and “Responsible for”."><textarea className="textarea" rows={4} value={details} onChange={(e) => setDetails(e.target.value)} spellCheck /></Field>
         </>
       )}
       <div className="row wrap">
         <button className="btn btn-primary btn-sm" onClick={() => onSave(textual
           ? (kind === 'list' ? { text: null, title: null, details: text.split(';').map((s) => s.trim()).filter(Boolean) } : { text })
-          : { title, subtitle, dates, details: details.split('\n').map((s) => s.trim()).filter(Boolean) })}>Save</button>
+          : harvard ? { org, location, role, dates, details: details.split('\n').map((s) => s.trim()).filter(Boolean) }
+            : { title, subtitle, dates, details: details.split('\n').map((s) => s.trim()).filter(Boolean) })}>Save</button>
         <button className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
         {onReset && <button className="btn btn-ghost btn-sm" onClick={onReset} style={{ marginLeft: 'auto' }}><Icon name="restore" />Use portfolio wording</button>}
       </div>

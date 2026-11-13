@@ -1,8 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '../lib/api';
+import { desktop } from '../lib/desktop';
 import type { Preferences, Schema, User } from '../lib/types';
 
-interface Toast { id: number; kind: 'info' | 'ok' | 'error'; text: string }
+export interface ToastAction { label: string; run: () => void }
+interface Toast { id: number; kind: 'info' | 'ok' | 'error'; text: string; actions?: ToastAction[] }
 
 interface Ctx {
   user: User;
@@ -11,7 +13,7 @@ interface Ctx {
   profileName: string | null;
   setProfileName: (n: string | null) => void;
   updatePrefs: (patch: Partial<Omit<Preferences, 'dashboard_layout'>> & { dashboard_layout?: Preferences['dashboard_layout'] | null }) => Promise<Preferences>;
-  toast: (text: string, kind?: Toast['kind']) => void;
+  toast: (text: string, kind?: Toast['kind'], actions?: ToastAction[]) => void;
   openCapture: () => void;
   openSearch: () => void;
   openRecord: (type: string, id: number) => void;
@@ -51,11 +53,29 @@ export function AppProvider({ user, children }: ProviderProps) {
     api.get<{ full_name: string | null }>('/profile').then((p) => setProfileName(p.full_name)).catch(() => {});
   }, []);
 
-  const toast = useCallback((text: string, kind: Toast['kind'] = 'info') => {
+  const toast = useCallback((text: string, kind: Toast['kind'] = 'info', actions?: ToastAction[]) => {
     const id = ++seq.current;
-    setToasts((t) => [...t, { id, kind, text }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), kind === 'error' ? 6000 : 3200);
+    setToasts((t) => [...t, { id, kind, text, actions }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), actions?.length ? 10000 : kind === 'error' ? 6000 : 3200);
   }, []);
+
+  // Desktop: report where each saved export landed, with Open / Show in folder.
+  useEffect(() => {
+    if (!desktop) return undefined;
+    return desktop.onDownload((info) => {
+      if (info.state === 'completed' && info.path) {
+        const p = info.path;
+        toast(`Saved ${p}`, 'ok', [
+          { label: 'Open', run: () => { desktop!.openPath(p); } },
+          { label: 'Show in folder', run: () => { desktop!.showItemInFolder(p); } },
+        ]);
+      } else if (info.state === 'cancelled') {
+        toast(`Not saved: ${info.name}. The export is still kept in the export history.`, 'info');
+      } else {
+        toast(`Saving ${info.name} failed. Try again or choose another folder.`, 'error');
+      }
+    });
+  }, [toast]);
 
   const updatePrefs = useCallback(async (patch: Parameters<Ctx['updatePrefs']>[0]) => {
     const next = await api.put<Preferences>('/preferences', patch);

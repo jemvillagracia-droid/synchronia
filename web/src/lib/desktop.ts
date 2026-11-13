@@ -8,6 +8,8 @@ export interface DesktopBridge {
   openPath: (p: string) => Promise<string>;
   openExternal: (url: string) => Promise<void>;
   showDataFolder: () => Promise<void>;
+  showItemInFolder: (p: string) => Promise<void>;
+  onDownload: (cb: (info: { state: 'completed' | 'cancelled' | 'interrupted'; name: string; path?: string }) => void) => () => void;
 }
 
 export const desktop: DesktopBridge | null = (window as unknown as { synchronia?: DesktopBridge }).synchronia ?? null;
