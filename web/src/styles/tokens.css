@@ -1,0 +1,72 @@
+/* SYNCHRONIA design tokens — application identity (the CV output has its own system, Phase 3). */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces: near-black → charcoal */
+  --bg: #08080a;
+  --bg-1: #0e0e11;          /* panels */
+  --bg-2: #141418;          /* raised / inputs */
+  --bg-3: #1b1b21;          /* hover */
+  --scrim: rgba(4, 4, 6, 0.72);
+
+  /* Lines */
+  --line: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.12);
+  --line-3: rgba(255, 255, 255, 0.2);
+
+  /* Text */
+  --text: #e9e6e1;
+  --text-2: #a7a3ad;
+  --text-3: #6f6c78;
+  --text-inverse: #0a0a0c;
+
+  /* Accents — restrained */
+  --violet: #8b6cf0;
+  --violet-2: #b3a0ff;
+  --violet-dim: rgba(139, 108, 240, 0.14);
+  --violet-line: rgba(139, 108, 240, 0.42);
+  --orange: #f08a24;
+  --orange-dim: rgba(240, 138, 36, 0.13);
+  --orange-line: rgba(240, 138, 36, 0.45);
+  --red: #e0443e;
+  --red-dim: rgba(224, 68, 62, 0.13);
+  --red-line: rgba(224, 68, 62, 0.5);
+  --ok: #5db58c;
+  --ok-dim: rgba(93, 181, 140, 0.13);
+
+  /* Typography */
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-cond: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --font-display: 'Noto Serif Display Variable', 'Noto Serif Display', Georgia, serif;
+
+  --fs-xs: 0.6875rem;   /* 11 */
+  --fs-sm: 0.8125rem;   /* 13 */
+  --fs-md: 0.875rem;    /* 14 */
+  --fs-lg: 1rem;        /* 16 */
+  --fs-xl: 1.375rem;    /* 22 */
+  --fs-2xl: 2rem;       /* 32 */
+  --fs-3xl: 2.75rem;    /* 44 */
+
+  /* Spacing (4px grid) */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+
+  /* Geometry — mostly square, small chamfers */
+  --radius: 2px;
+  --chamfer: 10px;
+
+  /* Layout */
+  --sidebar-w: 248px;
+  --sidebar-w-collapsed: 60px;
+  --topbar-h: 56px;
+  --context-w: 320px;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur: 160ms;
+  --shadow-pop: 0 18px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--line-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur: 0ms; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
