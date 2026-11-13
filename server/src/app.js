@@ -7,6 +7,7 @@ import { HttpError, audit } from './repo.js';
 import { RESOURCES } from './resources.js';
 import { nexus, notifications, search, capture, normaliseLayout, profileRow, portfolioSummary, WIDGETS } from './nexus.js';
 import { decrypt } from './secrets.js';
+import { cvRouter, imageRouter } from './cv/routes.js';
 import { tx } from './db.js';
 import { ROOT, APP_NAME, APP_TAGLINE, APP_VERSION } from './config.js';
 
@@ -17,7 +18,7 @@ const PROFILE_FIELDS = {
 };
 const MODES = ['administrative', 'instructor', 'researcher', 'faculty_development'];
 
-export function createApp(db, { accessToken } = {}) {
+export function createApp(db, { accessToken, pdfRenderer } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
@@ -26,7 +27,7 @@ export function createApp(db, { accessToken } = {}) {
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Content-Security-Policy',
-      "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
+      "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
     next();
   });
   app.use(hostGuard);
@@ -191,6 +192,10 @@ export function createApp(db, { accessToken } = {}) {
     res.json({ application: APP_NAME, version: APP_VERSION, exported_at: new Date().toISOString(), ...data });
   });
 
+  // ── Curriculum Vitae Studio and photograph library ───────
+  api.use('/cv', cvRouter(db, { pdfRenderer }));
+  api.use('/images', imageRouter(db));
+
   // ── Generic record API for every registered type ──────────
   api.get('/records/:type', (req, res) => {
     const { deleted, limit, offset, sort, order, ...where } = req.query;
@@ -223,7 +228,11 @@ export function createApp(db, { accessToken } = {}) {
   // ── Errors ────────────────────────────────────────────────
   app.use((err, _req, res, _next) => {
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Malformed JSON' });
-    if (err instanceof HttpError) return res.status(err.status).json({ error: err.message, details: err.details });
+    if (err instanceof HttpError) {
+      // An upload rejected before its body was read leaves the connection unusable; close it.
+      if (err.status === 413 || err.status === 415) res.setHeader('Connection', 'close');
+      return res.status(err.status).json({ error: err.message, details: err.details });
+    }
     console.error(err);
     res.status(500).json({ error: 'Internal error' });
   });

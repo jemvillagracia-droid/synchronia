@@ -98,7 +98,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .nav a:hover { background: var(--bg-3); color: var(--text); }
 .nav a.active { color: var(--text); background: linear-gradient(90deg, var(--violet-dim), transparent 85%); }
 .nav a.active::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; background: var(--violet); }
-.nav .code { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--text-3); }
+.nav .code { width: 18px; flex-shrink: 0; font-family: var(--font-mono); font-size: 10px; color: var(--text-3); text-align: left; }
 .nav a.active .code { color: var(--violet-2); }
 .nav svg { width: 18px; height: 18px; flex-shrink: 0; }
 .sidebar-foot { border-top: 1px solid var(--line-2); padding: var(--s-3) var(--s-4); display: flex; align-items: center; gap: var(--s-2); }

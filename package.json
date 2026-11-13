@@ -2,7 +2,7 @@
   "name": "synchronia",
   "productName": "SYNCHRONIA",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "SYNCHRONIA \u2014 The Academic Ascension System. Synchronize. Evolve. Transcend.",
   "author": "SYNCHRONIA",
   "type": "module",
@@ -12,16 +12,18 @@
   },
   "scripts": {
     "start": "npm run build && electron .",
-    "dev": "concurrently -k -n api,web,app \"npm:dev:server\" \"npm:dev:web\" \"npm:dev:desktop\"",
-    "dev:server": "SYNCHRONIA_ACCESS_TOKEN=dev-access-token-dev-access-token-0001 node --disable-warning=ExperimentalWarning --watch server/src/index.js",
+    "dev": "concurrently -k -n web,app \"npm:dev:web\" \"npm:dev:desktop\"",
     "dev:web": "vite web",
-    "dev:desktop": "wait-on tcp:127.0.0.1:5173 tcp:127.0.0.1:4317 && SYNCHRONIA_DEV_URL=http://127.0.0.1:5173 SYNCHRONIA_ACCESS_TOKEN=dev-access-token-dev-access-token-0001 electron .",
+    "dev:desktop": "wait-on tcp:127.0.0.1:5173 && SYNCHRONIA_DEV_URL=http://127.0.0.1:5173 SYNCHRONIA_ACCESS_TOKEN=dev-access-token-dev-access-token-0001 electron .",
     "build": "tsc -p web/tsconfig.json --noEmit && vite build web",
     "test": "node --disable-warning=ExperimentalWarning --test server/test/*.test.js",
     "dist:win": "npm run build && electron-builder --win --x64 --publish never"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "docx": "^9.5.1",
+    "express": "^5.1.0",
+    "jszip": "^3.10.1",
+    "pdfjs-dist": "^4.10.38"
   },
   "devDependencies": {
     "@fontsource-variable/noto-serif-display": "5.1.1",

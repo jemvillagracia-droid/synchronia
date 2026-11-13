@@ -2,6 +2,7 @@
 // Every number here is computed from stored records — nothing is estimated or invented.
 import { RESOURCES, PORTFOLIO_GROUPS } from './resources.js';
 import { HttpError, create, missingRecommended } from './repo.js';
+import { pendingCount } from './cv/model.js';
 
 export const WIDGETS = [
   { id: 'profile', title: 'Professional Profile' },
@@ -234,6 +235,10 @@ export function notifications(db, userId) {
       id: `corr-${c.id}`, type: 'correspondence', entity_id: c.id, level: c.due_date < t ? 'critical' : 'warning',
       title: c.subject, detail: c.due_date < t ? `Follow-up overdue since ${c.due_date}` : `Follow-up due ${c.due_date}`,
     });
+  }
+  for (const c of db.prepare("SELECT id, name, version FROM cv_profiles WHERE user_id = ? AND status = 'draft' AND deleted_at IS NULL").all(userId)) {
+    const n = pendingCount(db, userId, c.id);
+    if (n) items.push({ id: `cv-${c.id}`, type: 'cv', entity_id: c.id, level: 'info', title: c.name, detail: `${n} new portfolio record${n === 1 ? '' : 's'} can be added to this CV` });
   }
   const expiryHorizon = addDays(t, 60);
   for (const l of db.prepare(`SELECT id, license_type, valid_until FROM licenses WHERE user_id = ? AND deleted_at IS NULL

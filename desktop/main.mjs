@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createPdfRenderer } from './pdf.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const isDev = !app.isPackaged;
@@ -22,6 +23,7 @@ if (!app.requestSingleInstanceLock()) {
 
   let win = null;
   let service = null;
+  let pdfRenderer = null;
   const stateFile = path.join(app.getPath('userData'), 'window-state.json');
 
   const readState = () => { try { return JSON.parse(fs.readFileSync(stateFile, 'utf8')); } catch { return {}; } };
@@ -58,17 +60,12 @@ if (!app.requestSingleInstanceLock()) {
   ipcMain.on('synchronia:info', (e) => { e.returnValue = { version: app.getVersion(), dataDir, platform: process.platform }; });
 
   async function createWindow() {
-    const accessToken = crypto.randomBytes(32).toString('base64url');
-    let origin;
-    if (DEV_URL) {
-      // Development: the API runs separately (npm run dev:server) with a fixed token; the client comes from Vite.
-      origin = DEV_URL;
-    } else {
-      const { startServer } = await import('../server/src/server.js');
-      service = await startServer({ port: 0, host: '127.0.0.1', accessToken });
-      origin = `http://127.0.0.1:${service.port}`;
-    }
-    const token = DEV_URL ? process.env.SYNCHRONIA_ACCESS_TOKEN : accessToken;
+    // Development: the client comes from Vite (which proxies /api to port 4317); production: a random port.
+    const token = DEV_URL ? process.env.SYNCHRONIA_ACCESS_TOKEN : crypto.randomBytes(32).toString('base64url');
+    const { startServer } = await import('../server/src/server.js');
+    pdfRenderer = createPdfRenderer();
+    service = await startServer({ port: DEV_URL ? 4317 : 0, host: '127.0.0.1', accessToken: token, pdfRenderer });
+    const origin = DEV_URL || `http://127.0.0.1:${service.port}`;
 
     const state = readState();
     win = new BrowserWindow({
@@ -107,7 +104,7 @@ if (!app.requestSingleInstanceLock()) {
 
     win.once('ready-to-show', () => win.show());
     win.on('close', saveState);
-    win.on('closed', () => { win = null; });
+    win.on('closed', () => { win = null; app.quit(); }); // the hidden print window must not keep the app alive
 
     await win.loadURL(`${origin}/api/open?token=${encodeURIComponent(token)}&next=/`);
   }
@@ -122,8 +119,13 @@ if (!app.requestSingleInstanceLock()) {
     }
   });
 
-  app.on('window-all-closed', async () => {
-    if (service) await service.close().catch(() => {});
-    app.quit();
+  app.on('window-all-closed', () => app.quit());
+  let cleaned = false;
+  app.on('before-quit', (e) => {
+    if (cleaned) return;
+    e.preventDefault();
+    cleaned = true;
+    pdfRenderer?.dispose();
+    Promise.resolve(service?.close()).catch(() => {}).finally(() => app.quit());
   });
 }

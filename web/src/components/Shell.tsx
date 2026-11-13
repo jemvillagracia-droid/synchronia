@@ -34,13 +34,14 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onNavigate }: { collapsed: b
         <div className="nav-section label">Systems</div>
         {MODULES.map((m) => (
           <NavLink key={m.id} to={m.path} end={m.path === '/'} onClick={onNavigate} title={collapsed ? m.label : undefined}>
+            <span className="code">{m.code}</span>
             <Icon name={m.icon} />
             <span className="txt">{m.label}</span>
-            <span className="code">{m.code}</span>
           </NavLink>
         ))}
         <div className="nav-section label">System</div>
         <NavLink to="/settings" onClick={onNavigate} title={collapsed ? 'Settings' : undefined}>
+          <span className="code" aria-hidden>··</span>
           <Icon name="settings" />
           <span className="txt">Settings</span>
         </NavLink>
