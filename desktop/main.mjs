@@ -48,9 +48,17 @@ if (!app.requestSingleInstanceLock()) {
     });
     return res.canceled ? null : res.filePaths[0];
   });
+  // Evidence and file references open documents with their usual app. Programs and scripts are never launched from
+  // here, even if a reference points at one.
+  const NEVER_OPEN = /\.(exe|com|bat|cmd|ps1|psm1|vbs|vbe|js|jse|wsf|wsh|msi|msp|scr|pif|lnk|url|hta|cpl|jar|reg|application|appref-ms|scf|inf|sys|dll|ocx)$/i;
   ipcMain.handle('synchronia:open-path', async (_e, p) => {
     if (typeof p !== 'string' || !path.isAbsolute(p)) return 'Not a valid file location';
+    if (p.startsWith('\\\\')) return 'Network locations are not opened directly. Map the shared folder to a drive letter, then link the file from there.';
     if (!fs.existsSync(p)) return 'The file is no longer at that location';
+    let st;
+    try { st = fs.statSync(p); } catch { return 'The file cannot be read'; }
+    if (!st.isFile() && !st.isDirectory()) return 'Not a regular file';
+    if (st.isFile() && NEVER_OPEN.test(p)) return 'For your safety, SYNCHRONIA does not open programs or scripts. Use Show in folder instead.';
     return shell.openPath(p); // '' on success, otherwise an error message
   });
   ipcMain.handle('synchronia:open-external', async (_e, url) => {
@@ -68,6 +76,9 @@ if (!app.requestSingleInstanceLock()) {
     pdf: [{ name: 'PDF document', extensions: ['pdf'] }],
     docx: [{ name: 'Word document', extensions: ['docx'] }],
     json: [{ name: 'JSON data', extensions: ['json'] }],
+    xlsx: [{ name: 'Excel workbook', extensions: ['xlsx'] }],
+    zip: [{ name: 'ZIP archive', extensions: ['zip'] }],
+    db: [{ name: 'SYNCHRONIA backup', extensions: ['db'] }],
   };
   function handleDownloads() {
     session.defaultSession.on('will-download', (_e, item) => {
@@ -149,7 +160,14 @@ if (!app.requestSingleInstanceLock()) {
     await win.loadURL(`${origin}/api/open?token=${encodeURIComponent(token)}&next=/`);
   }
 
+  // Deny every permission (camera, microphone, location, notifications, clipboard read, …) in every session,
+  // including the hidden PDF window. SYNCHRONIA needs none of them.
+  app.on('session-created', (ses) => {
+    ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+    ses.setPermissionCheckHandler(() => false);
+  });
   app.whenReady().then(async () => {
+    for (const ses of [session.defaultSession]) { ses.setPermissionRequestHandler((_wc, _p, cb) => cb(false)); ses.setPermissionCheckHandler(() => false); }
     if (!isDev) Menu.setApplicationMenu(null);
     handleDownloads();
     try {

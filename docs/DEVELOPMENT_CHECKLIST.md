@@ -217,6 +217,30 @@ See `docs/QC_REPORT.md` for the quality-control results.
 - Full workflow driven through the interface in Electron: letterhead, logging through the form, quick log, routing and acting, meeting with agenda and minutes, tasks from action items, minutes export, secretariat record, follow-ups, turnover with notes and export, role change, office accomplishment report — no console errors; documents rendered in LibreOffice.
 - Accessibility and layout sweep: every tab and pop-up at 1500/1024/760 px; full-app regression sweep (58 page loads).
 
-## Upcoming phases
+## Phase 7 — Integration and Continuity ✅
 
-- [ ] **Phase 7 — Integration and Continuity**: Google Drive OAuth, unified timeline, backup/restore, security testing
+| Requirement (directive §IX, §X, §XII, Phase 7) | Status | Implementation |
+|---|---|---|
+| Google Drive via secure OAuth, where authorized | ✅ | Owner’s own OAuth client; PKCE (S256), single-use state, loopback redirect; read-only **metadata** scope; tokens and client secret encrypted; revoke on disconnect; “needs reconnecting” when Google withdraws the grant |
+| Search and retrieve authorized files | ✅ | Search Drive by file name; files open in Drive through their links |
+| Attach Drive references to portfolio, academic, CV and administrative records | ✅ | “Search my Google Drive” in every record’s Evidence tab; library “Add to library” |
+| Preserve Drive identifiers and links; display metadata | ✅ | File ID, link, type, size, owner, modified date; “Refresh Drive details” reports files that are gone or no longer shared and keeps the reference |
+| Manual link and file-reference fallback | ✅ | Drive share links, web links and files on this computer, as before |
+| Never claim upload or sync | ✅ | Wording throughout states that files are referenced, not copied; scope cannot write |
+| Avoid duplicate files and references | ✅ | The same Drive file or link is never stored twice; attaching it again links the existing reference |
+| Knowledge and References module | ✅ | Library with where-used, filters, open; Google Drive; Search everything |
+| Unified professional timeline (§X) | ✅ | Employment, appointments, qualifications, licences, trainings, publications, awards, teaching (per term), research milestones, extension, service, accomplishments; event date vs recorded date (“recorded …” for retrospective entries); each entry opens its record and shows its support |
+| Unified search | ✅ | Every record, plus text inside syllabi, materials, TOS, rubrics, minutes and turnover notes, and generated documents; module filter; full-page search |
+| Backup and recovery | ✅ | Existing verified snapshots and restore, plus “Save a copy” of any backup and “Import a backup file” (verified; refused if from a newer version) |
+| Data portability (§XII) | ✅ | Complete archive (.zip): records as JSON and CSV, generated documents and CV exports, photographs, letterhead, SHA-256 manifest; protected fields only on request; keys and tokens never exported |
+| Security testing | ✅ | `security.test.js` (every route enumerated from source; host guard; CSRF; redirects; injection; traversal; uploads; secrets at rest; headers; error hygiene; output escaping); runtime Electron checks; dependency audit — see `docs/SECURITY.md` |
+
+### Verified (Phase 7)
+
+- `npm test`: **85 tests, all passing** (8 in `continuity.test.js` against a local stand-in for Google; 11 in `security.test.js`).
+- Electron 45 end-to-end: Drive setup, browser sign-in, Drive search, add to library, link Drive evidence, refresh details, library usage, search everything, timeline, archive, backup copy and import — no console errors; earlier walkthroughs (administrative operations, Intelligence reports including PDF, syllabus import) re-run on Electron 45.
+- Accessibility and layout: 64 page loads at three widths plus 28 administrative views and pop-ups.
+
+## All phases complete
+
+SYNCHRONIA 1.0.0 implements Phases 1–7 of the directive.

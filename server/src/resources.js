@@ -307,6 +307,11 @@ export const RESOURCES = {
   },
 };
 
+// Text inside these JSON documents is searchable too.
+const SEARCH_JSON = { syllabi: ['content_json'], materials: ['content_json'], tos: ['content_json'], rubrics: ['criteria_json'],
+  meetings: ['agenda_json', 'minutes_json'], turnover_documents: ['notes_json'] };
+for (const [k, fields] of Object.entries(SEARCH_JSON)) if (RESOURCES[k]) RESOURCES[k].searchJson = fields;
+
 // Searchable text: every text field (secrets and JSON excluded).
 for (const [key, r] of Object.entries(RESOURCES)) {
   r.key = key;

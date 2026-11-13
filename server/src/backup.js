@@ -5,7 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { HttpError } from './repo.js';
 
 export const KEEP_AUTOMATIC = 15;
-const NAME_RE = /^synchronia-(\d{8}-\d{6})-(startup|scheduled|manual|pre-update|pre-restore)\.db$/;
+const NAME_RE = /^synchronia-(\d{8}-\d{6})-(startup|scheduled|manual|pre-update|pre-restore|imported)(-\d+)?\.db$/;
 
 export const backupDir = (dataDir) => path.join(dataDir, 'backups');
 const stamp = () => { const d = new Date(); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; };
@@ -88,4 +88,41 @@ export function applyPendingRestore(dataDir, dbPath) {
   for (const ext of ['', '-wal', '-shm']) fs.rmSync(dbPath + ext, { force: true });
   fs.copyFileSync(src, dbPath);
   return { restored: true, file };
+}
+
+const SQLITE_MAGIC = Buffer.from('SQLite format 3\0', 'latin1');
+
+/** Path of a listed backup, refusing anything that is not a backup file name in the backup folder. */
+export function backupFile(dataDir, name) {
+  if (!NAME_RE.test(String(name))) throw new HttpError(422, 'Not a SYNCHRONIA backup file name');
+  const file = path.join(backupDir(dataDir), path.basename(name));
+  if (!fs.existsSync(file)) throw new HttpError(404, 'Backup not found');
+  return file;
+}
+
+/**
+ * Bring in a backup made on another computer (or kept elsewhere). It is verified before it is listed, and refused if
+ * it comes from a newer version of SYNCHRONIA than this one. Restoring it is a separate, deliberate step.
+ */
+export function importBackup(dataDir, buffer, knownMigrations) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 512 || !buffer.subarray(0, 16).equals(SQLITE_MAGIC)) {
+    throw new HttpError(415, 'That file is not a SYNCHRONIA database backup (.db).');
+  }
+  const dir = backupDir(dataDir);
+  fs.mkdirSync(dir, { recursive: true });
+  let name = `synchronia-${stamp()}-imported.db`;
+  for (let i = 1; fs.existsSync(path.join(dir, name)); i += 1) name = `synchronia-${stamp()}-imported-${i}.db`;
+  const file = path.join(dir, name);
+  fs.writeFileSync(file, buffer);
+  const v = verifyBackup(file);
+  let newer = [];
+  if (v.ok) {
+    let d;
+    try { d = new DatabaseSync(file, { readOnly: true }); newer = d.prepare('SELECT name FROM schema_migrations').all().map((r) => r.name).filter((n) => !knownMigrations.includes(n)); } catch { /* verified above */ } finally { d?.close(); }
+  }
+  if (!v.ok || newer.length) {
+    fs.rmSync(file, { force: true });
+    throw new HttpError(422, !v.ok ? `This backup failed verification (${v.integrity}). It was not imported.` : 'This backup was made by a newer version of SYNCHRONIA. Update the app first.');
+  }
+  return { file: name, ...v };
 }

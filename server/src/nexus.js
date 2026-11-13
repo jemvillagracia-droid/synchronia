@@ -304,7 +304,7 @@ export function portfolioSummary(db, userId) {
 }
 
 /** Full-text search across every structured record the user owns. */
-export function search(db, userId, q, limit = 30) {
+export function search(db, userId, q, limit = 30, module = null) {
   const terms = String(q || '').normalize('NFKC').match(/[\p{L}\p{N}]+/gu) || [];
   if (!terms.length) return { query: q, results: [] };
   const match = terms.slice(0, 8).map((w) => `"${w.replace(/"/g, '')}"*`).join(' ');
@@ -312,7 +312,7 @@ export function search(db, userId, q, limit = 30) {
         highlight(search_index, 3, '[[', ']]') AS title_hl,
         snippet(search_index, 4, '[[', ']]', '…', 14) AS snippet, bm25(search_index, 0, 0, 0, 5, 1) AS score
       FROM search_index WHERE search_index MATCH ? AND user_id = ? ORDER BY score LIMIT ?`)
-    .all(match, userId, Math.min(Number(limit) || 30, 100));
+    .all(match, userId, module ? 500 : Math.min(Number(limit) || 30, 100));
   return {
     query: q,
     results: rows.map((r) => ({
@@ -321,9 +321,9 @@ export function search(db, userId, q, limit = 30) {
       title: r.title,
       title_highlighted: r.title_hl || r.title,
       snippet: r.snippet || '',
-      label: r.entity_type === 'profile' ? 'Professional Profile' : RESOURCES[r.entity_type]?.label || r.entity_type,
-      module: r.entity_type === 'profile' ? 'portfolio' : RESOURCES[r.entity_type]?.module || 'nexus',
-    })),
+      label: r.entity_type === 'profile' ? 'Professional Profile' : r.entity_type === 'reports' ? 'Generated Document' : RESOURCES[r.entity_type]?.label || r.entity_type,
+      module: r.entity_type === 'profile' ? 'portfolio' : r.entity_type === 'reports' ? 'intelligence' : RESOURCES[r.entity_type]?.module || 'nexus',
+    })).filter((x) => !module || x.module === module).slice(0, Math.min(Number(limit) || 30, 100)),
   };
 }
 

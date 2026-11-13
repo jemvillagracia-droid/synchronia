@@ -1081,3 +1081,40 @@ a.link { color: var(--accent-2); text-decoration: underline; text-underline-offs
 .task-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-4); align-items: start; }
 .turnover-sec { display: grid; gap: var(--s-2); }
 .ts-title { font-family: var(--font-cond); font-weight: 600; font-size: 15px; letter-spacing: .03em; color: var(--text); }
+
+/* ── Knowledge and References, Timeline (Phase 7) ────────────────────────── */
+.lib-list { display: grid; gap: var(--s-3); }
+.lib-item { padding: var(--s-3) var(--s-4); background: var(--bg-1); border: 1px solid var(--line-2); border-left: 3px solid var(--accent); display: grid; gap: 6px; }
+.lib-item.unavailable { border-left-color: var(--orange); }
+.lib-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.lib-title { font-family: var(--font-cond); font-weight: 600; font-size: 16px; color: var(--text); text-align: left; }
+.lib-meta { font-size: 13.5px; color: var(--text-2); overflow-wrap: anywhere; }
+.lib-warn { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; color: #ff7a45; }
+.lib-used { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13.5px; color: var(--text-2); }
+.chip-link { all: unset; cursor: pointer; padding: 2px 8px; border: 1px solid var(--line-3); color: var(--accent-2); font-size: 13px; }
+.chip-link:hover { border-color: var(--accent-2); }
+.chip-link:focus-visible { outline: 2px solid var(--orange); outline-offset: 1px; }
+.setup-steps { margin: var(--s-2) 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; color: var(--text-2); }
+.search-big { font-size: 18px; height: 48px; }
+.search-results mark { background: rgba(138,63,252,.35); color: var(--text); padding: 0 2px; }
+.list .s.wrap { white-space: normal; }
+.timeline { display: grid; gap: var(--s-5); }
+.tl-y { display: flex; align-items: baseline; gap: var(--s-3); margin: 0 0 var(--s-3); font-family: var(--font-mono); font-size: 30px; color: var(--orange); text-shadow: 0 0 10px rgba(255,90,31,.3); font-weight: 400; }
+.tl-y span { font-size: 13px; color: var(--text-2); text-shadow: none; }
+.tl-list { list-style: none; margin: 0; padding: 0 0 0 var(--s-4); border-left: 2px solid var(--line-3); display: grid; gap: var(--s-2); }
+.tl-ev { position: relative; display: grid; grid-template-columns: 170px minmax(0, 1fr) auto; gap: var(--s-3); align-items: start; padding: var(--s-2) var(--s-3); background: var(--bg-1); border: 1px solid var(--line-2); }
+.tl-ev::before { content: ''; position: absolute; left: calc(-1 * var(--s-4) - 7px); top: 14px; width: 10px; height: 10px; background: var(--accent); border: 2px solid var(--bg); }
+.tl-ev.cat-employment::before, .tl-ev.cat-appointments::before { background: var(--orange); }
+.tl-ev.cat-qualifications::before, .tl-ev.cat-licenses::before { background: #3ec98d; }
+.tl-date { font-size: 13px; color: var(--text-2); padding-top: 2px; }
+.tl-body { text-align: left; min-width: 0; }
+.tl-body .t { white-space: normal; }
+@media (max-width: 760px) { .tl-ev { grid-template-columns: 1fr; } }
+.lib-title, .tl-body { all: unset; box-sizing: border-box; cursor: pointer; }
+.lib-title { font-family: var(--font-cond); font-weight: 600; font-size: 16px; color: var(--text); overflow-wrap: anywhere; }
+.lib-title:hover, .tl-body:hover .t { color: var(--accent-2); }
+.lib-title:focus-visible, .tl-body:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.tl-body { display: grid; gap: 2px; min-width: 0; }
+.tl-body .t { display: block; color: var(--text); font-size: 15px; line-height: 1.4; }
+.tl-body .s { display: block; color: var(--text-2); font-size: 13px; }
+.panel-head .tag, .panel-head .tag[class*="st-"] { color: var(--on-accent); border-color: rgba(255,255,255,.65); background: rgba(0,0,0,.28); }

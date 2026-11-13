@@ -39,6 +39,7 @@ function PortfolioNav({ summary }: { summary: PortfolioSummary | null }) {
     <nav className="pf-nav" aria-label="Portfolio sections">
       <NavLink to="/portfolio" end><span className="code">00</span>Overview</NavLink>
       <NavLink to="/portfolio/profile"><span className="code">PRF</span>Professional Profile</NavLink>
+      <NavLink to="/portfolio/timeline"><span className="code">TL</span>Professional Timeline</NavLink>
       {PORTFOLIO.map((c) => (
         <NavLink key={c.key} to={`/portfolio/${c.key}`}>
           <span className="code">{c.code}</span>{c.label}<span className="n">{count(c.key) ?? ''}</span>

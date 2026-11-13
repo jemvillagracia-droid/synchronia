@@ -10,8 +10,10 @@ import { decrypt } from './secrets.js';
 import { cvRouter, imageRouter } from './cv/routes.js';
 import { intelligenceRouter } from './intelligence/routes.js';
 import { adminRouter } from './admin/routes.js';
+import { knowledgeRouter } from './knowledge/routes.js';
+import { googleCallbackRouter, integrationsRouter } from './integrations/routes.js';
 import { academicRouter } from './academic/routes.js';
-import { backupNow, integrity, listBackups, scheduleRestore } from './backup.js';
+import { backupFile, backupNow, importBackup, integrity, listBackups, scheduleRestore } from './backup.js';
 import { tx } from './db.js';
 import { ROOT, APP_NAME, APP_TAGLINE, APP_VERSION } from './config.js';
 
@@ -43,13 +45,14 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
   api.get('/meta', (_req, res) => res.json({ name: APP_NAME, tagline: APP_TAGLINE, version: APP_VERSION }));
   api.get('/open', openHandler(accessToken));
   api.get('/auth/state', (req, res) => res.json({ user: req.user || null }));
+  api.use(googleCallbackRouter(db));
   api.use(requireAuth);
 
   // ── Central Nexus ─────────────────────────────────────────
   api.get('/nexus', (req, res) => res.json(nexus(db, req.user.id)));
   api.get('/portfolio/summary', (req, res) => res.json(portfolioSummary(db, req.user.id)));
   api.get('/notifications', (req, res) => res.json(notifications(db, req.user.id)));
-  api.get('/search', (req, res) => res.json(search(db, req.user.id, req.query.q, req.query.limit)));
+  api.get('/search', (req, res) => res.json(search(db, req.user.id, req.query.q, req.query.limit, typeof req.query.module === 'string' ? req.query.module : null)));
   api.post('/capture', (req, res) => res.status(201).json(capture(db, req.user.id, req.body)));
 
   // ── Professional profile (one per user) ───────────────────
@@ -215,6 +218,19 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
     audit(db, req.user.id, 'export', null, 'export', `Backup written: ${b.file}`);
     res.status(201).json(b);
   });
+  api.get('/system/backups/:name/download', (req, res) => {
+    if (!dataDir) throw new HttpError(503, 'Backups are available in the desktop app');
+    const file = backupFile(dataDir, req.params.name);
+    audit(db, req.user.id, 'export', null, 'export', `Saved a copy of backup ${req.params.name}`);
+    res.download(file, req.params.name);
+  });
+  api.post('/system/backups/import', express.raw({ type: () => true, limit: '2gb' }), (req, res) => {
+    if (!dataDir) throw new HttpError(503, 'Backups are available in the desktop app');
+    const known = fs.readdirSync(path.join(ROOT, 'server', 'migrations')).filter((f) => f.endsWith('.sql'));
+    const r = importBackup(dataDir, req.body, known);
+    audit(db, req.user.id, 'export', null, 'settings', `Imported backup ${r.file} (verified)`);
+    res.status(201).json(r);
+  });
   api.post('/system/backups/:name/restore', (req, res) => {
     if (!dataDir) throw new HttpError(503, 'Restore is available in the desktop app');
     const r = scheduleRestore(dataDir, req.params.name);
@@ -226,6 +242,8 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
   api.use('/cv', cvRouter(db, { pdfRenderer }));
   api.use('/intelligence', intelligenceRouter(db, { pdfRenderer }));
   api.use('/admin', adminRouter(db));
+  api.use('/knowledge', knowledgeRouter(db));
+  api.use('/integrations', integrationsRouter(db));
   api.use('/images', imageRouter(db));
   api.use('/academic', academicRouter(db));
 
@@ -261,6 +279,11 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
   // ── Errors ────────────────────────────────────────────────
   app.use((err, _req, res, _next) => {
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Malformed JSON' });
+    // Request-body errors from the parsers carry their own status; answer with a plain message, never internals.
+    if (err.type === 'entity.too.large') { res.setHeader('Connection', 'close'); return res.status(413).json({ error: 'The request is too large.' }); }
+    if (typeof err.type === 'string' && err.type.startsWith('entity.') || err.type === 'charset.unsupported' || err.type === 'encoding.unsupported') {
+      return res.status(err.status && err.status < 500 ? err.status : 400).json({ error: 'The request could not be read.' });
+    }
     if (err instanceof HttpError) {
       // An upload rejected before its body was read leaves the connection unusable; close it.
       if (err.status === 413 || err.status === 415) res.setHeader('Connection', 'close');

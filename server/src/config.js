@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,4 +11,4 @@ export const IS_PROD = process.env.NODE_ENV === 'production';
 export const SESSION_DAYS = 14;
 export const APP_NAME = 'SYNCHRONIA';
 export const APP_TAGLINE = 'Synchronize. Evolve. Transcend.';
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version; } catch { return '0.0.0'; } })();

@@ -4,7 +4,7 @@
 
 An academic and professional advancement environment for managing teaching, research, extension, professional
 portfolio, curriculum vitae and administrative work in one place. Built in phases per the SYNCHRONIA Master Product
-Directive. **Phases 1–6 (Identity and Foundation, Professional Portfolio, Curriculum Vitae Studio, Academic Workspace, Intelligence, Administrative Operations) are complete.** SYNCHRONIA is a Windows
+Directive. **All seven phases of the directive are complete (version 1.0).** SYNCHRONIA is a Windows
 desktop application for a single owner.
 
 ## Installing on Windows
@@ -43,6 +43,27 @@ and structured minutes; action items become tasks, and minutes export to Word on
 approved). Secretariat records are numbered per type and year. The daily log feeds the Office Accomplishment Report in
 Intelligence. When you transfer or receive a faculty appointment, *Record a role change* updates your profile,
 employment history and academic mode together, and a turnover document compiles what your successor needs.
+
+### Knowledge and References, Google Drive and the timeline
+
+Your documents stay where they are; SYNCHRONIA keeps **references** to them (never copies), and never stores the same
+file twice. *Knowledge and References › Library* lists every reference and the records it supports.
+
+Google Drive is optional. To connect it, create your own OAuth client once (Google Cloud Console › enable the Drive
+API › OAuth consent screen › Credentials › OAuth client ID › *Desktop app*), paste the client ID and secret under
+*Knowledge and References › Google Drive*, and choose *Connect*. Google asks you to allow **read-only access to file
+details**; SYNCHRONIA can then search your Drive by name and link files as evidence, but cannot open, download, upload,
+change or delete anything. *Disconnect* revokes the access.
+
+*Professional Portfolio › Professional Timeline* shows your career in order from your records, marking entries you
+recorded long after the event. *Search everything* (or Ctrl K) also searches inside syllabi, minutes and notes.
+
+### Moving or keeping your data
+
+*Settings › Data & recovery › Complete archive* downloads everything in open formats (JSON, CSV, your generated
+documents, photographs and letterhead) with checksums. Any backup can be saved elsewhere with *Save a copy*, and a
+backup from another computer can be brought in with *Import a backup file* (it is verified first). See
+`docs/SECURITY.md` for how the app is protected and tested.
 
 ### Institution, letterhead and syllabi
 

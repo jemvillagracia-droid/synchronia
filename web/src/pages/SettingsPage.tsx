@@ -5,6 +5,7 @@ import { fmtDateTime, humanize, MODE_DESC, MODE_LABEL } from '../lib/format';
 import type { Mode } from '../lib/types';
 import { useApp } from '../components/AppContext';
 import { Icon } from '../components/Icon';
+import { download } from '../lib/download';
 import { InstitutionSettings } from './InstitutionSettings';
 
 type Tab = 'workspace' | 'institution' | 'application' | 'data';
@@ -97,7 +98,16 @@ function Backups() {
     try { await api.post(`/system/backups/${encodeURIComponent(b.file)}/restore`); setScheduled(b.file); toast('Restore scheduled — restart SYNCHRONIA to apply it', 'ok'); }
     catch (e) { toast((e as Error).message, 'error'); }
   }
-  const LABEL: Record<string, string> = { startup: 'Automatic (start-up)', scheduled: 'Automatic (6-hourly)', manual: 'Manual', 'pre-update': 'Before update', 'pre-restore': 'Before restore' };
+  const LABEL: Record<string, string> = { startup: 'Automatic (start-up)', scheduled: 'Automatic (6-hourly)', manual: 'Manual', 'pre-update': 'Before update', 'pre-restore': 'Before restore', imported: 'Imported' };
+  async function importFile(f: File) {
+    try {
+      const res = await fetch('/api/system/backups/import', { method: 'POST', credentials: 'same-origin', headers: { 'X-Synchronia': '1', 'Content-Type': 'application/octet-stream' }, body: f });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || `Import failed (${res.status})`);
+      toast(`Imported and verified ${d.file}. Restore it from the list when you are ready.`, 'ok');
+      dataChanged();
+    } catch (e) { toast((e as Error).message, 'error'); }
+  }
   return (
     <section className="panel">
       <header className="panel-head"><span className="code">BAK</span><h2>Backups and integrity</h2></header>
@@ -110,16 +120,18 @@ function Backups() {
         <div className="row wrap">
           <button className="btn btn-primary" onClick={backup}><Icon name="download" />Back up now</button>
           <button className="btn" onClick={check}><Icon name="check" />Check database integrity</button>
+          <label className="btn"><Icon name="upload" />Import a backup file…<input type="file" accept=".db" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) importFile(f); }} /></label>
           <span className={`tag ${status?.integrity === 'ok' ? 'ok' : 'red'}`}>Integrity: {status ? status.integrity : '…'}</span>
           {scheduled && desktop && <button className="btn btn-accent" onClick={() => desktop!.relaunch()}><Icon name="restore" />Restart now to restore {scheduled}</button>}
         </div>
         {!list ? <div className="skeleton" /> : list.length === 0 ? <div className="empty">No backups yet.</div> : (
           <div className="table-wrap"><table className="table">
-            <thead><tr><th>Backup</th><th>Kind</th><th>Taken</th><th>Size</th><th /></tr></thead>
+            <thead><tr><th>Backup</th><th>Kind</th><th>Taken</th><th>Size</th><th><span className="sr-only">Actions</span></th></tr></thead>
             <tbody>{list.map((b) => (
               <tr key={b.file}><td className="mono" style={{ fontSize: 12 }}>{b.file}</td><td>{LABEL[b.reason] || b.reason}</td>
                 <td className="num faint">{fmtDateTime(b.at)}</td><td className="num faint">{(b.size_bytes / 1024).toFixed(0)} KB</td>
-                <td style={{ textAlign: 'right' }}><button className="btn btn-sm" onClick={() => restore(b)}><Icon name="restore" />Restore</button></td></tr>
+                <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}><button className="btn btn-sm btn-ghost" onClick={() => download(`/api/system/backups/${encodeURIComponent(b.file)}/download`, b.file)}><Icon name="download" />Save a copy</button>{' '}
+                  <button className="btn btn-sm" onClick={() => restore(b)}><Icon name="restore" />Restore</button></td></tr>
             ))}</tbody>
           </table></div>
         )}
@@ -158,6 +170,7 @@ function Data() {
           <a className="btn btn-primary" href="/api/export" download><Icon name="download" />Download export</a>
         </div>
       </section>
+      <ArchiveExport />
       <Backups />
       <section className="panel">
         <header className="panel-head"><span className="code">BIN</span><h2>Recycle bin</h2><span className="num faint">{bin?.length ?? '…'}</span></header>
@@ -224,5 +237,23 @@ export function SettingsPage() {
       {tab === 'application' && <Application />}
       {tab === 'data' && <Data />}
     </div>
+  );
+}
+
+function ArchiveExport() {
+  const [secrets, setSecrets] = useState(false);
+  return (
+    <section className="panel">
+      <header className="panel-head"><span className="code">ZIP</span><h2>Complete archive</h2></header>
+      <div className="panel-body stack">
+        <p className="muted" style={{ margin: 0, fontSize: 13.5, maxWidth: '75ch' }}>
+          Everything in open formats, to keep or to move elsewhere: every record as JSON and as spreadsheets (CSV), generated documents and CV exports,
+          CV photographs and the letterhead, with a checksum for every file. Google Drive files are not copied — they stay in your Drive, and their links are kept.
+          The encryption key and any Google sign-in are never included.
+        </p>
+        <label className="checkline"><input type="checkbox" className="check" checked={secrets} onChange={(e) => setSecrets(e.target.checked)} />Include protected fields (licence registration numbers) in plain text</label>
+        <div><button className="btn btn-primary" onClick={() => download(`/api/knowledge/archive${secrets ? '?include_secrets=1' : ''}`, `SYNCHRONIA_Archive.zip`)}><Icon name="download" />Download archive (.zip)</button></div>
+      </div>
+    </section>
   );
 }

@@ -159,11 +159,31 @@ export function displayTitle(r, row) {
   return t === null || t === undefined || t === '' ? `${r.label} #${row.id}` : String(t);
 }
 
-function indexText(r, row) {
-  return {
-    title: displayTitle(r, row),
-    body: r.searchFields.filter((n) => n !== r.title).map((n) => row[n]).filter(Boolean).join(' \n '),
+/** All string values inside a JSON document (syllabus content, minutes, notes), for full-text search. */
+function jsonText(j, out = [], budget = { n: 30000 }) {
+  let v = j;
+  if (typeof j === 'string') { try { v = JSON.parse(j); } catch { return out; } }
+  const walk = (x) => {
+    if (budget.n <= 0 || x == null) return;
+    if (typeof x === 'string') { if (x.trim() && !/^\d{4}-\d{2}-\d{2}/.test(x)) { out.push(x); budget.n -= x.length; } }
+    else if (Array.isArray(x)) x.forEach(walk);
+    else if (typeof x === 'object') Object.values(x).forEach(walk);
   };
+  walk(v);
+  return out;
+}
+
+function indexText(r, row) {
+  const parts = r.searchFields.filter((n) => n !== r.title).map((n) => row[n]).filter(Boolean);
+  for (const n of r.searchJson || []) if (row[n]) jsonText(row[n], parts);
+  return { title: displayTitle(r, row), body: parts.join(' \n ') };
+}
+
+/** Generated documents are searchable by title (their content stays in the file). */
+export function indexReport(db, report) {
+  db.prepare("DELETE FROM search_index WHERE entity_type = 'reports' AND entity_id = ?").run(report.id);
+  db.prepare("INSERT INTO search_index (entity_type, entity_id, user_id, title, body) VALUES ('reports', ?, ?, ?, ?)")
+    .run(report.id, report.user_id, report.title, [report.report_type, report.format, report.period_start, report.period_end].filter(Boolean).join(' '));
 }
 
 export function reindex(db, r, row) {
@@ -192,6 +212,7 @@ export function rebuildSearchIndex(db) {
       for (const row of db.prepare(`SELECT * FROM ${r.table} WHERE deleted_at IS NULL`).all()) reindex(db, r, row);
     }
     for (const { id } of db.prepare('SELECT id FROM users').all()) indexProfile(db, id);
+    for (const rep of db.prepare('SELECT * FROM reports').all()) indexReport(db, rep);
   });
 }
 
@@ -378,7 +399,10 @@ export function attachEvidence(db, userId, key, id, body) {
     }
     if (input.provider === 'url' && !/^https?:\/\//i.test(input.url || '')) throw new HttpError(422, 'Enter a web address', { url: 'Must start with http:// or https://' });
     if (input.provider === 'local_path' && !input.url) throw new HttpError(422, 'Choose a file', { url: 'Required' });
-    refId = create(db, userId, 'file_references', input).id;
+    // The same file already in the library is linked again rather than duplicated.
+    try { refId = create(db, userId, 'file_references', input).id; } catch (err) {
+      if (err.status === 409 && err.details?.existing_id) refId = err.details.existing_id; else throw err;
+    }
   } else {
     const ref = db.prepare('SELECT id FROM external_file_references WHERE id = ? AND user_id = ? AND deleted_at IS NULL').get(refId, userId);
     if (!ref) throw new HttpError(404, 'File reference not found');

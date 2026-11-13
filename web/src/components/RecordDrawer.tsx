@@ -366,7 +366,23 @@ function EvidencePanel({ type, id, items, onChange }: {
   type: string; id: number; items: EvidenceItem[] | null; onChange: (items: EvidenceItem[], record?: RecordRow) => void;
 }) {
   const { toast } = useApp();
-  const [mode, setMode] = useState<'new' | 'existing'>('new');
+  const [mode, setMode] = useState<'new' | 'existing' | 'drive'>('new');
+  const [drive, setDrive] = useState<{ status: string } | null>(null);
+  const [dq, setDq] = useState('');
+  const [found, setFound] = useState<{ id: string; name: string; mime_type: string; modified_time: string | null; library_id: number | null }[] | null>(null);
+  useEffect(() => { api.get<{ status: string }>('/integrations/google').then(setDrive).catch(() => setDrive(null)); }, []);
+  async function searchDrive(e?: FormEvent) {
+    e?.preventDefault();
+    try { setFound((await api.get<any>(`/integrations/google/files?q=${encodeURIComponent(dq)}`)).files); } catch (err) { toast((err as Error).message, 'error'); }
+  }
+  async function attachDrive(fileId: string) {
+    setBusy(true);
+    try {
+      const r = await api.post<{ reference: { id: number } }>(`/integrations/google/files/${encodeURIComponent(fileId)}/library`);
+      const next = await api.post<EvidenceItem[]>(`/records/${type}/${id}/evidence`, { file_ref_id: r.reference.id });
+      onChange(next); toast('Drive file linked (as a reference — nothing was copied)', 'ok');
+    } catch (err) { toast((err as Error).message, 'error'); } finally { setBusy(false); }
+  }
   const [provider, setProvider] = useState<'google_drive' | 'url' | 'local_path'>('google_drive');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -439,6 +455,7 @@ function EvidencePanel({ type, id, items, onChange }: {
         <div className="seg" role="group" aria-label="Evidence source">
           <button type="button" aria-pressed={mode === 'new'} onClick={() => setMode('new')}>New reference</button>
           <button type="button" aria-pressed={mode === 'existing'} onClick={() => setMode('existing')}>Already in SYNCHRONIA</button>
+          {drive?.status === 'connected' && <button type="button" aria-pressed={mode === 'drive'} onClick={() => setMode('drive')}>Search my Google Drive</button>}
         </div>
         {mode === 'new' ? (
           <>
@@ -459,12 +476,25 @@ function EvidencePanel({ type, id, items, onChange }: {
               </Field>
             ) : (
               <Field label={provider === 'google_drive' ? 'Google Drive share link' : 'Web address'} required error={errors.url}
-                hint={provider === 'google_drive' ? 'In Drive: Share › Copy link. Stored as a reference; Drive sync arrives in Phase 7.' : undefined}>
+                hint={provider === 'google_drive' ? 'In Drive: Share › Copy link. Stored as a reference (file ID and link); nothing is copied. Connect Drive in Knowledge and References to search it instead.' : undefined}>
                 <input className="input" type="url" value={url} onChange={(e) => setUrl(e.target.value)}
                   placeholder={provider === 'google_drive' ? 'https://drive.google.com/file/d/…' : 'https://'} />
               </Field>
             )}
           </>
+        ) : mode === 'drive' ? (
+          <div className="stack" style={{ gap: 'var(--s-2)' }}>
+            <div className="row">
+              <input className="input" value={dq} onChange={(e) => setDq(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); searchDrive(); } }} placeholder="File name in your Drive" aria-label="Search Google Drive by file name" />
+              <button type="button" className="btn" onClick={() => searchDrive()}><Icon name="search" />Search</button>
+            </div>
+            {found && (found.length ? (
+              <ul className="list">{found.map((f) => (
+                <li key={f.id}><span className="grow"><span className="t">{f.name}</span><span className="s">{[f.mime_type?.split('/').pop(), f.modified_time && `modified ${f.modified_time.slice(0, 10)}`, f.library_id && 'in your library'].filter(Boolean).join(' · ')}</span></span>
+                  <button type="button" className="btn btn-sm" disabled={busy || (f.library_id != null && linkedIds.has(f.library_id))} onClick={() => attachDrive(f.id)}><Icon name="link" />{f.library_id != null && linkedIds.has(f.library_id) ? 'Linked' : 'Link'}</button></li>
+              ))}</ul>
+            ) : <div className="empty">No files with that name.</div>)}
+          </div>
         ) : (
           <Field label="Existing reference" required error={errors.file_ref_id}>
             <select className="select" value={pick} onChange={(e) => setPick(e.target.value)}>
@@ -473,7 +503,7 @@ function EvidencePanel({ type, id, items, onChange }: {
             </select>
           </Field>
         )}
-        <div><button className="btn btn-primary" disabled={busy || (mode === 'existing' && !pick)}><Icon name="link" />{busy ? 'Linking…' : 'Link evidence'}</button></div>
+        {mode !== 'drive' && <div><button className="btn btn-primary" disabled={busy || (mode === 'existing' && !pick)}><Icon name="link" />{busy ? 'Linking…' : 'Link evidence'}</button></div>}
       </form>
     </div>
   );

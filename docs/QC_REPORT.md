@@ -95,3 +95,26 @@ Defects found and fixed during this pass:
 - In the daily log, the time boxes were too narrow and hid the first digit ("1:30" for "11:30").
 - With the sidebar narrowed to icons (≤ 1100 px), its links had no accessible names; every link is now named.
 - Routing steps listed under an Intelligence indicator opened nothing when clicked; they are now shown as plain entries.
+
+---
+
+# Quality-control addendum — release 1.0.0 (Phase 7, Integration and Continuity)
+
+| Check | Result |
+|---|---|
+| Automated tests | **85 / 85 passing** (`continuity.test.js` 8, `security.test.js` 11) |
+| Security | Every API route enumerated from source and refused without the access key (and with a wrong key); see `docs/SECURITY.md` |
+| Dependencies | Production: **0 known vulnerabilities** after upgrading Electron 38 → 45.1.0 and react-router-dom → 6.30.6 and pinning uuid 11.1.1; remaining advisories are in build-only tools |
+| Runtime (Electron 45) | All end-to-end walkthroughs re-run; renderer isolation, CSP enforcement, blocked navigation and pop-ups, denied permissions verified in the running app |
+| Interface | 64 page loads at three widths plus 28 administrative views/pop-ups: no errors, no sideways scroll, no clipped text; only the documented decorative lamps remain |
+
+Defects found and fixed during this pass:
+
+- The app reported its version as 0.1.0 (hard-coded); it now reads the real version.
+- An oversized request returned 500 and logged a stack trace; it now returns 413 with a plain message.
+- Electron 38 had reached end of support with open security advisories; upgraded to Electron 45.
+- Opening a local file reference could launch a program or script, or touch a network path; these are now refused.
+- Permission requests (camera, microphone, location, notifications) were not explicitly denied; they now are, in every window.
+- A Drive hint said “Drive sync arrives in Phase 7” — misleading, since nothing is synchronized; corrected.
+- Library titles and timeline entries showed default button styling, and timeline labels ran into titles; fixed.
+- A status tag on a violet panel header was below the contrast minimum; fixed.

@@ -1,3 +1,5 @@
+import { KnowledgePage } from './pages/KnowledgePage';
+import { TimelinePage } from './pages/TimelinePage';
 import { AdminPage } from './pages/admin/AdminPage';
 import { IntelligencePage } from './pages/IntelligencePage';
 import { useCallback, useEffect, useState } from 'react';
@@ -81,6 +83,7 @@ export function App() {
                 <Route path="/" element={<NexusPage />} />
                 <Route path="/portfolio" element={<PortfolioOverview />} />
                 <Route path="/portfolio/profile" element={<ProfilePage />} />
+                <Route path="/portfolio/timeline" element={<TimelinePage />} />
                 <Route path="/portfolio/:category" element={<PortfolioCategoryPage />} />
                 <Route path="/academic" element={<AcademicPage />} />
                 <Route path="/academic/courses/:id" element={<CoursePage />} />
@@ -88,7 +91,8 @@ export function App() {
                 <Route path="/cv/:id" element={<CvEditor />} />
                 <Route path="/intelligence" element={<IntelligencePage />} />
                 <Route path="/admin" element={<AdminPage />} />
-                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence', 'admin'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
+                <Route path="/knowledge" element={<KnowledgePage />} />
+                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence', 'admin', 'knowledge'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
