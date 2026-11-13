@@ -21,10 +21,10 @@
   --text-inverse: #080808;
 
   /* Accents — saturated, as in SOUL ARCHIVE */
-  --violet: #9b6bd3;
-  --violet-2: #c09cf0;
-  --violet-dim: rgba(155, 107, 211, 0.18);
-  --violet-line: rgba(155, 107, 211, 0.6);
+  --violet: #8a3ffc;
+  --violet-2: #b98aff;
+  --violet-dim: rgba(138, 63, 252, 0.2);
+  --violet-line: rgba(138, 63, 252, 0.7);
   --orange: #ff5a1f;
   --orange-dim: rgba(255, 90, 31, 0.15);
   --orange-line: rgba(255, 90, 31, 0.6);
@@ -34,6 +34,13 @@
   --ok: #66c77a;
   --ok-dim: rgba(102, 199, 122, 0.15);
   --warn: #f3b321;
+  /* Primary accent: saturated EVA violet (fills carry white text for contrast) */
+  --accent: #8a3ffc;
+  --accent-2: #b98aff;
+  --accent-hover: #9d5cff;
+  --accent-dim: rgba(138, 63, 252, 0.2);
+  --accent-line: rgba(138, 63, 252, 0.7);
+  --on-accent: #ffffff;
   --cyan: #46d4d8;
 
   /* Typography */

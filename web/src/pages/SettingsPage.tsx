@@ -71,6 +71,62 @@ function Application() {
   );
 }
 
+interface BackupInfo { file: string; reason: string; at: string; size_bytes: number }
+
+function Backups() {
+  const { toast } = useApp();
+  const [list, setList] = useState<BackupInfo[] | null>(null);
+  const [status, setStatus] = useState<{ integrity: string; restored: { restored: boolean; file: string } | null } | null>(null);
+  const [scheduled, setScheduled] = useState('');
+  const load = useCallback(() => {
+    api.get<BackupInfo[]>('/system/backups').then(setList).catch(() => setList([]));
+    api.get<any>('/system/status').then(setStatus).catch(() => {});
+  }, []);
+  useEffect(() => { load(); return onDataChanged(load); }, [load]);
+  async function backup() {
+    try { const b = await api.post<BackupInfo>('/system/backups'); toast(`Backup written: ${b.file}`, 'ok'); load(); } catch (e) { toast((e as Error).message, 'error'); }
+  }
+  async function check() {
+    const r = await api.post<{ integrity: string }>('/system/integrity');
+    toast(r.integrity === 'ok' ? 'Database integrity check passed' : `Integrity check failed: ${r.integrity}`, r.integrity === 'ok' ? 'ok' : 'error');
+    load();
+  }
+  async function restore(b: BackupInfo) {
+    if (!window.confirm(`Restore the backup from ${fmtDateTime(b.at)}?\n\nChanges made after it will be replaced. Your current data is backed up first, and the restore is applied when SYNCHRONIA restarts.`)) return;
+    try { await api.post(`/system/backups/${encodeURIComponent(b.file)}/restore`); setScheduled(b.file); toast('Restore scheduled — restart SYNCHRONIA to apply it', 'ok'); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
+  const LABEL: Record<string, string> = { startup: 'Automatic (start-up)', scheduled: 'Automatic (6-hourly)', manual: 'Manual', 'pre-update': 'Before update', 'pre-restore': 'Before restore' };
+  return (
+    <section className="panel">
+      <header className="panel-head"><span className="code">BAK</span><h2>Backups and integrity</h2></header>
+      <div className="panel-body stack">
+        <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+          Every change is written to disk before it is reported as saved. A verified backup is taken automatically at every start and every six hours
+          (the newest 15 are kept), and before any database update. Backups contain your records; keep a copy of the data folder elsewhere as well.
+        </p>
+        {status?.restored && <div className={`alert ${status.restored.restored ? 'info' : ''}`}>{status.restored.restored ? `Restored from ${status.restored.file} at this start.` : `The scheduled restore of ${status.restored.file} could not be verified and was skipped.`}</div>}
+        <div className="row wrap">
+          <button className="btn btn-primary" onClick={backup}><Icon name="download" />Back up now</button>
+          <button className="btn" onClick={check}><Icon name="check" />Check database integrity</button>
+          <span className={`tag ${status?.integrity === 'ok' ? 'ok' : 'red'}`}>Integrity: {status ? status.integrity : '…'}</span>
+          {scheduled && desktop && <button className="btn btn-accent" onClick={() => desktop!.relaunch()}><Icon name="restore" />Restart now to restore {scheduled}</button>}
+        </div>
+        {!list ? <div className="skeleton" /> : list.length === 0 ? <div className="empty">No backups yet.</div> : (
+          <div className="table-wrap"><table className="table">
+            <thead><tr><th>Backup</th><th>Kind</th><th>Taken</th><th>Size</th><th /></tr></thead>
+            <tbody>{list.map((b) => (
+              <tr key={b.file}><td className="mono" style={{ fontSize: 12 }}>{b.file}</td><td>{LABEL[b.reason] || b.reason}</td>
+                <td className="num faint">{fmtDateTime(b.at)}</td><td className="num faint">{(b.size_bytes / 1024).toFixed(0)} KB</td>
+                <td style={{ textAlign: 'right' }}><button className="btn btn-sm" onClick={() => restore(b)}><Icon name="restore" />Restore</button></td></tr>
+            ))}</tbody>
+          </table></div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 interface BinItem { type: string; label: string; id: number; title: string; deleted_at: string }
 interface AuditItem { id: number; entity_type: string; entity_id: number | null; action: string; summary: string; at: string }
 
@@ -101,6 +157,7 @@ function Data() {
           <a className="btn btn-primary" href="/api/export" download><Icon name="download" />Download export</a>
         </div>
       </section>
+      <Backups />
       <section className="panel">
         <header className="panel-head"><span className="code">BIN</span><h2>Recycle bin</h2><span className="num faint">{bin?.length ?? '…'}</span></header>
         <div className="panel-body">
@@ -149,7 +206,7 @@ function Data() {
 export function SettingsPage() {
   const [tab, setTab] = useState<Tab>('workspace');
   return (
-    <div className="page" style={{ maxWidth: 1080 }}>
+    <div className="page">
       <div className="page-head">
         <div>
           <div className="crumb"><span className="bar" /><span className="label">System · Settings</span></div>

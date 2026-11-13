@@ -34,7 +34,7 @@ export function fmtDate(d: string | null | undefined): string {
 export function fmtDateTime(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${fmtTime12(d, false)}`;
 }
 
 export function relTime(iso: string): string {
@@ -72,3 +72,17 @@ export const initials = (name: string | null | undefined, fallback = 'S') =>
   (name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || fallback;
 
 export const fmtNum = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+
+/** 12-hour clock, e.g. 9:05:07 AM */
+export function fmtTime12(d: Date, seconds = true): string {
+  const h = d.getHours() % 12 || 12;
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${h}:${mm}${seconds ? `:${ss}` : ''} ${d.getHours() < 12 ? 'AM' : 'PM'}`;
+}
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+export const fmtLongDate = (d: Date) => `${DAYS[d.getDay()].slice(0, 3)}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+export const weekdayName = (d: Date) => DAYS[d.getDay()];
+export const monthName = (d: Date) => MONTHS_LONG[d.getMonth()];

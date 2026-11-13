@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { api, ApiError, dataChanged, onDataChanged } from '../../lib/api';
+import { api, dataChanged, onDataChanged } from '../../lib/api';
 import { fmtDate, fmtNum, humanize } from '../../lib/format';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
 import { Field } from '../../components/Field';
 import { AutoText } from '../../components/AutoText';
 import { exportAndSave } from './AcademicPage';
+import { useAutosave } from '../../lib/autosave';
+import { SaveIndicator } from '../../components/SaveIndicator';
 
 interface Workspace {
   course: any; offerings: any[]; clos: any[]; pos: any[]; alignments: { course_outcome_id: number; program_outcome_id: number; level: string }[];
@@ -29,24 +31,19 @@ function SyllabusEditor({ id, onClose }: { id: number; onClose: () => void }) {
   const [data, setData] = useState<{ syllabus: any; content: SyllabusContent; clos: any[] } | null>(null);
   const [c, setC] = useState<SyllabusContent | null>(null);
   const [refs, setRefs] = useState('');
-  const [busy, setBusy] = useState(false);
   useEffect(() => { api.get<any>(`/academic/syllabi/${id}`).then((d) => { setData(d); setC(d.content); setRefs(d.content.references.join('\n')); }); }, [id]);
+  const payload = c ? { ...c, references: refs.split('\n').map((r) => r.trim()).filter(Boolean) } : null;
+  const auto = useAutosave(`syllabus-${id}`, payload, async (v) => { const d = await api.put<any>(`/academic/syllabi/${id}/content`, v); setData(d); dataChanged(); });
   if (!data || !c) return <div className="skeleton" style={{ height: 200 }} />;
   const set = (patch: Partial<SyllabusContent>) => setC({ ...c, ...patch });
   const setWeek = (i: number, patch: Record<string, any>) => set({ weeks: c.weeks.map((w, j) => (j === i ? { ...w, ...patch } : w)) });
   const total = c.grading.reduce((n, g) => n + (Number(g.weight) || 0), 0);
-  async function save() {
-    setBusy(true);
-    try {
-      const d = await api.put<any>(`/academic/syllabi/${id}/content`, { ...c, references: refs.split('\n').map((r) => r.trim()).filter(Boolean) });
-      setData(d); setC(d.content); toast('Syllabus saved', 'ok'); dataChanged();
-    } catch (e) { toast((e as Error).message, 'error'); } finally { setBusy(false); }
-  }
+  async function save() { if (await auto.flush()) toast('Syllabus saved', 'ok'); }
   return (
     <section className="panel">
       <header className="panel-head"><h2>Syllabus · {data.syllabus.version_label}</h2>
         <button className="btn btn-sm" onClick={() => openRecord('syllabi', id)}>Version details</button>
-        <button className="icon-btn sm" onClick={onClose} aria-label="Close syllabus"><Icon name="close" /></button></header>
+        <button className="icon-btn sm" onClick={() => { auto.flush().then((ok) => { if (ok) onClose(); }); }} aria-label="Close syllabus"><Icon name="close" /></button></header>
       <div className="panel-body stack" style={{ gap: 'var(--s-5)' }}>
         <div className="form-grid">
           <Field label="Course description" className="span-2"><textarea className="textarea" rows={4} value={c.description} onChange={(e) => set({ description: e.target.value })} spellCheck /></Field>
@@ -96,9 +93,10 @@ function SyllabusEditor({ id, onClose }: { id: number; onClose: () => void }) {
           <Field label="References (one per line)" className="span-2"><textarea className="textarea" rows={4} value={refs} onChange={(e) => setRefs(e.target.value)} spellCheck /></Field>
           <Field label="Course policies" className="span-2"><textarea className="textarea" rows={4} value={c.policies} onChange={(e) => set({ policies: e.target.value })} spellCheck /></Field>
         </div>
-        <div className="row">
-          <button className="btn btn-primary" onClick={save} disabled={busy}><Icon name="check" />{busy ? 'Saving…' : 'Save syllabus'}</button>
-          <button className="btn" onClick={async () => { await save(); exportAndSave(`/academic/syllabi/${id}/export`, toast); }}><Icon name="download" />Save and export Word</button>
+        <div className="row wrap">
+          <button className="btn btn-primary" onClick={save}><Icon name="check" />Save now</button>
+          <button className="btn" onClick={async () => { if (await auto.flush()) exportAndSave(`/academic/syllabi/${id}/export`, toast); }}><Icon name="download" />Export Word</button>
+          <SaveIndicator state={auto.state} savedAt={auto.savedAt} error={auto.error} />
         </div>
       </div>
     </section>
@@ -155,18 +153,17 @@ function TosEditor({ id, onClose }: { id: number; onClose: () => void }) {
   const [c, setC] = useState<any>(null);
   const load = (data: any) => { setD(data); setC(data.content); };
   useEffect(() => { api.get<any>(`/academic/tos/${id}`).then(load); }, [id]);
+  const auto = useAutosave(`tos-${id}`, c, async (v) => { setD(await api.put<any>(`/academic/tos/${id}/content`, v)); dataChanged(); });
   if (!d || !c) return <div className="skeleton" style={{ height: 200 }} />;
   async function save(andExport = false) {
-    try {
-      load(await api.put<any>(`/academic/tos/${id}/content`, c));
-      toast('Table of specifications saved', 'ok');
-      if (andExport) exportAndSave(`/academic/tos/${id}/export`, toast);
-    } catch (e) { toast((e as Error).message, 'error'); }
+    if (!(await auto.flush())) return;
+    toast('Table of specifications saved', 'ok');
+    if (andExport) exportAndSave(`/academic/tos/${id}/export`, toast);
   }
   const levelSum = BLOOM.reduce((n, b) => n + (Number(c.levels[b]) || 0), 0);
   return (
     <section className="panel">
-      <header className="panel-head"><h2>Table of specifications · {d.tos.title}</h2><button className="icon-btn sm" onClick={onClose} aria-label="Close"><Icon name="close" /></button></header>
+      <header className="panel-head"><h2>Table of specifications · {d.tos.title}</h2><button className="icon-btn sm" onClick={() => { auto.flush().then((ok) => { if (ok) onClose(); }); }} aria-label="Close"><Icon name="close" /></button></header>
       <div className="panel-body stack" style={{ gap: 'var(--s-4)' }}>
         <div className="row wrap">
           <Field label="Total items"><input className="input" style={{ width: 120 }} type="number" min={0} value={c.total_items} onChange={(e) => setC({ ...c, total_items: Number(e.target.value) })} /></Field>
@@ -188,8 +185,9 @@ function TosEditor({ id, onClose }: { id: number; onClose: () => void }) {
             </div>
           ))}
         </div>
-        <div className="row"><button className="btn btn-primary" onClick={() => save()}><Icon name="check" />Save and recalculate</button>
-          <button className="btn" onClick={() => save(true)}><Icon name="download" />Save and export Word</button></div>
+        <div className="row wrap"><button className="btn btn-primary" onClick={() => save()}><Icon name="check" />Save and recalculate</button>
+          <button className="btn" onClick={() => save(true)}><Icon name="download" />Save and export Word</button>
+          <SaveIndicator state={auto.state} savedAt={auto.savedAt} error={auto.error} /></div>
         {d.warnings.map((x: string) => <div key={x} className="alert info">{x}</div>)}
         {d.rows.length > 0 && (
           <div className="table-wrap"><table className="table matrix">
@@ -217,19 +215,18 @@ function RubricEditor({ id, onClose }: { id: number; onClose: () => void }) {
   const [c, setC] = useState<any>(null);
   const load = (data: any) => { setD(data); setC(data.content); };
   useEffect(() => { api.get<any>(`/academic/rubrics/${id}`).then(load); }, [id]);
+  const auto = useAutosave(`rubric-${id}`, c, async (v) => { setD(await api.put<any>(`/academic/rubrics/${id}/criteria`, v)); dataChanged(); });
   if (!d || !c) return <div className="skeleton" style={{ height: 200 }} />;
   async function save(andExport = false) {
-    try {
-      load(await api.put<any>(`/academic/rubrics/${id}/criteria`, c));
-      toast('Rubric saved', 'ok');
-      if (andExport) exportAndSave(`/academic/rubrics/${id}/export`, toast);
-    } catch (e) { toast(e instanceof ApiError ? e.message : 'Could not save', 'error'); }
+    if (!(await auto.flush())) { toast(auto.error || 'Could not save', 'error'); return; }
+    toast('Rubric saved', 'ok');
+    if (andExport) exportAndSave(`/academic/rubrics/${id}/export`, toast);
   }
   const setLevel = (i: number, patch: any) => setC({ ...c, levels: c.levels.map((l: any, j: number) => (j === i ? { ...l, ...patch } : l)) });
   const setCrit = (i: number, patch: any) => setC({ ...c, criteria: c.criteria.map((k: any, j: number) => (j === i ? { ...k, ...patch } : k)) });
   return (
     <section className="panel">
-      <header className="panel-head"><h2>Rubric · {d.rubric.title}</h2><button className="icon-btn sm" onClick={onClose} aria-label="Close"><Icon name="close" /></button></header>
+      <header className="panel-head"><h2>Rubric · {d.rubric.title}</h2><button className="icon-btn sm" onClick={() => { auto.flush().then((ok) => { if (ok) onClose(); }); }} aria-label="Close"><Icon name="close" /></button></header>
       <div className="panel-body stack" style={{ gap: 'var(--s-4)' }}>
         <div className="table-wrap"><table className="table edit-table">
           <thead><tr><th style={{ minWidth: 160 }}>Criterion</th><th style={{ width: 80 }}>Weight %</th>
@@ -258,8 +255,9 @@ function RubricEditor({ id, onClose }: { id: number; onClose: () => void }) {
           <span className="faint" style={{ fontSize: 12 }}>Maximum score {d.summary.max_points}</span>
         </div>
         {d.summary.warnings.map((x: string) => <div key={x} className="alert info">{x}</div>)}
-        <div className="row"><button className="btn btn-primary" onClick={() => save()}><Icon name="check" />Save rubric</button>
-          <button className="btn" onClick={() => save(true)}><Icon name="download" />Save and export Word</button></div>
+        <div className="row wrap"><button className="btn btn-primary" onClick={() => save()}><Icon name="check" />Save rubric</button>
+          <button className="btn" onClick={() => save(true)}><Icon name="download" />Save and export Word</button>
+          <SaveIndicator state={auto.state} savedAt={auto.savedAt} error={auto.error} /></div>
       </div>
     </section>
   );

@@ -11,18 +11,29 @@ export function openDatabase(file) {
   const db = new DatabaseSync(file);
   db.exec('PRAGMA foreign_keys = ON;');
   if (file !== ':memory:') db.exec('PRAGMA journal_mode = WAL;');
+  // FULL: every committed change is on disk before the API reports success (survives power loss).
+  db.exec('PRAGMA synchronous = FULL;');
   db.exec('PRAGMA busy_timeout = 5000;');
-  migrate(db);
+  migrate(db, file);
   return db;
 }
 
-function migrate(db) {
+function migrate(db, file = ':memory:') {
   db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
     name TEXT PRIMARY KEY,
     applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
   )`);
   const applied = new Set(db.prepare('SELECT name FROM schema_migrations').all().map((r) => r.name));
   const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
+  const pending = files.filter((f) => !applied.has(f));
+  // Before changing the structure of an existing database, keep a snapshot of it.
+  if (pending.length && applied.size && file !== ':memory:') {
+    const dir = path.join(path.dirname(file), 'backups');
+    fs.mkdirSync(dir, { recursive: true });
+    const d = new Date(); const p2 = (n) => String(n).padStart(2, '0');
+    const name = `synchronia-${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}-pre-update.db`;
+    db.exec(`VACUUM INTO '${path.join(dir, name).replace(/'/g, "''")}'`);
+  }
   for (const f of files) {
     if (applied.has(f)) continue;
     const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, f), 'utf8');

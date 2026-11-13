@@ -57,6 +57,7 @@ if (!app.requestSingleInstanceLock()) {
     if (typeof url === 'string' && /^https?:\/\//i.test(url)) await shell.openExternal(url);
   });
   ipcMain.handle('synchronia:show-data-folder', () => shell.openPath(dataDir));
+  ipcMain.handle('synchronia:relaunch', () => { app.relaunch(); app.quit(); });
   ipcMain.handle('synchronia:show-item', (_e, p) => {
     if (typeof p === 'string' && path.isAbsolute(p) && fs.existsSync(p)) shell.showItemInFolder(p);
   });
@@ -133,6 +134,15 @@ if (!app.requestSingleInstanceLock()) {
     });
 
     win.once('ready-to-show', () => win.show());
+    // An editor with unsaved changes blocks closing; ask what to do instead of discarding silently.
+    win.webContents.on('will-prevent-unload', (e) => {
+      const choice = dialog.showMessageBoxSync(win, {
+        type: 'warning', buttons: ['Stay and save', 'Close without saving'], defaultId: 0, cancelId: 0,
+        title: 'Unsaved changes', message: 'Some changes have not been saved yet.',
+        detail: 'Stay to let SYNCHRONIA finish saving, or close and discard the unsaved changes.',
+      });
+      if (choice === 1) e.preventDefault();
+    });
     win.on('close', saveState);
     win.on('closed', () => { win = null; app.quit(); }); // the hidden print window must not keep the app alive
 

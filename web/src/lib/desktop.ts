@@ -9,6 +9,7 @@ export interface DesktopBridge {
   openExternal: (url: string) => Promise<void>;
   showDataFolder: () => Promise<void>;
   showItemInFolder: (p: string) => Promise<void>;
+  relaunch: () => Promise<void>;
   onDownload: (cb: (info: { state: 'completed' | 'cancelled' | 'interrupted'; name: string; path?: string }) => void) => () => void;
 }
 

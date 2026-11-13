@@ -6,6 +6,8 @@ import { MODULES } from '../lib/modules';
 import { api, onDataChanged, dataChanged } from '../lib/api';
 import { MODE_LABEL, MODE_DESC, initials, relTime, dueLabel } from '../lib/format';
 import type { Mode, Notification, RecordRow } from '../lib/types';
+import { Overlay } from './Overlay';
+import { StatusBar } from './StatusBar';
 
 function useClickAway(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null);
@@ -236,11 +238,10 @@ function ContextPanel({ onClose }: { onClose: () => void }) {
 export function Shell({ children }: { children: ReactNode }) {
   const { prefs, updatePrefs, openCapture, openSearch } = useApp();
   const [mobileNav, setMobileNav] = useState(false);
-  const [ctxOpen, setCtxOpen] = useState<boolean | null>(null);
+  const [contextOpen, setContextOpen] = useState(false);
   const location = useLocation();
   const collapsed = !!prefs?.sidebar_collapsed;
-  const wideWorkspace = /^\/cv\/\d+/.test(location.pathname); // the CV editor needs the full width
-  const contextOpen = !wideWorkspace && (ctxOpen ?? (prefs ? prefs.context_panel_open && window.innerWidth > 1180 : false));
+
 
   useEffect(() => { setMobileNav(false); }, [location.pathname]);
 
@@ -257,11 +258,8 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [openCapture, openSearch]);
 
-  function toggleContext() {
-    const next = !contextOpen;
-    setCtxOpen(next);
-    if (window.innerWidth > 1180) updatePrefs({ context_panel_open: next }).catch(() => {});
-  }
+  // The context panel opens as a centred pop-up so pages keep the full window.
+  const toggleContext = () => setContextOpen((o) => !o);
 
   return (
     <div className={`shell ${collapsed ? 'is-collapsed' : ''}`}>
@@ -281,14 +279,19 @@ export function Shell({ children }: { children: ReactNode }) {
         <button className="icon-btn show-mobile" onClick={openCapture} aria-label="Quick Capture" style={{ color: 'var(--orange)' }}><Icon name="plus" /></button>
         <ModeSwitch />
         <Notifications />
-        <button className="icon-btn hide-mobile" onClick={toggleContext} aria-label={contextOpen ? 'Hide context panel' : 'Show context panel'} aria-pressed={contextOpen}>
+        <button className="icon-btn hide-mobile" onClick={toggleContext} aria-label={contextOpen ? 'Hide context' : 'Show context: pending tasks and recent changes'} aria-pressed={contextOpen}>
           <Icon name="panel" />
         </button>
         <Link to="/settings" className="icon-btn hide-mobile" aria-label="System settings"><Icon name="settings" /></Link>
         <ProfileMenu />
       </header>
       <main className="main" id="main" tabIndex={-1}>{children}</main>
-      {contextOpen && <ContextPanel onClose={toggleContext} />}
+      <StatusBar />
+      {contextOpen && (
+        <Overlay onClose={() => setContextOpen(false)} label="Context">
+          <div className="context-pop"><ContextPanel onClose={() => setContextOpen(false)} /></div>
+        </Overlay>
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('synchronia', {
   openExternal: (url) => ipcRenderer.invoke('synchronia:open-external', String(url)),
   showDataFolder: () => ipcRenderer.invoke('synchronia:show-data-folder'),
   showItemInFolder: (p) => ipcRenderer.invoke('synchronia:show-item', String(p)),
+  relaunch: () => ipcRenderer.invoke('synchronia:relaunch'),
   onDownload: (cb) => {
     const listener = (_e, info) => cb(info);
     ipcRenderer.on('synchronia:download', listener);

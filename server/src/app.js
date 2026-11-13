@@ -9,6 +9,7 @@ import { nexus, notifications, search, capture, normaliseLayout, profileRow, por
 import { decrypt } from './secrets.js';
 import { cvRouter, imageRouter } from './cv/routes.js';
 import { academicRouter } from './academic/routes.js';
+import { backupNow, integrity, listBackups, scheduleRestore } from './backup.js';
 import { tx } from './db.js';
 import { ROOT, APP_NAME, APP_TAGLINE, APP_VERSION } from './config.js';
 
@@ -19,7 +20,7 @@ const PROFILE_FIELDS = {
 };
 const MODES = ['administrative', 'instructor', 'researcher', 'faculty_development'];
 
-export function createApp(db, { accessToken, pdfRenderer } = {}) {
+export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health = {} } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
@@ -191,6 +192,32 @@ export function createApp(db, { accessToken, pdfRenderer } = {}) {
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader('Content-Disposition', `attachment; filename="synchronia-export-${stamp}.json"`);
     res.json({ application: APP_NAME, version: APP_VERSION, exported_at: new Date().toISOString(), ...data });
+  });
+
+  // ── Save-path status, backups and restore ─────────────────
+  api.get('/system/status', (req, res) => {
+    const last = db.prepare("SELECT at FROM audit_logs WHERE user_id = ? AND action IN ('create','update','delete','restore','settings') ORDER BY id DESC LIMIT 1").get(req.user.id);
+    const backups = dataDir ? listBackups(dataDir) : [];
+    let records = 0;
+    for (const r of Object.values(RESOURCES)) records += db.prepare(`SELECT COUNT(*) n FROM ${r.table} WHERE user_id = ? AND deleted_at IS NULL`).get(req.user.id).n;
+    res.json({
+      version: APP_VERSION, integrity: health.integrity || 'ok', restored: health.restore || null, backup_error: health.backup_error || null,
+      last_saved_at: last ? last.at : null, last_backup: backups[0] || null, backups: backups.length, records,
+    });
+  });
+  api.post('/system/integrity', (req, res) => { health.integrity = integrity(db); res.json({ integrity: health.integrity }); });
+  api.get('/system/backups', (_req, res) => res.json(dataDir ? listBackups(dataDir) : []));
+  api.post('/system/backups', (req, res) => {
+    if (!dataDir) throw new HttpError(503, 'Backups are available in the desktop app');
+    const b = backupNow(db, dataDir, 'manual');
+    audit(db, req.user.id, 'export', null, 'export', `Backup written: ${b.file}`);
+    res.status(201).json(b);
+  });
+  api.post('/system/backups/:name/restore', (req, res) => {
+    if (!dataDir) throw new HttpError(503, 'Restore is available in the desktop app');
+    const r = scheduleRestore(dataDir, req.params.name);
+    audit(db, req.user.id, 'export', null, 'settings', `Restore scheduled from ${r.scheduled}; applied on next start`);
+    res.json({ ...r, restart_required: true });
   });
 
   // ── Curriculum Vitae Studio and photograph library ───────

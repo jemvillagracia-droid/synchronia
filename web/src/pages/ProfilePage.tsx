@@ -6,6 +6,7 @@ import { Field } from '../components/Field';
 import { Icon } from '../components/Icon';
 import { PortfolioShell } from './PortfolioPage';
 import { AutoText } from '../components/AutoText';
+import { useDirty } from '../lib/dirty';
 
 type Profile = Record<string, string | null> & { updated_at?: string };
 
@@ -53,6 +54,8 @@ export function ProfilePage() {
   }, []);
 
   const dirty = profile && SECTIONS.some((s) => s.fields.some((f) => (draft[f.name] || '') !== (profile[f.name] || '')));
+
+  useDirty('profile', !!dirty);
 
   async function save(e: FormEvent) {
     e.preventDefault();

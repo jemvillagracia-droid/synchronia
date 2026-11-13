@@ -8,6 +8,7 @@ import { FORMS, VERIFICATION_INFO, type FormSection } from '../lib/forms';
 import { desktop, openReference } from '../lib/desktop';
 import type { RecordRow, ResourceSpec } from '../lib/types';
 import { useApp } from './AppContext';
+import { useDirty, confirmDiscard } from '../lib/dirty';
 
 interface HistoryItem { id: number; action: string; summary: string; at: string; changes: Record<string, [any, any]> | null }
 interface EvidenceItem { link_id: number; id: number; provider: string; external_id: string | null; url: string | null; title: string; linked_at: string }
@@ -185,18 +186,29 @@ export function RecordDrawer({ type, id, onClose, onCreated, defaults }: { type:
     </form>
   ) : null;
 
+  // Unsaved-change guard: compare the draft with the stored record (or with an empty new record).
+  const isDirty = editing && !!spec && Object.entries(draft).some(([k, v]) => {
+    const f = spec.fields[k];
+    if (!f) return false;
+    if (isNew) return v !== null && v !== '' && v !== false && !(k === 'verification' && v === 'self_reported') && !(defaults && k in defaults) && !(f.type === 'enum' && f.required && v === f.values?.[0]);
+    if (f.type === 'secret') return !!v;
+    return (row?.[k] ?? null) !== (v === '' ? null : v);
+  });
+  useDirty(`record-${type}-${id ?? 'new'}`, isDirty);
+  const guardedClose = () => { if (isDirty && !confirmDiscard()) return; onClose(); };
+
   const ver = row?.verification ? VERIFICATION_INFO[row.verification] : null;
   const recommended = spec?.recommended || [];
   const missing: string[] = row?._missing || [];
   const evidenceCount = evidence?.length ?? row?._evidence_count ?? 0;
 
   return (
-    <Overlay onClose={onClose} label={spec ? spec.label : 'Record'}>
+    <Overlay onClose={guardedClose} label={spec ? spec.label : 'Record'}>
       <aside className="drawer">
         <div className="modal-head">
           <span className="label">{spec?.label || humanize(type)}</span>
           <span style={{ flex: 1 }} />
-          <button className="icon-btn sm" onClick={onClose} aria-label="Close"><Icon name="close" /></button>
+          <button className="icon-btn sm" onClick={guardedClose} aria-label="Close"><Icon name="close" /></button>
         </div>
         {error && <div className="modal-body"><div className="alert">{error}</div></div>}
         {!row && !error && !isNew && <div className="modal-body"><div className="skeleton" /><div className="skeleton" style={{ width: '60%' }} /></div>}
@@ -209,7 +221,7 @@ export function RecordDrawer({ type, id, onClose, onCreated, defaults }: { type:
             </div>
             <div className="modal-body" style={{ flex: 1 }}>{form}</div>
             <div className="modal-foot">
-              <button key="cancel" type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
+              <button key="cancel" type="button" className="btn btn-ghost" onClick={guardedClose} disabled={busy}>Cancel</button>
               <button key="create" className="btn btn-primary" type="submit" form="record-form" disabled={busy}>{busy ? 'Saving…' : 'Save record'}</button>
             </div>
           </>
@@ -325,7 +337,7 @@ export function RecordDrawer({ type, id, onClose, onCreated, defaults }: { type:
             <div className="modal-foot">
               {editing ? (
                 <>
-                  <button key="cancel" type="button" className="btn btn-ghost" onClick={() => setEditing(false)} disabled={busy}>Cancel</button>
+                  <button key="cancel" type="button" className="btn btn-ghost" onClick={() => { if (isDirty && !confirmDiscard()) return; setEditing(false); }} disabled={busy}>Cancel</button>
                   <button key="save" className="btn btn-primary" type="submit" form="record-form" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button>
                 </>
               ) : confirmDelete ? (
