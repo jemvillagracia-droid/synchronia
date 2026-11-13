@@ -5,6 +5,7 @@ import { fmtDate, fmtNum, dueLabel, humanize, relTime, MODE_LABEL } from '../lib
 import type { LayoutItem, Nexus } from '../lib/types';
 import { useApp } from '../components/AppContext';
 import { Icon } from '../components/Icon';
+import { CommandDisplay } from '../components/CommandDisplay';
 
 const SIZE: Record<string, string> = {
   profile: 'w-8', development: 'w-4', deadlines: 'w-4', teaching: 'w-4', research: 'w-4', extension: 'w-4', pd: 'w-4',
@@ -408,6 +409,8 @@ export function NexusPage() {
           )}
         </div>
       </div>
+
+      {data.command && <CommandDisplay c={data.command} />}
 
       {editing && (
         <div className="panel accent-violet" style={{ marginBottom: 'var(--s-4)' }}>

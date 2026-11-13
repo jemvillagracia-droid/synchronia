@@ -38,6 +38,7 @@ export interface Task {
 }
 
 export interface Nexus {
+  command?: import('../components/CommandDisplay').Command;
   generated_at: string; today: string; mode: Mode;
   layout: LayoutItem[]; layout_customised: boolean;
   widgets: { id: string; title: string }[];

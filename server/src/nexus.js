@@ -189,7 +189,9 @@ export function nexus(db, userId) {
   const recent_changes = db.prepare(`SELECT id, entity_type, entity_id, action, summary, at FROM audit_logs
       WHERE user_id = ? AND action IN ('create','update','delete','restore') ORDER BY id DESC LIMIT 10`).all(userId);
 
+  const command = commandDisplay(db, userId, t);
   return {
+    command,
     generated_at: new Date().toISOString(),
     today: t,
     mode,
@@ -348,4 +350,83 @@ export function capture(db, userId, body) {
     kind, title, body: text, event_date: event_date || today(), source: 'quick_capture',
     module: activityModules.includes(module) ? module : MODULE_FOR_KIND[kind] || 'general',
   });
+}
+
+
+// ───────────────────────── Command display (Evangelion-style) ─────────────────────────
+// Every figure below is computed from stored records; nothing is simulated.
+
+const BUCKET = {
+  education: 'portfolio', licenses: 'portfolio', employment: 'portfolio', appointments: 'portfolio', trainings: 'portfolio', awards: 'portfolio',
+  memberships: 'portfolio', committees: 'portfolio', portfolio_entries: 'portfolio', profile: 'portfolio',
+  courses: 'academic', teaching_assignments: 'academic', syllabi: 'academic', learning_outcomes: 'academic', materials: 'academic',
+  assessments: 'academic', tos: 'academic', rubrics: 'academic', class_activities: 'academic', research_projects: 'academic',
+  publications: 'academic', presentations: 'academic', extension_projects: 'academic', development_goals: 'academic',
+  cv_profiles: 'cv', uploaded_images: 'cv',
+};
+
+function commandDisplay(db, userId, t) {
+  // Activity over the last 30 days, by area
+  const start = addDays(t, -29);
+  const rows = db.prepare(`SELECT substr(at, 1, 10) d, entity_type, COUNT(*) n FROM audit_logs
+      WHERE user_id = ? AND action IN ('create','update','delete','restore') AND substr(at, 1, 10) >= ? GROUP BY d, entity_type`).all(userId, start);
+  const days = [];
+  for (let i = 0; i < 30; i += 1) days.push({ date: addDays(start, i), portfolio: 0, academic: 0, cv: 0, other: 0 });
+  const byDate = Object.fromEntries(days.map((d) => [d.date, d]));
+  for (const r of rows) { const d = byDate[r.d]; if (d) d[BUCKET[r.entity_type] || 'other'] += r.n; }
+  const sum = (from, to) => days.slice(from, to).reduce((n, d) => n + d.portfolio + d.academic + d.cv + d.other, 0);
+
+  // Deadline status lamps
+  const open = "status IN ('open','in_progress') AND deleted_at IS NULL";
+  const overdue = db.prepare(`SELECT COUNT(*) n FROM tasks WHERE user_id = ? AND ${open} AND due_date IS NOT NULL AND due_date < ?`).get(userId, t).n;
+  const dueToday = db.prepare(`SELECT COUNT(*) n FROM tasks WHERE user_id = ? AND ${open} AND due_date = ?`).get(userId, t).n;
+  const dueWeek = db.prepare(`SELECT COUNT(*) n FROM tasks WHERE user_id = ? AND ${open} AND due_date > ? AND due_date <= ?`).get(userId, t, addDays(t, 7)).n;
+  const level = overdue ? 'danger' : dueToday || dueWeek >= 5 ? 'caution' : 'nominal';
+
+  // Workload level: open tasks by area
+  const LIMITS = { caution: 5, danger: 10 };
+  const workload = db.prepare(`SELECT module, COUNT(*) n FROM tasks WHERE user_id = ? AND ${open} GROUP BY module`).all(userId);
+  const wl = Object.fromEntries(workload.map((w) => [w.module, w.n]));
+  const areas = [['teaching', 'Teaching'], ['research', 'Research'], ['admin', 'Administrative'], ['portfolio', 'Portfolio and CV'], ['general', 'General']]
+    .map(([k, label]) => ({ key: k, label, open: (wl[k] || 0) + (k === 'portfolio' ? (wl.cv || 0) : 0) + (k === 'research' ? (wl.extension || 0) + (wl.development || 0) : 0) }));
+
+  // MAGI subsystems
+  const pAttention = (() => {
+    let total = 0, attention = 0;
+    for (const g of PORTFOLIO_GROUPS) for (const key of g.resources) {
+      const r = RESOURCES[key];
+      for (const row of db.prepare(`SELECT * FROM ${r.table} WHERE user_id = ? AND deleted_at IS NULL`).all(userId)) {
+        total += 1;
+        const ev = db.prepare(`SELECT COUNT(*) n FROM evidence_links e JOIN external_file_references f ON f.id = e.file_ref_id AND f.deleted_at IS NULL
+          WHERE e.entity_type = ? AND e.entity_id = ?`).get(key, row.id).n;
+        if (!ev || missingRecommended(r, row).length) attention += 1;
+      }
+    }
+    return { total, attention };
+  })();
+  const cvs = db.prepare("SELECT status, COUNT(*) n FROM cv_profiles WHERE user_id = ? AND deleted_at IS NULL GROUP BY status").all(userId);
+  const cvCount = Object.fromEntries(cvs.map((c) => [c.status, c.n]));
+  let cvPending = 0;
+  for (const c of db.prepare("SELECT id FROM cv_profiles WHERE user_id = ? AND status = 'draft' AND deleted_at IS NULL").all(userId)) cvPending += pendingCount(db, userId, c.id);
+  const active = db.prepare("SELECT DISTINCT course_id FROM teaching_assignments WHERE user_id = ? AND deleted_at IS NULL AND status = 'active'").all(userId).map((r) => r.course_id);
+  const approved = active.filter((cid) => db.prepare("SELECT COUNT(*) n FROM syllabi WHERE user_id = ? AND course_id = ? AND deleted_at IS NULL AND status = 'approved'").get(userId, cid).n).length;
+  const magi = [
+    { key: 'portfolio', name: 'BALTHASAR · 2', system: 'Professional Portfolio',
+      status: pAttention.total === 0 ? 'no_data' : pAttention.attention ? 'review' : 'ready',
+      detail: pAttention.total === 0 ? 'No records yet' : pAttention.attention ? `${pAttention.attention} of ${pAttention.total} records need evidence or details` : `All ${pAttention.total} records evidenced and complete` },
+    { key: 'cv', name: 'CASPER · 3', system: 'Curriculum Vitae Studio',
+      status: !(cvCount.draft || cvCount.finalized) ? 'no_data' : cvPending ? 'review' : cvCount.finalized ? 'ready' : 'review',
+      detail: !(cvCount.draft || cvCount.finalized) ? 'No CVs yet' : cvPending ? `${cvPending} new portfolio record(s) to review in drafts`
+        : `${cvCount.finalized || 0} finalized · ${cvCount.draft || 0} draft` },
+    { key: 'workspace', name: 'MELCHIOR · 1', system: 'Academic Workspace',
+      status: !active.length ? 'no_data' : approved === active.length ? 'ready' : 'review',
+      detail: !active.length ? 'No active classes' : `${approved} of ${active.length} active course(s) have an approved syllabus` },
+  ];
+
+  return {
+    deadlines: { overdue, due_today: dueToday, due_week: dueWeek, level },
+    activity: { days, this_week: sum(23, 30), last_week: sum(16, 23), total_30: sum(0, 30) },
+    workload: { areas, limits: LIMITS },
+    magi,
+  };
 }
