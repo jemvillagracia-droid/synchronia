@@ -1,7 +1,7 @@
 // ATS compatibility analyzer, AI/parser readability validation and the pre-export quality checklist.
 // All checks run against text read back from the generated DOCX/PDF files. No compatibility guarantee is claimed.
 import { STANDARD_ATS_HEADINGS, SECTION_BY_KEY } from './sections.js';
-import { FONT_STACKS } from './templates.js';
+import { FONT_STACKS, styleFor } from './templates.js';
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, '-').replace(/\s+/g, ' ').trim();
 const STOP = new Set('a an and are as at be by for from has have in is it its of on or that the this to was were will with we you your our their they shall must should can may who what when where which while into about over under than then them these those such also other more most any each all not no yes per via using use used job work position applicant applicants candidate candidates required requirements preferred qualifications responsibilities including include ability strong excellent good well able experience years year'.split(' '));
@@ -201,6 +201,31 @@ export function qualityChecklist(model, editorView, ats) {
   add('text', 'Spelling and text consistency', textIssues.length ? 'incomplete' : 'complete',
     textIssues.length ? 'Basic checks found possible issues. Words underlined by the editor’s spell-checker should also be reviewed.' : 'No repeated words, double spaces or inconsistent bullet punctuation found. Review spell-checker underlines in the editor.',
     textIssues.slice(0, 20));
+
+  // Harvard CV conventions (the basis of the CV maker)
+  const harvard = [];
+  const WEAK = /^(responsible for|duties (include|included)|in charge of|worked on|helped( to)?|tasked with|assisted in)\b/i;
+  const PRONOUN = /(^|[^\w])(I|me|my|mine|we|our|us)([^\w]|$)/;
+  for (const s of model.sections) {
+    for (const e of s.entries) {
+      for (const d of e.details || []) {
+        if (WEAK.test(d)) harvard.push(`Start with an action verb instead of “${d.split(' ').slice(0, 2).join(' ')}…” (${s.heading})`);
+        if (PRONOUN.test(d)) harvard.push(`Avoid first-person pronouns: “${d.slice(0, 60)}…”`);
+      }
+      if (e.kind === 'text' && e.text && PRONOUN.test(e.text)) harvard.push(`${s.heading}: written in the first person — Harvard-style CVs use a neutral voice`);
+      if (e.org && !e.location && ['education', 'employment', 'appointments'].includes(s.key)) harvard.push(`Add a location (City, Province/Country) for ${e.org} (${s.heading})`);
+    }
+  }
+  if (['academic', 'faculty', 'research', 'application'].includes(model.meta.cv_type) && model.sections[0] && model.sections[0].key !== 'education') {
+    harvard.push(`Education is customarily the first section of an academic CV (currently “${model.sections[0].heading}”)`);
+  }
+  if (h.photo) harvard.push('Harvard-style CVs omit photographs');
+  const st = styleFor(model);
+  if (st.size < 10 || st.size > 12) harvard.push(`Body text at ${st.size} pt; 10–12 pt is conventional`);
+  const m = model.settings.margins;
+  if ([m.top, m.right, m.bottom, m.left].some((x) => x < 0.5 || x > 1)) harvard.push('Margins between 0.5 and 1 inch are conventional');
+  add('harvard', 'Harvard CV conventions', harvard.length ? 'incomplete' : 'complete',
+    harvard.length ? 'Points where this CV departs from Harvard CV conventions:' : 'Education first, action-verb bullets, neutral voice, locations, conventional type and margins.', [...new Set(harvard)].slice(0, 25));
 
   // ATS readability
   add('ats', 'ATS readability', ats.summary.fail ? 'incomplete' : 'complete',

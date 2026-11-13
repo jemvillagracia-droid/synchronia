@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { humanize } from '../lib/format';
 import type { FieldSpec } from '../lib/types';
+import { AutoText } from './AutoText';
 
 export function Field({ label, required, error, hint, children, className }: {
   label: string; required?: boolean; error?: string; hint?: ReactNode; children: ReactNode; className?: string;
@@ -62,7 +63,7 @@ export function SpecInput({ name, spec, value, onChange, refOptions, placeholder
       return <input id={id} type="password" autoComplete="off" className="input mono" value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
     default:
       return isLongField(name, spec)
-        ? <textarea id={id} className="textarea" maxLength={spec.max} value={value ?? ''} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
-        : <input id={id} className="input" maxLength={spec.max} value={value ?? ''} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />;
+        ? <textarea id={id} className="textarea" maxLength={spec.max} value={value ?? ''} placeholder={placeholder} spellCheck onChange={(e) => onChange(e.target.value)} />
+        : <AutoText id={id} maxLength={spec.max} value={value ?? ''} placeholder={placeholder} onChange={onChange} />;
   }
 }

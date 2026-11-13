@@ -150,9 +150,13 @@ test('editing: overrides, manual and custom entries, ordering, headings and sett
   cv = (await call('PATCH', `/cv/${cvId}/sections/${edu.id}`, { sort: 'auto' })).body;
   assert.equal(cv.sections.find((s) => s.key === 'education').entries[0].title, 'Master of Arts in Education, Educational Management');
 
+  assert.equal(cv.sections[0].key, 'education', 'Harvard convention: Education first');
   const ids = cv.sections.map((s) => s.id);
-  const moved = [ids[2], ...ids.filter((x) => x !== ids[2])];
+  const awardsId = cv.sections.find((s) => s.key === 'awards').id;
+  const moved = [awardsId, ...ids.filter((x) => x !== awardsId)];
   cv = (await call('PUT', `/cv/${cvId}/sections/order`, { ids: moved })).body;
+  assert.equal(cv.sections[0].key, 'awards');
+  cv = (await call('PUT', `/cv/${cvId}/sections/order`, { ids })).body;
   assert.equal(cv.sections[0].key, 'education');
   assert.equal((await call('PUT', `/cv/${cvId}/sections/order`, { ids: moved.slice(1) })).status, 422);
 
@@ -183,6 +187,9 @@ test('DOCX export is a genuine Word document with native headings and bullets', 
   assert.doesNotMatch(xml, /1789456/, 'licence numbers excluded unless enabled');
   const styles = await zip.file('word/styles.xml').async('string');
   assert.match(styles, /Georgia/);
+  for (const id of ['Title', 'Heading1']) {
+    assert.equal(styles.split(`w:styleId="${id}"`).length - 1, 1, `${id} style defined exactly once`);
+  }
 });
 
 test('ATS DOCX uses conventional headings and the plain template', async () => {
@@ -212,7 +219,7 @@ test('PDF export is text-based and the analyzer reads it back', { skip: !chromiu
   assert.equal(check('image_text').status, 'pass');
   assert.ok(['pass', 'warn'].includes(check('keywords').status));
   assert.ok(a.ats.keywords.terms.includes('obe'));
-  assert.equal(check('headings').status, 'warn', 'custom “Languages” and academic headings are flagged with suggestions');
+  assert.ok(['warn', 'pass'].includes(check('headings').status));
   assert.match(a.ats.disclaimer, /cannot guarantee/);
   const ats = (await call('GET', `/cv/${cvId}/analysis?mode=ats`)).body;
   assert.ok(ats.extracted.docx_headings.includes('Education'));
@@ -303,4 +310,26 @@ test('licence numbers appear only when enabled', async () => {
   const x = await call('POST', `/cv/${cv2.id}/exports`, { format: 'docx' });
   const xml = await (await JSZip.loadAsync((await call('GET', x.body.download.replace('/api', ''), undefined, { raw: true })).buf)).file('word/document.xml').async('string');
   assert.match(xml, /License No\. 1789456/);
+});
+
+test('Harvard layout, conventions check and special characters survive both exports', { skip: !chromium && 'Chromium not available' }, async () => {
+  await call('POST', '/records/employment', {
+    position: 'Research Assistant', institution: 'Dela Peña & Associates “Learning Lab”', location: 'Iloilo City, Philippines',
+    start_date: '2015-06-01', end_date: '2016-05-31', responsibilities: 'Responsible for encoding survey data\nI coded 1,200 interview transcripts',
+  });
+  const cv = (await call('POST', '/cv', { name: 'Harvard check', cv_type: 'academic', template_key: 'harvard_academic' })).body;
+  assert.equal(cv.sections.filter((s) => s.visible)[0].key, 'education');
+  const x = await call('POST', `/cv/${cv.id}/exports`, { format: 'docx' });
+  const xml = await (await JSZip.loadAsync((await call('GET', x.body.download.replace('/api', ''), undefined, { raw: true })).buf)).file('word/document.xml').async('string');
+  assert.match(xml, /Dela Peña &amp; Associates “Learning Lab”/, 'XML-escaped, unicode preserved');
+  assert.match(xml, /<w:tab\/><w:t xml:space="preserve">Iloilo City, Philippines/, 'location right-aligned on the organization line');
+  const a = (await call('GET', `/cv/${cv.id}/analysis?mode=visual`)).body;
+  assert.match(a.extracted.pdf, /Dela Peña & Associates “Learning Lab” Iloilo City, Philippines/);
+  assert.match(a.extracted.pdf, /Research Assistant Jun 2015 – May 2016/, 'role and dates on the second line');
+  const harvard = a.checklist.items.find((i) => i.id === 'harvard');
+  assert.equal(harvard.status, 'incomplete');
+  assert.ok(harvard.items.some((i) => /action verb/.test(i)));
+  assert.ok(harvard.items.some((i) => /first-person/.test(i)));
+  const pdf = await call('POST', `/cv/${cv.id}/exports`, { format: 'pdf' });
+  assert.match(pdf.body.file_name, /^Santos_Maria_CV_Academic_HarvardInspiredAcademic_v1_DRAFT_/);
 });

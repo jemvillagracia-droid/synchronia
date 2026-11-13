@@ -5,6 +5,7 @@ import { Icon } from './Icon';
 import { api, ApiError, dataChanged } from '../lib/api';
 import { localToday } from '../lib/format';
 import { useApp } from './AppContext';
+import { AutoText } from './AutoText';
 
 const KINDS = [
   { id: 'task', label: 'Task' },
@@ -75,7 +76,7 @@ export function QuickCapture({ onClose }: { onClose: () => void }) {
           </div>
           {formError && <div className="alert">{formError}</div>}
           <Field label="Title" required error={errors.title}>
-            <input className="input" data-autofocus value={title} maxLength={500} onChange={(e) => setTitle(e.target.value)}
+            <AutoText data-autofocus value={title} maxLength={500} onChange={setTitle}
               placeholder={isTask ? 'e.g. Submit revised syllabus for EDUC 101' : kind === 'idea' ? 'e.g. Study on blended learning readiness' : kind === 'accomplishment' ? 'e.g. Completed OBE syllabus workshop' : 'What happened?'} />
           </Field>
           <Field label={isTask ? 'Notes' : 'Details'} error={errors.notes || errors.body}>

@@ -9,6 +9,7 @@ import { Icon } from '../../components/Icon';
 import { Field } from '../../components/Field';
 import { PdfPages } from '../../components/PdfPages';
 import { PhotoManager } from '../../components/PhotoManager';
+import { AutoText } from '../../components/AutoText';
 
 type Mutate = (p: Promise<CvView>, ok?: string) => Promise<boolean>;
 
@@ -31,9 +32,9 @@ function EntryEditor({ entry, kind, onSave, onCancel, onReset }: {
         </Field>
       ) : (
         <>
-          <Field label="Title"><input className="input" value={title} onChange={(e) => setTitle(e.target.value)} spellCheck /></Field>
+          <Field label="Title"><AutoText value={title} onChange={setTitle} /></Field>
           <div className="form-grid">
-            <Field label="Institution / details line"><input className="input" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} spellCheck /></Field>
+            <Field label="Institution / details line"><AutoText value={subtitle} onChange={setSubtitle} /></Field>
             <Field label="Dates"><input className="input" value={dates} onChange={(e) => setDates(e.target.value)} placeholder="e.g. Jun 2021 – Present" /></Field>
           </div>
           <Field label="Bullet points (one per line)"><textarea className="textarea" rows={4} value={details} onChange={(e) => setDetails(e.target.value)} spellCheck /></Field>

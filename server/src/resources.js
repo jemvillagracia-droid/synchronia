@@ -30,7 +30,7 @@ export const RESOURCES = {
     title: 'degree', subtitle: ['institution', 'major'], date: 'graduation_date',
     recommended: ['major', 'location', 'graduation_date'],
     fields: {
-      degree: text(req), major: text(), institution: text(req), location: text(),
+      degree: text(req), major: text(), institution: text(req), location: text(), thesis_title: text({ max: 1000 }), advisor: text(),
       start_date: date(), end_date: date(), graduation_date: date(),
       status: oneOf(['completed', 'ongoing', 'units_earned']), distinctions: long(), ...verification,
     },
@@ -47,9 +47,9 @@ export const RESOURCES = {
   employment: {
     table: 'employment_records', label: 'Employment', module: 'portfolio', group: 'employment',
     title: 'position', subtitle: ['institution', 'office'], date: 'start_date',
-    recommended: ['office', 'start_date', 'responsibilities'],
+    recommended: ['office', 'location', 'start_date', 'responsibilities'],
     fields: {
-      position: text(req), institution: text(req), office: text(), employment_type: text(),
+      position: text(req), institution: text(req), office: text(), location: text(), employment_type: text(),
       start_date: date(), end_date: date(), is_current: bool(),
       responsibilities: long(), accomplishments: long(), ...verification,
     },
@@ -59,7 +59,7 @@ export const RESOURCES = {
     title: 'academic_rank', subtitle: ['institution', 'department'], date: 'start_date',
     recommended: ['faculty_designation', 'department', 'start_date', 'teaching_responsibilities'],
     fields: {
-      academic_rank: text(req), faculty_designation: text(), institution: text(req), department: text(),
+      academic_rank: text(req), faculty_designation: text(), institution: text(req), department: text(), location: text(),
       start_date: date(), end_date: date(), is_current: bool(), teaching_responsibilities: long(), ...verification,
     },
   },
@@ -131,24 +131,26 @@ export const RESOURCES = {
     table: 'learning_outcomes', label: 'Learning Outcome', module: 'academic', title: 'code', subtitle: ['description'],
     fields: {
       course_id: ref('courses'), syllabus_id: ref('syllabi'), outcome_type: oneOf(['CLO', 'PO', 'ILO'], req),
-      code: text(req), description: long(req), sort_order: int(),
+      code: text(req), description: long(req), program: text(), sort_order: int(),
     },
   },
   materials: {
     table: 'instructional_materials', label: 'Instructional Material', module: 'academic',
     title: 'title', subtitle: ['material_type'], date: 'event_date',
     fields: {
-      course_id: ref('courses'), title: text(req),
+      course_id: ref('courses'), teaching_assignment_id: ref('teaching_assignments'), title: text(req),
       material_type: oneOf(['lesson_plan', 'weekly_plan', 'module', 'slides', 'handout', 'learning_resource', 'activity', 'other']),
-      description: long(), status: oneOf(['draft', 'in_use', 'archived']), event_date: date(),
+      week_no: int({ min: 1, max: 30 }), clo_codes: text(), description: long(), status: oneOf(['draft', 'in_use', 'archived']), event_date: date(),
+      content_json: json(),
     },
   },
   assessments: {
     table: 'assessments', label: 'Assessment', module: 'academic', title: 'title', subtitle: ['assessment_type'], date: 'scheduled_date',
     fields: {
-      course_id: ref('courses'), title: text(req),
+      course_id: ref('courses'), teaching_assignment_id: ref('teaching_assignments'), title: text(req),
       assessment_type: oneOf(['quiz', 'exam', 'midterm', 'final', 'project', 'performance_task', 'assignment', 'other']),
-      scheduled_date: date(), total_points: real({ min: 0 }), status: oneOf(['draft', 'ready', 'administered', 'graded']),
+      scheduled_date: date(), total_points: real({ min: 0 }), item_count: int({ min: 0, max: 1000 }), clo_codes: text(),
+      status: oneOf(['draft', 'ready', 'administered', 'graded']),
     },
   },
   tos: {
@@ -168,7 +170,10 @@ export const RESOURCES = {
       title: text(req), role: text(),
       status: oneOf(['idea', 'proposal', 'approved', 'data_collection', 'analysis', 'writing', 'completed', 'discontinued']),
       start_date: date(), end_date: date(), research_questions: long(), objectives: long(), methodology: long(),
-      instruments: long(), ethics_reference: text(), collaborators: long(), funding: text(), ...verification,
+      instruments: long(), ethics_reference: text(), collaborators: long(), funding: text(),
+      progress_pct: int({ min: 0, max: 100 }), target_sample: int({ min: 0 }), collected_sample: int({ min: 0 }),
+      validation_status: oneOf(['not_started', 'in_progress', 'validated', 'not_applicable']),
+      ethics_status: oneOf(['not_required', 'to_submit', 'under_review', 'approved', 'revisions_requested']), ...verification,
     },
   },
   publications: {
@@ -200,11 +205,28 @@ export const RESOURCES = {
       title: text(req),
       project_type: oneOf(['extension_project', 'community_program', 'training_conducted', 'seminar', 'engagement', 'other']),
       partner: text(), location: text(), start_date: date(), end_date: date(),
-      status: oneOf(['planned', 'ongoing', 'completed', 'cancelled']), beneficiaries: long(),
+      status: oneOf(['planned', 'ongoing', 'completed', 'cancelled']), role: text(), beneficiaries: long(),
+      participants_count: int({ min: 0 }), training_hours: real({ min: 0 }),
       objectives: long(), outcomes: long(), narrative: long(), ...verification,
     },
   },
 
+  class_activities: {
+    table: 'class_activities', label: 'Class Activity', module: 'academic', title: 'title', subtitle: ['activity_type'], date: 'activity_date',
+    fields: {
+      teaching_assignment_id: ref('teaching_assignments', req), activity_date: date(req), title: text(req),
+      activity_type: oneOf(['lecture', 'laboratory', 'activity', 'assessment', 'consultation', 'field_work', 'other']),
+      description: long(), present: int({ min: 0 }), enrolled: int({ min: 0 }), notes: long(),
+    },
+  },
+  development_goals: {
+    table: 'development_goals', label: 'Development Goal', module: 'academic', title: 'title', subtitle: ['goal_area', 'status'], date: 'target_date',
+    fields: {
+      goal_area: oneOf(['teaching', 'research', 'extension', 'professional', 'qualification']), title: text(req), description: long(),
+      target_date: date(), status: oneOf(['planned', 'in_progress', 'achieved', 'deferred']), progress_pct: int({ min: 0, max: 100 }),
+      linked_training_id: ref('trainings'),
+    },
+  },
   activities: {
     table: 'activities', label: 'Activity', module: 'nexus', title: 'title', subtitle: ['kind'], date: 'event_date',
     fields: {

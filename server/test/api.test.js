@@ -49,7 +49,7 @@ test('schema migrates and seeds CV templates', () => {
     assert.ok(tables.includes(t), `missing table ${t}`);
   }
   assert.equal(db.prepare('SELECT COUNT(*) n FROM cv_templates').get().n, 7);
-  assert.equal(db.prepare('SELECT COUNT(*) n FROM schema_migrations').get().n, 3);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM schema_migrations').get().n, 4);
 });
 
 test('no sign-in: the launch access key opens the app; everything else is refused', async () => {

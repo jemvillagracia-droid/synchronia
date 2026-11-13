@@ -59,6 +59,7 @@ export function validate(db, userId, r, input, { partial = false } = {}) {
         const n = Number(v);
         if (!Number.isFinite(n) || (f.type === 'int' && !Number.isInteger(n))) { errors[name] = 'Must be a number'; break; }
         if (f.min !== undefined && n < f.min) { errors[name] = `Must be ≥ ${f.min}`; break; }
+        if (f.max !== undefined && n > f.max) { errors[name] = `Must be ≤ ${f.max}`; break; }
         out[name] = n;
         break;
       }

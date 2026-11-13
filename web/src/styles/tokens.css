@@ -2,37 +2,39 @@
 :root {
   color-scheme: dark;
 
-  /* Surfaces: near-black → charcoal */
-  --bg: #08080a;
-  --bg-1: #0e0e11;          /* panels */
-  --bg-2: #141418;          /* raised / inputs */
-  --bg-3: #1b1b21;          /* hover */
-  --scrim: rgba(4, 4, 6, 0.72);
+  /* Palette shared with SOUL ARCHIVE ("Evangelion" theme): near-black surfaces, NERV orange, EVA purple. */
+  --bg: #080808;
+  --bg-1: #101010;          /* panels */
+  --bg-2: #151515;          /* raised / inputs / sidebar */
+  --bg-3: #1f1f1f;          /* hover */
+  --scrim: rgba(0, 0, 0, 0.74);
 
   /* Lines */
-  --line: rgba(255, 255, 255, 0.07);
-  --line-2: rgba(255, 255, 255, 0.12);
-  --line-3: rgba(255, 255, 255, 0.2);
+  --line: #222222;
+  --line-2: #2a2a2a;
+  --line-3: #3d3d3d;
 
-  /* Text */
-  --text: #e9e6e1;
-  --text-2: #a7a3ad;
-  --text-3: #6f6c78;
-  --text-inverse: #0a0a0c;
+  /* Text — high contrast for long reading sessions */
+  --text: #f2f2f2;
+  --text-2: #c2c2c2;
+  --text-3: #8f8f8f;
+  --text-inverse: #080808;
 
-  /* Accents — restrained */
-  --violet: #8b6cf0;
-  --violet-2: #b3a0ff;
-  --violet-dim: rgba(139, 108, 240, 0.14);
-  --violet-line: rgba(139, 108, 240, 0.42);
-  --orange: #f08a24;
-  --orange-dim: rgba(240, 138, 36, 0.13);
-  --orange-line: rgba(240, 138, 36, 0.45);
-  --red: #e0443e;
-  --red-dim: rgba(224, 68, 62, 0.13);
-  --red-line: rgba(224, 68, 62, 0.5);
-  --ok: #5db58c;
-  --ok-dim: rgba(93, 181, 140, 0.13);
+  /* Accents — saturated, as in SOUL ARCHIVE */
+  --violet: #9b6bd3;
+  --violet-2: #c09cf0;
+  --violet-dim: rgba(155, 107, 211, 0.18);
+  --violet-line: rgba(155, 107, 211, 0.6);
+  --orange: #ff5a1f;
+  --orange-dim: rgba(255, 90, 31, 0.15);
+  --orange-line: rgba(255, 90, 31, 0.6);
+  --red: #e53935;
+  --red-dim: rgba(229, 57, 53, 0.15);
+  --red-line: rgba(229, 57, 53, 0.6);
+  --ok: #66c77a;
+  --ok-dim: rgba(102, 199, 122, 0.15);
+  --warn: #f3b321;
+  --cyan: #46d4d8;
 
   /* Typography */
   --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;

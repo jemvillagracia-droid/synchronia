@@ -21,8 +21,9 @@ export const FONT_STACKS = {
  */
 export const TEMPLATES = {
   harvard_academic: {
-    name: 'Harvard-Inspired Academic CV', font: 'Times New Roman', size: 11, align: 'center', heading: 'smallcaps-rule', dates: 'right', accent: '#000000',
-    description: 'Traditional academic typography in black and white. Centered name, small-caps headings, dates aligned right.',
+    name: 'Harvard-Inspired Academic CV', font: 'Times New Roman', size: 11, align: 'center', heading: 'caps-rule', dates: 'right', accent: '#000000',
+    layout: 'harvard', separator: ' • ', nameSize: 1.65,
+    description: 'Follows Harvard CV conventions: centered name and contact line, bold capital headings with a rule, organization and location on the first line, position or degree with dates on the second, action-verb bullets, Education first, no photograph.',
   },
   traditional_academic: {
     name: 'Traditional Academic CV', font: 'Garamond', size: 11.5, align: 'left', heading: 'caps', dates: 'column', accent: '#000000',
@@ -33,7 +34,7 @@ export const TEMPLATES = {
     description: 'Contemporary sans-serif layout with a restrained navy accent. Suited to faculty applications.',
   },
   research: {
-    name: 'Research and Publication CV', font: 'Cambria', size: 11, align: 'center', heading: 'smallcaps-rule', dates: 'right', accent: '#000000',
+    name: 'Research and Publication CV', font: 'Cambria', size: 11, align: 'center', heading: 'smallcaps-rule', dates: 'right', accent: '#000000', layout: 'harvard',
     description: 'Leads with research experience, publications and presentations.',
   },
   faculty_teaching: {

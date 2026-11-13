@@ -5,6 +5,7 @@ import { useApp } from '../components/AppContext';
 import { Field } from '../components/Field';
 import { Icon } from '../components/Icon';
 import { PortfolioShell } from './PortfolioPage';
+import { AutoText } from '../components/AutoText';
 
 type Profile = Record<string, string | null> & { updated_at?: string };
 
@@ -78,7 +79,8 @@ export function ProfilePage() {
                   <Field key={f.name} label={f.label} hint={f.hint} error={errors[f.name]} className={f.long ? 'span-2' : ''}>
                     {f.long
                       ? <textarea className="textarea" value={draft[f.name] || ''} onChange={(e) => setDraft((d) => ({ ...d, [f.name]: e.target.value }))} />
-                      : <input className="input" type={f.type || 'text'} value={draft[f.name] || ''} onChange={(e) => setDraft((d) => ({ ...d, [f.name]: e.target.value }))} />}
+                      : f.type ? <input className="input" type={f.type} value={draft[f.name] || ''} onChange={(e) => setDraft((d) => ({ ...d, [f.name]: e.target.value }))} />
+                      : <AutoText value={draft[f.name] || ''} onChange={(v) => setDraft((d) => ({ ...d, [f.name]: v }))} />}
                   </Field>
                 ))}
               </div>

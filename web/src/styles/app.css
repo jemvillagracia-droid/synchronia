@@ -644,3 +644,89 @@ fieldset:disabled .tpl-card { cursor: default; opacity: .7; }
   .cv-left { border-right: 0; border-bottom: 1px solid var(--line-2); max-height: none; }
   .cv-preview { min-height: 70vh; }
 }
+
+/* ═════════ SOUL ARCHIVE visual compatibility layer ═════════
+   Mirrors soul_archive/ui/theme.py: solid accent title bars, filled active states, bold letter-spaced labels,
+   accent-coloured figures and an orange-edged sidebar. Placed last so it refines the base styles above. */
+body::before { opacity: 0.25; }
+.sidebar { background: var(--bg-2); border-right: 2px solid var(--orange); }
+.brand { border-bottom-color: var(--line-2); }
+.brand-word { color: var(--orange); font-family: var(--font-cond); font-weight: 700; font-variation-settings: normal; font-stretch: normal; letter-spacing: 0.08em; font-size: 20px; }
+.nav a { font-family: var(--font-cond); font-weight: 600; font-size: 13.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); border-left: 4px solid transparent; }
+.nav a:hover { background: var(--bg-1); color: var(--text); border-left-color: var(--line-3); }
+.nav a.active { background: var(--orange); color: var(--text-inverse); border-left-color: var(--text); }
+.nav a.active::before { display: none; }
+.nav a.active .code, .nav a.active svg { color: var(--text-inverse); }
+.nav .code { color: var(--text-3); font-size: 11px; }
+.topbar { background: var(--bg); border-bottom: 3px double var(--red); }
+
+.page-head h1 { font-family: var(--font-cond); font-weight: 700; font-variation-settings: normal; font-stretch: normal; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--orange); font-size: clamp(26px, 3vw, 36px); line-height: 1.1; }
+.crumb .label { color: var(--text-2); font-family: var(--font-mono); letter-spacing: 0.1em; }
+.label { color: var(--text-2); }
+
+/* Panels: solid title bars like SOUL ARCHIVE's PanelTitle */
+.panel { clip-path: none; border-color: var(--line-2); background: var(--bg-1); }
+.panel::after { display: none; }
+.panel-head { background: var(--orange); border-bottom: 0; min-height: 30px; padding: 4px var(--s-3); }
+.panel-head h2 { color: var(--text-inverse); font-weight: 700; letter-spacing: 0.14em; white-space: normal; }
+.panel-head .code { color: var(--text-inverse); border-color: rgba(0,0,0,.45); background: rgba(0,0,0,.12); }
+.panel-head .num, .panel-head .faint { color: var(--text-inverse) !important; opacity: .8; }
+.panel-head .icon-btn { color: var(--text-inverse); }
+.panel-head .icon-btn:hover { background: rgba(0,0,0,.15); }
+.panel-head .btn { background: var(--bg); color: var(--text); border-color: var(--bg); }
+.panel.accent-violet .panel-head, .panel-head.alt { background: var(--violet); }
+.panel.accent-orange { border-top-color: var(--line-2); }
+
+/* Figures in accent colours, monospace */
+.stat .v { color: var(--orange); }
+.stat .v.zero { color: var(--text-3); }
+.stat-row .stat:nth-child(even) .v:not(.zero) { color: var(--violet-2); }
+.stat .k { color: var(--text-2); }
+.cat-card .count { color: var(--orange); }
+
+/* Buttons and tabs: bold, letter-spaced; filled when active */
+.btn { font-weight: 700; letter-spacing: 0.08em; background: var(--bg-2); border-color: var(--line-2); }
+.btn:hover { border-color: var(--orange); color: var(--orange); background: var(--bg-2); }
+.btn-primary, .btn-accent { background: var(--orange); border-color: var(--orange); color: var(--text-inverse); }
+.btn-primary:hover, .btn-accent:hover { background: var(--text); border-color: var(--text); color: var(--text-inverse); }
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-danger { color: var(--red); border-color: var(--red-line); background: transparent; }
+.btn-danger:hover { background: var(--red); color: var(--text-inverse); border-color: var(--red); }
+.tabs .active, .tabs [aria-selected='true'] { background: var(--orange); color: var(--text-inverse); border-bottom-color: var(--orange); }
+.tabs a, .tabs button { font-weight: 700; padding: 8px 14px; }
+.seg button { font-weight: 600; color: var(--text-2); }
+.seg button[aria-pressed='true'] { background: var(--violet); color: var(--text-inverse); box-shadow: none; }
+.mode-chip { border-color: var(--orange); color: var(--orange); }
+.tag { color: var(--text-2); border-color: var(--line-3); font-weight: 600; }
+.tag.violet { color: var(--violet-2); border-color: var(--violet-line); }
+.tag.orange { color: var(--orange); border-color: var(--orange-line); }
+.input, .select, .textarea { background: var(--bg); border-color: var(--line-3); color: var(--text); }
+.input:focus, .select:focus, .textarea:focus { border-color: var(--orange); background: var(--bg); }
+.input::placeholder, .textarea::placeholder { color: #6a6a6a; }
+.field > label > span.label, .field > span.label { color: var(--text-2); }
+.field .hint { color: var(--text-3); font-size: 12px; }
+.check:checked { background: var(--orange); border-color: var(--orange); }
+.check:checked::after { border-color: var(--text-inverse); }
+.meter > span { background: var(--orange); }
+.meter.orange > span { background: var(--violet); }
+.pf-nav a.active { background: var(--orange); color: var(--text-inverse); box-shadow: none; }
+.pf-nav a.active .code, .pf-nav a.active .n { color: var(--text-inverse); }
+.palette-item[aria-selected='true'] { background: var(--orange-dim); box-shadow: inset 3px 0 0 var(--orange); }
+.modal { border-top: 3px solid var(--orange); }
+.modal-head h2 { color: var(--orange); }
+.toast { border-left-width: 3px; }
+.dossier-row .what .t { color: var(--text); }
+.dossier-row .when { color: var(--violet-2); }
+.cv-section-head { background: var(--bg-2); }
+.tpl-card.selected { border-color: var(--orange); box-shadow: inset 3px 0 0 var(--orange); background: var(--orange-dim); }
+.photo-card.selected { border-color: var(--orange); box-shadow: 0 0 0 1px var(--orange); }
+
+/* Text wrapping: never cut off record text; long values wrap onto further lines */
+.list .t, .list .s, .palette-item .t, .palette-item .s, .photo-meta .t,
+.cv-section-title span:first-child, .pf-nav a, .tabs a, .tabs button { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.tabs { flex-wrap: wrap; overflow: visible; }
+.dl dd, .cite, .text { overflow-wrap: anywhere; }
+textarea.input.autogrow { display: block; height: auto; min-height: 36px; padding-top: 7px; padding-bottom: 7px; resize: none; overflow: hidden; line-height: 1.45; }
+.select { text-overflow: ellipsis; }
+.cv-title { white-space: normal; overflow-wrap: anywhere; }

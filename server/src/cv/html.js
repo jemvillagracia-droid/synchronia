@@ -33,6 +33,11 @@ function entryHtml(e, st) {
   const text = e.text ? `<p class="text">${esc(e.text)}</p>` : '';
   const sub = e.subtitle ? `<div class="sub">${esc(e.subtitle)}</div>` : '';
   const note = e.note ? `<div class="note">${esc(e.note)}</div>` : '';
+  if (st.layout === 'harvard' && e.org) {
+    // Harvard convention: organization (bold) + location on the first line; role or degree (italic) + dates on the second.
+    return `<div class="entry"><div class="line1"><span class="t">${esc(e.org)}</span>${e.location ? `<span class="loc">${esc(e.location)}</span>` : ''}</div>`
+      + `<div class="line1"><span class="role">${esc(e.role || e.title || '')}</span>${e.dates ? `<span class="d">${esc(e.dates)}</span>` : ''}</div>${note}${details}${text}</div>`;
+  }
   if (st.dates === 'column') {
     return `<div class="entry col"><div class="d">${esc(e.dates || '')}</div><div class="body"><div class="t">${esc(e.title || '')}</div>${sub}${note}${details}${text}</div></div>`;
   }
@@ -55,7 +60,9 @@ html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { margin: 0; font-family: ${font}; font-size: ${st.size}pt; line-height: ${(1.25 + 0.05 * (st.spacing - 1)).toFixed(2)}; color: #000; background: #fff; }
 .cv-head { text-align: ${st.align}; margin-bottom: ${(0.6 * st.spacing).toFixed(2)}em; ${photo ? 'min-height: 1.35in;' : ''} }
 .cv-head .photo { float: right; width: 1.15in; height: auto; margin: 0 0 0.1in 0.2in; border: .5pt solid #999; }
-.name { font-size: 1.9em; font-weight: 700; margin: 0 0 2pt; letter-spacing: ${st.heading === 'smallcaps-rule' ? '.02em' : '0'}; color: ${st.accent}; }
+.role { font-style: italic; }
+.loc { white-space: nowrap; }
+.name { font-size: ${st.nameSize || 1.9}em; font-weight: 700; margin: 0 0 2pt; letter-spacing: ${st.heading === 'smallcaps-rule' ? '.02em' : '0'}; color: ${st.accent}; }
 /* The name is never small-caps or uppercased: Chromium writes such text into the PDF as capitals, and parsers would read the name in all caps. */
 .title { margin: 0 0 2pt; font-size: 1.02em; }
 .contact { margin: 0; font-size: .95em; }
@@ -76,7 +83,7 @@ p { margin: 0 0 ${(0.45 * st.spacing).toFixed(2)}em; }
 .cite { padding-left: 2em; text-indent: -2em; break-inside: avoid; }
 .text { text-align: left; }
 `;
-  const contact = h.contact.map(esc).join(' &nbsp;|&nbsp; ');
+  const contact = h.contact.map(esc).join(st.separator ? esc(st.separator).replace(/ /g, '&nbsp;') : ' &nbsp;|&nbsp; ');
   const head = `<header class="cv-head">${photo ? `<img class="photo" src="${photo}" alt="Photograph of ${esc(h.name || '')}">` : ''}`
     + `<h1 class="name">${esc(h.name || 'Name not recorded')}</h1>${h.title ? `<p class="title">${esc(h.title)}</p>` : ''}`
     + `${contact ? `<p class="contact">${contact}</p>` : ''}</header>`;

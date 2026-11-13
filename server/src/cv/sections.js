@@ -55,13 +55,14 @@ export const SECTIONS = [
   { key: 'research_interests', heading: 'Research Interests', ats: 'Research Interests', source: 'profile', kind: 'list',
     fromProfile: (p) => ({ items: list(p.research_interests), missing: p.research_interests ? [] : ['research_interests'] }) },
 
-  { key: 'education', heading: 'Educational Background', ats: 'Education', source: 'education', kind: 'item',
+  { key: 'education', heading: 'Education', ats: 'Education', source: 'education', kind: 'item',
     map: (r, o) => ({
       title: r.major ? `${r.degree}, ${r.major}` : r.degree,
       subtitle: join(r.institution, r.location),
+      org: r.institution, location: r.location || null, role: r.major ? `${r.degree}, ${r.major}` : r.degree,
       dates: r.status === 'ongoing' ? fmtRange(r.start_date, null, { current: true, style: o.dateStyle })
         : fmtDate(r.graduation_date, o.dateStyle) || fmtRange(r.start_date, r.end_date, { style: o.dateStyle }),
-      details: lines(r.distinctions),
+      details: [r.thesis_title && `Thesis: ${r.thesis_title}${r.advisor ? `. Advisor: ${r.advisor}` : ''}`, ...lines(r.distinctions)].filter(Boolean),
       note: r.status === 'units_earned' ? 'Units earned' : r.status === 'ongoing' ? 'In progress' : null,
       sortDate: r.graduation_date || r.end_date || r.start_date || (r.status === 'ongoing' ? '9999' : null),
       missing: [!r.graduation_date && !r.end_date && r.status === 'completed' && 'graduation_date'].filter(Boolean),
@@ -82,6 +83,8 @@ export const SECTIONS = [
     map: (r, o) => ({
       title: r.faculty_designation ? `${r.academic_rank}, ${r.faculty_designation}` : r.academic_rank,
       subtitle: join(r.department, r.institution),
+      org: r.institution, location: r.location || null,
+      role: [r.faculty_designation ? `${r.academic_rank}, ${r.faculty_designation}` : r.academic_rank, r.department].filter(Boolean).join(', '),
       dates: fmtRange(r.start_date, r.end_date, { current: !!r.is_current, style: o.dateStyle }),
       details: lines(r.teaching_responsibilities),
       sortDate: r.is_current ? '9999' : r.end_date || r.start_date,
@@ -91,10 +94,11 @@ export const SECTIONS = [
     map: (r, o) => ({
       title: r.position,
       subtitle: join(r.office, r.institution),
+      org: r.institution, location: r.location || null, role: join(r.position, r.office),
       dates: fmtRange(r.start_date, r.end_date, { current: !!r.is_current, style: o.dateStyle }),
       details: [...lines(r.responsibilities), ...lines(r.accomplishments)],
       sortDate: r.is_current ? '9999' : r.end_date || r.start_date,
-      missing: [!r.start_date && 'start_date', !r.responsibilities && 'responsibilities'].filter(Boolean),
+      missing: [!r.start_date && 'start_date', !r.responsibilities && 'responsibilities', !r.location && 'location'].filter(Boolean),
     }) },
   { key: 'teaching', heading: 'Teaching Experience', ats: 'Teaching Experience', source: 'teaching_assignments', kind: 'item',
     map: (r) => ({
@@ -133,7 +137,7 @@ export const SECTIONS = [
   { key: 'extension', heading: 'Extension and Community Engagement', ats: 'Extension and Community Engagement', source: 'extension_projects', kind: 'item',
     filter: { extension_projects: (r) => r.status !== 'cancelled' },
     map: (r, o) => ({
-      title: r.title, subtitle: join(r.partner, r.location),
+      title: r.title, subtitle: [join(r.partner, r.location), r.role].filter(Boolean).join(' · '),
       dates: fmtRange(r.start_date, r.end_date, { current: r.status === 'ongoing', style: o.dateStyle }),
       details: lines(r.outcomes), sortDate: r.end_date || r.start_date,
     }) },
@@ -171,6 +175,8 @@ export const SECTIONS = [
       dates: fmtRange(r.start_date, r.end_date, { current: !!r.is_current, style: o.dateStyle }),
       sortDate: r.is_current ? '9999' : r.end_date || r.start_date,
     }) },
+  { key: 'grants', heading: 'Fellowships and Grants', ats: 'Awards and Honors', source: null, kind: 'item' },
+  { key: 'languages', heading: 'Languages', ats: 'Languages', source: null, kind: 'list' },
   { key: 'skills', heading: 'Technical Competencies', ats: 'Technical Skills', source: null, kind: 'item' },
   { key: 'achievements', heading: 'Academic Achievements', ats: 'Awards and Honors', source: 'portfolio_entries', kind: 'item',
     map: (r, o) => ({ title: r.title, dates: fmtDate(r.event_date, o.dateStyle), details: lines(r.description), sortDate: r.event_date }) },
@@ -184,22 +190,25 @@ export const STANDARD_ATS_HEADINGS = new Set([
   'professional experience', 'work experience', 'experience', 'employment history', 'teaching experience', 'research experience',
   'publications', 'conference presentations', 'presentations', 'extension and community engagement', 'professional development',
   'awards and honors', 'awards', 'professional affiliations', 'institutional service', 'technical skills', 'skills', 'references',
-  'research interests', 'areas of specialization', 'committee memberships',
+  'research interests', 'areas of specialization', 'committee memberships', 'languages', 'fellowships and grants', 'honors and awards',
 ]);
 
 /** Default visible section order per CV type; every other section is created hidden. */
+// Default orders follow the Harvard CV conventions (Mignone Center for Career Success guides): Education first,
+// then appointments, honors and grants, scholarship, teaching, research, other experience, service, affiliations,
+// languages, skills and references. Summaries are not customary on Harvard-style academic CVs, so they start hidden there.
 export const DEFAULT_ORDER = {
-  academic: ['summary', 'specialization', 'education', 'licenses', 'appointments', 'employment', 'teaching', 'research', 'research_interests',
-    'publications', 'books', 'presentations', 'extension', 'awards', 'development', 'service', 'committees', 'affiliations', 'achievements', 'references'],
-  faculty: ['summary', 'education', 'licenses', 'appointments', 'teaching', 'development', 'employment', 'research', 'publications',
-    'presentations', 'service', 'committees', 'awards', 'affiliations', 'extension', 'references'],
-  research: ['summary', 'research_interests', 'education', 'research', 'publications', 'books', 'presentations', 'appointments',
-    'employment', 'awards', 'development', 'affiliations', 'references'],
+  academic: ['education', 'appointments', 'awards', 'grants', 'publications', 'books', 'presentations', 'teaching', 'research',
+    'employment', 'licenses', 'development', 'extension', 'service', 'committees', 'affiliations', 'research_interests', 'languages', 'skills', 'references'],
+  faculty: ['education', 'appointments', 'teaching', 'licenses', 'awards', 'development', 'publications', 'presentations',
+    'research', 'employment', 'service', 'committees', 'extension', 'affiliations', 'languages', 'references'],
+  research: ['education', 'appointments', 'research_interests', 'research', 'publications', 'books', 'presentations', 'grants',
+    'awards', 'teaching', 'employment', 'affiliations', 'languages', 'references'],
   administrative: ['summary', 'employment', 'education', 'licenses', 'service', 'committees', 'development', 'awards', 'skills',
-    'affiliations', 'achievements', 'references'],
-  professional: ['summary', 'employment', 'education', 'licenses', 'development', 'awards', 'skills', 'affiliations', 'references'],
-  application: ['summary', 'education', 'licenses', 'appointments', 'employment', 'teaching', 'research', 'publications', 'presentations',
-    'development', 'awards', 'service', 'affiliations', 'references'],
+    'affiliations', 'achievements', 'languages', 'references'],
+  professional: ['summary', 'employment', 'education', 'licenses', 'development', 'awards', 'skills', 'affiliations', 'languages', 'references'],
+  application: ['education', 'appointments', 'licenses', 'employment', 'teaching', 'research', 'publications', 'presentations',
+    'awards', 'development', 'service', 'affiliations', 'languages', 'references'],
   short_bio: ['summary'],
 };
 

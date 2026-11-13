@@ -288,7 +288,7 @@ export function deleteSection(db, userId, id, sid) {
 function cleanContent(c) {
   if (!c || typeof c !== 'object') throw new HttpError(422, 'Entry content must be an object');
   const out = {};
-  for (const k of ['title', 'subtitle', 'dates', 'text', 'note']) {
+  for (const k of ['title', 'subtitle', 'dates', 'text', 'note', 'org', 'role', 'location']) {
     if (c[k] === undefined) continue;
     if (c[k] !== null && (typeof c[k] !== 'string' || c[k].length > 4000)) throw new HttpError(422, `Invalid ${k}`, { [k]: 'Text up to 4000 characters' });
     out[k] = c[k] === null ? null : c[k].trim();
@@ -443,8 +443,15 @@ function resolveEntries(db, userId, cv, s, def, settings, p) {
       id: e.id, included: !!e.included, sort_order: e.sort_order, manual: !e.source_type, overridden: !!(override && e.source_type),
       kind: def?.kind || 'item', source, missing, override: e.source_type ? override : null,
       title: content.title || null, subtitle: content.subtitle || null, dates: content.dates || null, note: content.note || null,
+      org: content.org || null, role: content.role || null, location: content.location || null,
       details: def?.kind === 'list' ? [] : content.details || [], text: content.text || null,
-      items: def?.kind === 'list' && override?.details ? override.details : content.items || null, sortDate: base.sortDate || null,
+      // List sections: an override's lines, the profile's items, or — for manual entries — the typed text split on semicolons.
+      items: def?.kind === 'list'
+        ? (override?.details?.length ? override.details
+          : content.items?.length ? content.items
+            : [content.title, content.text, ...(content.details || [])].filter(Boolean).flatMap((t) => String(t).split(/;\s*/)).filter(Boolean))
+        : content.items || null,
+      sortDate: base.sortDate || null,
     };
   });
 }
@@ -518,8 +525,12 @@ function buildModel(db, userId, cv, mode) {
         id: s.id, key: s.key, kind: s.kind, page_break_before: s.page_break_before,
         heading: ats && usedDefault && s.ats_heading ? s.ats_heading : s.heading,
         custom_heading: s.custom || !usedDefault,
-        entries: entries.map(({ id, kind, title, subtitle, dates, note, details, text, items, source, missing, manual }) =>
-          ({ id, kind, title, subtitle, dates, note, details, text, items, source, missing, manual })),
+        entries: entries.map(({ id, kind, title, subtitle, dates, note, details, text, items, source, missing, manual, org, role, location, overridden, override }) => {
+          // A per-CV rewording of title/subtitle takes precedence over the Harvard organization/role lines.
+          const reworded = overridden && override && (override.title !== undefined || override.subtitle !== undefined) && override.org === undefined && override.role === undefined;
+          return { id, kind, title, subtitle, dates, note, details, text, items, source, missing, manual,
+            org: reworded ? null : org, role: reworded ? null : role, location: reworded ? null : location };
+        }),
       };
     })
     .filter((s) => !(settings.hide_empty && s.entries.length === 0));
