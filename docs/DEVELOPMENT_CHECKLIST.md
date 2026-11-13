@@ -195,7 +195,28 @@ See `docs/QC_REPORT.md` for the quality-control results.
 - `npm test`: **55 tests, all passing** (8 new: catalog, period counting with undated handling, traceability and support filter, validation, Word, spreadsheet, PDF, empty-period and custom-section rules).
 - In Electron: seeded a realistic school year, generated Word, PDF and spreadsheet reports through the Save dialog, rendered them in LibreOffice and checked the layout; UI sweep at 1500/1024/760 px with axe-core including the indicator pop-up.
 
+## Phase 6 — Administrative Operations ✅
+
+| Requirement (directive §VIII) | Status | Implementation |
+|---|---|---|
+| Incoming and outgoing correspondence registries | ✅ | Automatic control numbers (IN-/OUT-YYYY-0001, kept if you enter your own, also from the standard record form); document type, dates, act-on-by date, action required/taken; days open and processing days; search and status filters |
+| Document routing | ✅ | Routing steps (to, action requested, due back, acted/returned) in their own table; status follows routing; legacy routing notes migrated |
+| Follow-up tracker | ✅ | Computed from records: documents with due dates, documents with someone, admin tasks, meetings whose date passed, minutes not started/drafted, secretariat records in draft or for signature — overdue first, with ages |
+| Meeting management | ✅ | Schedule, attendance, role; agenda; structured minutes (call to order, quorum, previous minutes, matters with action/responsible/due, other matters, adjournment, signatories); minutes status; action items become linked admin tasks once; Word minutes on the letterhead, marked DRAFT until approved |
+| Secretariat records | ✅ | Resolutions, certifications, notices, memoranda, etc.; numbered per type and year (Resolution No. 3, s. 2026); linked to meetings; signing and dissemination status |
+| Daily activity log | ✅ | Quick entry with time, category, output and quantity; weekly view with totals per category (entries, outputs, hours) |
+| Office accomplishment reports | ✅ | New Intelligence report built from the log, correspondence processed and routed, meetings, minutes, secretariat records issued, reports prepared and completed tasks — with [S#] sources |
+| Administrative task tracking | ✅ | Admin task board (to do / in progress / done) |
+| Turnover documentation | ✅ | Notes per section plus lists compiled live from records (assignments, open correspondence and where each is, follow-ups, meetings and minutes, secretariat records, recurring work from the log, file locations); Word export with Turned over / Received / Noted by |
+| Reconfigure role on transfer or faculty appointment | ✅ | One step: profile position/office, academic mode, closes current employment the day before, opens the new one, optional turnover draft; nothing deleted |
+| Does not overshadow the academic workspace | ✅ | Module stays behind its own tab group; the Nexus order still follows your academic mode |
+
+### Verified (Phase 6)
+
+- `npm test`: **66 tests, all passing** (11 new in `admin.test.js`).
+- Full workflow driven through the interface in Electron: letterhead, logging through the form, quick log, routing and acting, meeting with agenda and minutes, tasks from action items, minutes export, secretariat record, follow-ups, turnover with notes and export, role change, office accomplishment report — no console errors; documents rendered in LibreOffice.
+- Accessibility and layout sweep: every tab and pop-up at 1500/1024/760 px; full-app regression sweep (58 page loads).
+
 ## Upcoming phases
 
-- [ ] **Phase 6 — Administrative Operations**: correspondence registry, routing, minutes, turnover documentation
 - [ ] **Phase 7 — Integration and Continuity**: Google Drive OAuth, unified timeline, backup/restore, security testing

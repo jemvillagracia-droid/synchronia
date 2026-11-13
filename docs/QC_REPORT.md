@@ -75,3 +75,23 @@ Defects found and fixed during this pass:
 - PDF reports carried the letterhead only at the top of page 1; the footer banner now appears on every page.
 - Support tags for "Confirmed" and "Self-reported" looked alike; each support level now has its own colour, matching the legend.
 - Accessibility: the research pipeline headers had dark text on violet (below 4.5:1), now white; action columns in two tables had empty headers, now labelled for screen readers.
+
+---
+
+# Quality-control addendum — release 0.7.0 (Phase 6, Administrative Operations)
+
+| Check | Result |
+|---|---|
+| Automated tests | **66 / 66 passing** (`admin.test.js` adds 11, including the migration of legacy routing notes) |
+| End-to-end in Electron | The whole module driven through the interface (forms, quick log, routing, minutes, action items, exports, turnover, role change, office report): all steps passed, no console errors |
+| Documents | Minutes, turnover documentation and office accomplishment report rendered in LibreOffice and inspected |
+| Interface | 28 admin views and pop-ups at three widths, plus a 58-page regression sweep: no errors, no sideways scroll, no clipped text; only the documented decorative LCD lamps remain |
+
+Defects found and fixed during this pass:
+
+- Records created through the standard record form were not numbered; numbering now applies to every way a document or secretariat record is created.
+- Numbered lists in Word continued one shared count (the Absent list started at 4, the agenda at 5); each list now restarts at 1.
+- Signature blocks could split across pages (names on the next page); signature tables now stay together.
+- In the daily log, the time boxes were too narrow and hid the first digit ("1:30" for "11:30").
+- With the sidebar narrowed to icons (≤ 1100 px), its links had no accessible names; every link is now named.
+- Routing steps listed under an Intelligence indicator opened nothing when clicked; they are now shown as plain entries.

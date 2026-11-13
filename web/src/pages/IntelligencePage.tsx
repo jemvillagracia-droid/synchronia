@@ -92,7 +92,7 @@ function MetricDetail({ m, labels, onClose }: { m: Metric; labels: Record<Suppor
               {shown.map((s) => (
                 <li key={`${s.type}${s.id}`}>
                   <span className={`tag ${SUPPORT_CLASS[s.support]}`} title={labels[s.support]}>{SUPPORT_SHORT[s.support]}{s.evidence ? ` · ${s.evidence}` : ''}</span>
-                  {s.type === 'reports'
+                  {s.type === 'reports' || s.type === 'document_routes'
                     ? <span className="grow"><span className="t">{s.title}</span></span>
                     : <button className="rowlink grow" onClick={() => openRecord(s.type, s.id)}><span className="t">{s.title}</span><span className="s">{[s.group, s.type.replace(/_/g, ' ') + ` #${s.id}`].filter(Boolean).join(' · ')}</span></button>}
                   <span className="faint mono" style={{ fontSize: 12.5, whiteSpace: 'nowrap' }}>{s.date ? fmtDate(s.date) : 'Undated'}</span>

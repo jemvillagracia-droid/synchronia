@@ -25,7 +25,7 @@ function useClickAway(open: boolean, close: () => void) {
 function Sidebar({ collapsed, mobileOpen, onToggle, onNavigate }: { collapsed: boolean; mobileOpen: boolean; onToggle: () => void; onNavigate: () => void }) {
   return (
     <nav className={`sidebar ${mobileOpen ? 'open' : ''}`} aria-label="Primary">
-      <Link to="/" className="brand" onClick={onNavigate} style={{ textDecoration: 'none' }}>
+      <Link to="/" className="brand" onClick={onNavigate} style={{ textDecoration: 'none' }} aria-label="SYNCHRONIA — Central Nexus">
         <BrandMark className="brand-mark" />
         <span className="brand-text">
           <div className="brand-word display">SYNCHRONIA</div>
@@ -35,14 +35,14 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onNavigate }: { collapsed: b
       <div className="nav">
         <div className="nav-section label">Systems</div>
         {MODULES.map((m) => (
-          <NavLink key={m.id} to={m.path} end={m.path === '/'} onClick={onNavigate} title={collapsed ? m.label : undefined}>
+          <NavLink key={m.id} to={m.path} end={m.path === '/'} onClick={onNavigate} title={collapsed ? m.label : undefined} aria-label={m.label}>
             <span className="code">{m.code}</span>
             <Icon name={m.icon} />
             <span className="txt">{m.label}</span>
           </NavLink>
         ))}
         <div className="nav-section label">System</div>
-        <NavLink to="/settings" onClick={onNavigate} title={collapsed ? 'Settings' : undefined}>
+        <NavLink to="/settings" onClick={onNavigate} title={collapsed ? 'Settings' : undefined} aria-label="Settings">
           <span className="code" aria-hidden>··</span>
           <Icon name="settings" />
           <span className="txt">Settings</span>

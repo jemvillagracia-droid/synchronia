@@ -75,11 +75,11 @@ after(async () => { server.close(); db.close(); await browser?.close(); fs.rmSyn
 
 const AY = '?from=2026-06-01&to=2027-05-31';
 
-test('catalog lists sections A–E, indicators with their date basis, and eight report types', async () => {
+test('catalog lists sections A–E, indicators with their date basis, and nine report types', async () => {
   const c = (await call('GET', '/intelligence/catalog')).body;
   assert.deepEqual(c.sections.map((s) => s.code), ['A', 'B', 'C', 'D', 'E']);
   assert.ok(c.metrics.every((m) => m.basis), 'every indicator says what it is counted by');
-  assert.deepEqual(c.reports.map((r) => r.key), ['annual_academic', 'faculty_development', 'research_productivity', 'extension', 'professional_development', 'portfolio_summary', 'administrative', 'custom']);
+  assert.deepEqual(c.reports.map((r) => r.key), ['annual_academic', 'faculty_development', 'research_productivity', 'extension', 'professional_development', 'portfolio_summary', 'administrative', 'office_accomplishment', 'custom']);
 });
 
 test('analytics count only records in the period, and report undated records instead of guessing', async () => {
@@ -108,7 +108,8 @@ test('analytics count only records in the period, and report undated records ins
   assert.equal(A(a, 'licenses').sources[0].group, 'expired');
   assert.equal(A(a, 'incoming').count, 1);
   assert.equal(A(a, 'outgoing').count, 1);
-  assert.equal(A(a, 'meetings').count, 1);
+  assert.equal(A(a, 'meetings_noted').count, 1, 'a meeting noted through Quick Capture');
+  assert.equal(A(a, 'meetings').count, 0, 'no meeting records marked held');
   assert.equal(A(a, 'secretariat').count, 1, 'a current assignment that began before the period still counts');
 
   const all = (await call('GET', '/intelligence/analytics')).body;

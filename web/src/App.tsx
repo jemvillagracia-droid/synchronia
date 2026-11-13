@@ -1,3 +1,4 @@
+import { AdminPage } from './pages/admin/AdminPage';
 import { IntelligencePage } from './pages/IntelligencePage';
 import { useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
@@ -86,7 +87,8 @@ export function App() {
                 <Route path="/cv" element={<CvStudio />} />
                 <Route path="/cv/:id" element={<CvEditor />} />
                 <Route path="/intelligence" element={<IntelligencePage />} />
-                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
+                <Route path="/admin" element={<AdminPage />} />
+                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence', 'admin'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

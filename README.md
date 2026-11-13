@@ -4,7 +4,7 @@
 
 An academic and professional advancement environment for managing teaching, research, extension, professional
 portfolio, curriculum vitae and administrative work in one place. Built in phases per the SYNCHRONIA Master Product
-Directive. **Phases 1–5 (Identity and Foundation, Professional Portfolio, Curriculum Vitae Studio, Academic Workspace, Intelligence) are complete.** SYNCHRONIA is a Windows
+Directive. **Phases 1–6 (Identity and Foundation, Professional Portfolio, Curriculum Vitae Studio, Academic Workspace, Intelligence, Administrative Operations) are complete.** SYNCHRONIA is a Windows
 desktop application for a single owner.
 
 ## Installing on Windows
@@ -33,6 +33,16 @@ accomplishment, faculty development, research productivity, extension, professio
 administrative and custom — are produced as Word, PDF or spreadsheet; each line cites a numbered source record, and
 each record is marked as evidenced, confirmed, self-reported or prepared in SYNCHRONIA. Records without a date are
 listed as left out of a dated period, never guessed.
+
+### Administrative Operations
+
+Incoming and outgoing registries number documents automatically (IN-2026-0001, OUT-2026-0001) unless you enter
+your own control number. Each document keeps its routing steps — who has it, for what action, until when — and the
+follow-up tracker lists everything overdue or still with someone, computed from the records. Meetings carry an agenda
+and structured minutes; action items become tasks, and minutes export to Word on the letterhead (marked draft until
+approved). Secretariat records are numbered per type and year. The daily log feeds the Office Accomplishment Report in
+Intelligence. When you transfer or receive a faculty appointment, *Record a role change* updates your profile,
+employment history and academic mode together, and a turnover document compiles what your successor needs.
 
 ### Institution, letterhead and syllabi
 

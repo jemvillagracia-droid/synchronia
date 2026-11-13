@@ -170,6 +170,53 @@ export const FORMS: Record<string, FormLayout> = {
     ],
     labels: { partner: 'Partner / community', role: 'Your role', participants_count: 'Participants', training_hours: 'Training hours' },
   },
+  correspondence: {
+    sections: [
+      { title: 'Document', fields: ['direction', 'reference_no', 'doc_type', 'subject', 'counterpart', 'office'] },
+      { title: 'Dates', fields: ['document_date', 'logged_date', 'due_date'] },
+      { title: 'Action', fields: ['status', 'action_required', 'action_taken', 'completed_date', 'remarks'] },
+    ],
+    labels: { reference_no: 'Reference / control no.', doc_type: 'Document type', counterpart: 'From (incoming) / To (outgoing)', office: 'Office concerned', document_date: 'Date of document', logged_date: 'Date logged', due_date: 'Act on by' },
+    hints: { reference_no: 'Leave blank to number it automatically (IN-YYYY-0001 / OUT-YYYY-0001).', due_date: 'Shown in the follow-up tracker until the document is completed.' },
+    placeholders: { subject: 'e.g. Memorandum on the submission of grades', counterpart: 'e.g. Office of the Registrar' },
+  },
+  meetings: {
+    sections: [
+      { title: 'Meeting', fields: ['title', 'body', 'committee_id', 'meeting_type', 'status'] },
+      { title: 'When and where', fields: ['meeting_date', 'start_time', 'end_time', 'venue', 'mode'] },
+      { title: 'Participants', fields: ['role', 'presiding', 'attendees', 'absent'] },
+      { title: 'Notes', fields: ['minutes_status', 'remarks'] },
+    ],
+    labels: { body: 'Board / council / committee', committee_id: 'Linked assignment', role: 'Your role', presiding: 'Presiding officer', attendees: 'Present', minutes_status: 'Minutes' },
+    hints: { attendees: 'One name per line.', absent: 'One name per line.', minutes_status: 'Write the minutes from the Meetings tab; this updates as you go.' },
+    placeholders: { title: 'e.g. 3rd Regular Meeting of the Board of Regents', body: 'e.g. Board of Regents' },
+  },
+  secretariat_records: {
+    sections: [
+      { title: 'Record', fields: ['record_type', 'record_no', 'title', 'issuing_body', 'meeting_id', 'record_date', 'status'] },
+      { title: 'Signing and dissemination', fields: ['signatories', 'disseminated_to', 'remarks'] },
+    ],
+    labels: { record_no: 'Number', issuing_body: 'Issuing body', meeting_id: 'From meeting', disseminated_to: 'Disseminated to' },
+    hints: { record_no: 'Leave blank to number it automatically, e.g. Resolution No. 4, s. 2026.' },
+    placeholders: { title: 'e.g. Approving the academic calendar for SY 2026–2027' },
+  },
+  daily_logs: {
+    sections: [{ title: 'Activity', fields: ['log_date', 'start_time', 'end_time', 'activity', 'category', 'output', 'quantity', 'remarks'] }],
+    labels: { log_date: 'Date', output: 'Output', quantity: 'Number of outputs' },
+    placeholders: { activity: 'e.g. Logged and routed incoming communications', output: 'e.g. Documents logged' },
+  },
+  turnover_documents: {
+    sections: [
+      { title: 'Turnover', fields: ['title', 'office', 'position', 'effective_date', 'status'] },
+      { title: 'Successor', fields: ['successor_name', 'successor_position'] },
+      { title: 'Noted by', fields: ['noted_by', 'noted_by_title'] },
+    ],
+    labels: { position: 'Your position in that office', successor_name: 'Successor', successor_position: 'Successor’s position' },
+  },
+  tasks: {
+    sections: [{ title: 'Task', fields: ['title', 'module', 'priority', 'status', 'due_date', 'is_deadline', 'notes'] }],
+    labels: { module: 'Area', is_deadline: 'Hard deadline' },
+  },
 };
 
 export const VERIFICATION_INFO: Record<string, { label: string; cls: string; desc: string }> = {

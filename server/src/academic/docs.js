@@ -20,7 +20,7 @@ export const bullet = (text) => new Paragraph({ numbering: { reference: 'doc-bul
 export const field = (label, value) => new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `${label}: `, bold: true }), new TextRun(value == null || value === '' ? '—' : String(value))] });
 
 /** rows: array of arrays of strings; first row is the header. widths: optional percentages. */
-export function table(rows, { widths = null, header = true, center = [], contentWidth = 9360, size = 20, boldFirstCol = false, boldCols = [], noBorders = false, boldRow = -1 } = {}) {
+export function table(rows, { widths = null, header = true, center = [], contentWidth = 9360, size = 20, boldFirstCol = false, boldCols = [], noBorders = false, boldRow = -1, keepTogether = false } = {}) {
   const cols = rows[0]?.length || 1;
   const pct = widths || Array(cols).fill(100 / cols);
   // Explicit twip column widths with a fixed layout: honoured by Word and LibreOffice alike.
@@ -38,6 +38,7 @@ export function table(rows, { widths = null, header = true, center = [], content
         shading: header && i === 0 ? { type: ShadingType.CLEAR, color: 'auto', fill: 'E7E6E6' } : undefined,
         margins: { top: 60, bottom: 60, left: 80, right: 80 },
         children: String(c ?? '').split('\n').map((line) => new Paragraph({
+          ...(keepTogether && i < rows.length - 1 ? { keepNext: true, keepLines: true } : {}),
           alignment: center.includes(j) ? AlignmentType.CENTER : AlignmentType.LEFT,
           children: [new TextRun({ text: line, bold: (header && i === 0) || (boldFirstCol && j === 0) || boldCols.includes(j) || i === boldRow, size: header && i === 0 ? size - 2 : size })],
         })),
@@ -129,7 +130,8 @@ export async function buildDocument({ title, subtitle, children, landscape = fal
   return Packer.toBuffer(doc);
 }
 
-export const numbered = (text) => new Paragraph({ numbering: { reference: 'doc-numbers', level: 0 }, spacing: { after: 40 }, children: [new TextRun(String(text))] });
+/** A numbered list item. Items sharing an `instance` form one list; a new instance starts again at 1. */
+export const numbered = (text, instance = 0) => new Paragraph({ numbering: { reference: 'doc-numbers', level: 0, ...(instance ? { instance } : {}) }, spacing: { after: 40 }, children: [new TextRun(String(text))] });
 
 /** Save a generated report, record it, and return its download metadata. */
 export function saveReport(db, userId, { type, title, buffer, fileStem, periodStart = null, periodEnd = null, params = null, format = 'docx' }) {

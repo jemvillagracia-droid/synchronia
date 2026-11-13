@@ -45,11 +45,11 @@ after(() => { server.close(); db.close(); fs.rmSync(tmp, { recursive: true, forc
 test('schema migrates and seeds CV templates', () => {
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((r) => r.name);
   for (const t of ['users', 'professional_profiles', 'education_records', 'licenses', 'courses', 'syllabi', 'publications',
-    'cv_profiles', 'cv_entries', 'uploaded_images', 'external_file_references', 'audit_logs', 'tasks', 'administrative_transactions']) {
+    'cv_profiles', 'cv_entries', 'uploaded_images', 'external_file_references', 'audit_logs', 'tasks', 'administrative_transactions', 'meetings', 'secretariat_records', 'daily_logs', 'turnover_documents', 'document_routes']) {
     assert.ok(tables.includes(t), `missing table ${t}`);
   }
   assert.equal(db.prepare('SELECT COUNT(*) n FROM cv_templates').get().n, 7);
-  assert.equal(db.prepare('SELECT COUNT(*) n FROM schema_migrations').get().n, 5);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM schema_migrations').get().n, 6);
 });
 
 test('no sign-in: the launch access key opens the app; everything else is refused', async () => {

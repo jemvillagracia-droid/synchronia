@@ -14,6 +14,7 @@ const json = (o = {}) => ({ type: 'json', ...o });
 const ref = (resource, o = {}) => ({ type: 'ref', resource, ...o });
 const secret = (o = {}) => ({ type: 'secret', ...o });
 const req = { required: true };
+const time = (o = {}) => ({ type: 'text', max: 5, format: 'time', pattern: /^([01]\d|2[0-3]):[0-5]\d$/, patternMessage: 'Use HH:MM (24-hour)', ...o });
 
 const verification = { verification: oneOf(VERIFICATION), notes: long() };
 
@@ -249,9 +250,45 @@ export const RESOURCES = {
     title: 'subject', subtitle: ['direction', 'counterpart'], date: 'document_date',
     fields: {
       direction: oneOf(['incoming', 'outgoing'], req), reference_no: text(), subject: text(req), counterpart: text(),
+      doc_type: oneOf(['memorandum', 'letter', 'resolution', 'report', 'request', 'invitation', 'endorsement', 'notice', 'other']),
       office: text(), document_date: date(), logged_date: date(), due_date: date(),
       status: oneOf(['received', 'routed', 'in_progress', 'for_follow_up', 'completed', 'archived']),
+      action_required: long(), action_taken: long(), completed_date: date(),
       routing_json: json(), remarks: long(),
+    },
+  },
+  meetings: {
+    table: 'meetings', label: 'Meeting', module: 'admin', title: 'title', subtitle: ['body', 'status'], date: 'meeting_date',
+    fields: {
+      title: text(req), body: text(), committee_id: ref('committees'),
+      meeting_type: oneOf(['regular', 'special', 'committee', 'consultation', 'planning', 'other']),
+      meeting_date: date(req), start_time: time(), end_time: time(), venue: text(), mode: oneOf(['in_person', 'online', 'hybrid']),
+      role: oneOf(['secretary', 'presiding_officer', 'member', 'attendee', 'resource_person']),
+      status: oneOf(['scheduled', 'held', 'postponed', 'cancelled']), presiding: text(), attendees: long(), absent: long(),
+      agenda_json: json(), minutes_json: json(), minutes_status: oneOf(['none', 'draft', 'for_approval', 'approved']), remarks: long(),
+    },
+  },
+  secretariat_records: {
+    table: 'secretariat_records', label: 'Secretariat Record', module: 'admin', title: 'title', subtitle: ['record_no', 'status'], date: 'record_date',
+    fields: {
+      record_type: oneOf(['resolution', 'minutes', 'notice_of_meeting', 'certification', 'memorandum', 'referendum', 'excerpt', 'other'], req),
+      record_no: text(), title: text(req), issuing_body: text(), meeting_id: ref('meetings'), record_date: date(),
+      status: oneOf(['draft', 'for_signature', 'signed', 'disseminated', 'archived']), signatories: long(), disseminated_to: long(), remarks: long(),
+    },
+  },
+  daily_logs: {
+    table: 'daily_logs', label: 'Daily Log Entry', module: 'admin', title: 'activity', subtitle: ['category', 'output'], date: 'log_date',
+    fields: {
+      log_date: date(req), start_time: time(), end_time: time(), activity: text({ required: true, max: 2000 }),
+      category: oneOf(['correspondence', 'meeting', 'secretariat', 'records', 'clerical', 'coordination', 'reports', 'teaching', 'research', 'extension', 'other']),
+      output: text(), quantity: int({ min: 0, max: 100000 }), remarks: long(),
+    },
+  },
+  turnover_documents: {
+    table: 'turnover_documents', label: 'Turnover Document', module: 'admin', title: 'title', subtitle: ['office', 'status'], date: 'effective_date',
+    fields: {
+      title: text(req), office: text(), position: text(), successor_name: text(), successor_position: text(), effective_date: date(),
+      noted_by: text(), noted_by_title: text(), status: oneOf(['draft', 'final']), notes_json: json(),
     },
   },
   file_references: {
@@ -290,6 +327,6 @@ export const PORTFOLIO_GROUPS = [
 ];
 
 /** Pairs of date fields that must be in chronological order when both are present. */
-export const DATE_ORDER = [['start_date', 'end_date'], ['registration_date', 'valid_until']];
+export const DATE_ORDER = [['start_date', 'end_date'], ['registration_date', 'valid_until'], ['start_time', 'end_time']];
 
 export const byTable = Object.fromEntries(Object.values(RESOURCES).map((r) => [r.table, r]));

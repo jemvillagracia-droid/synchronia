@@ -18,6 +18,7 @@ export interface FieldSpec {
   resource?: string;
   max?: number;
   min?: number;
+  format?: 'time';
 }
 export interface ResourceSpec {
   label: string; module: string; title: string; subtitle: string[]; date: string | null;

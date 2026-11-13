@@ -48,6 +48,7 @@ export function validate(db, userId, r, input, { partial = false } = {}) {
       case 'text':
         if (typeof v !== 'string') { errors[name] = 'Must be text'; break; }
         if (v.length > f.max) { errors[name] = `At most ${f.max} characters`; break; }
+        if (f.pattern && !f.pattern.test(v)) { errors[name] = f.patternMessage || 'Invalid format'; break; }
         out[name] = v;
         break;
       case 'date':
@@ -263,8 +264,12 @@ function guardVerification(db, r, values, id) {
   }
 }
 
+/** Per-resource defaults applied before validation on create (e.g. registry numbering). Registered by feature modules. */
+export const createHooks = {};
+
 export function create(db, userId, key, input) {
   const r = getResource(key);
+  if (createHooks[key] && input && typeof input === 'object' && !Array.isArray(input)) input = createHooks[key](db, userId, { ...input });
   const values = validate(db, userId, r, input);
   guardVerification(db, r, values, null);
   checkDateOrder(r, values);

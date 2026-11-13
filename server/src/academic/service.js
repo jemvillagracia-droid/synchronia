@@ -249,7 +249,7 @@ export async function exportSyllabus(db, userId, id) {
       ['\n\n', '\n\n', '\n\n'],
       [signName(sig.prepared_by_name), signName(sig.reviewed_by_name), signName(sig.approved_by_name)],
       [sig.prepared_by_title, sig.reviewed_by_title, sig.approved_by_title],
-    ], { header: false, contentWidth: W, widths: [33, 34, 33], size: 20, center: [0, 1, 2], noBorders: true, boldRow: 2 }),
+    ], { header: false, contentWidth: W, widths: [33, 34, 33], size: 20, center: [0, 1, 2], noBorders: true, keepTogether: true, boldRow: 2 }),
   ];
   const buffer = await buildDocument({ title: `Syllabus — ${course.code}`, children, pageSize: 'folio', landscape: true, letterhead: letterheadFor(db, userId), showTitle: false, font: 'Arial' });
   return saveReport(db, userId, { type: 'syllabus', title: `Syllabus — ${course.code} ${s.version_label}`, buffer, fileStem: `Syllabus_${course.code}_${s.version_label}` });

@@ -47,6 +47,11 @@ export const REPORT_TYPES = {
     description: 'Correspondence handled, meetings, reports prepared, secretariat work and completed administrative tasks.',
     metrics: ALL('admin'),
   },
+  office_accomplishment: {
+    label: 'Office Accomplishment Report', short: 'Office accomplishment',
+    description: 'The daily activity log with outputs, correspondence processed and routed, meetings and minutes, secretariat records and completed tasks.',
+    metrics: ['daily_log', 'incoming', 'outgoing', 'routed', 'correspondence_completed', 'meetings', 'minutes_prepared', 'secretariat_records', 'reports_prepared', 'admin_done'],
+  },
   custom: {
     label: 'Accomplishment Report', short: 'Custom period-based report',
     description: 'Any combination of sections for any period.',
@@ -142,7 +147,7 @@ async function toDocx(db, userId, model) {
     ['\n\n', model.noted_by ? '\n\n' : ''],
     [(model.person.name || '').toUpperCase(), model.noted_by ? model.noted_by.name.toUpperCase() : ''],
     [model.person.position || '', model.noted_by ? model.noted_by.title : ''],
-  ], { header: false, widths: [50, 50], noBorders: true, boldRow: 2 }));
+  ], { header: false, widths: [50, 50], noBorders: true, keepTogether: true, boldRow: 2 }));
   return buildDocument({ title: model.title, subtitle: model.period.label, children, letterhead: letterheadFor(db, userId) });
 }
 

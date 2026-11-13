@@ -19,7 +19,8 @@ export function Field({ label, required, error, hint, children, className }: {
 }
 
 const LONG = new Set(['biography', 'description', 'responsibilities', 'accomplishments', 'teaching_responsibilities', 'notes', 'body',
-  'research_questions', 'objectives', 'methodology', 'instruments', 'collaborators', 'beneficiaries', 'outcomes', 'narrative', 'remarks', 'distinctions']);
+  'research_questions', 'objectives', 'methodology', 'instruments', 'collaborators', 'beneficiaries', 'outcomes', 'narrative', 'remarks', 'distinctions',
+  'attendees', 'absent', 'action_required', 'action_taken', 'signatories', 'disseminated_to']);
 
 export const isLongField = (name: string, spec: FieldSpec) => spec.type === 'text' && ((spec.max || 0) > 2000 || LONG.has(name));
 
@@ -62,6 +63,7 @@ export function SpecInput({ name, spec, value, onChange, refOptions, placeholder
     case 'secret':
       return <input id={id} type="password" autoComplete="off" className="input mono" value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
     default:
+      if (spec.format === 'time') return <input id={id} type="time" className="input" value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} />;
       return isLongField(name, spec)
         ? <textarea id={id} className="textarea" maxLength={spec.max} value={value ?? ''} placeholder={placeholder} spellCheck onChange={(e) => onChange(e.target.value)} />
         : <AutoText id={id} maxLength={spec.max} value={value ?? ''} placeholder={placeholder} onChange={onChange} />;
