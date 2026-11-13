@@ -135,8 +135,10 @@ been run on a Windows machine.
 | Directive item (Section IV) | Status | Notes |
 |---|---|---|
 | A. Course inventory and per-course workspaces | ✅ | Courses with offerings (AY, term, section, schedule, students). Tabs: Classes, Syllabus, Outcomes, Lessons and materials, Assessments, Class records |
-| Syllabus management (versions) | ✅ | Structured editor: description, prerequisites, consultation, weekly instructional plan (week, topics, CLOs, activities, assessment, hours), grading system with a running total, references, policies. Word export with real tables |
-| Course learning outcomes and program alignment | ✅ | CLOs per course; POs shared per program; CLO × PO matrix (Introduced / Enhanced / Demonstrated) |
+| Syllabus management (versions) | ✅ | Structured editor in the URS outcomes-based format: description, prerequisites, learner term, course outline (week / hours / ILOs / OBA / content / TLA / resources), grading policy with a running total, references, numbered policies, consultation hours, signatories. Word export on 8.5 × 13 landscape with the official letterhead |
+| Syllabus import (.docx) | ✅ | Reads existing, loosely formatted Word syllabi (nested tables, tabs, line breaks) into a reviewable preview; commit creates or reuses the course, POs (grouped), CILOs, I/P/D map and a draft syllabus atomically, and fills empty institution fields |
+| Institution profile and letterhead | ✅ | VMGO, college, default signatories; header/footer banners imported from the office's own Word template and placed on every exported document |
+| Course learning outcomes and program alignment | ✅ | CILOs per course; POs shared per program and grouped (A/B/C); curriculum map I – Introductory / P – Practiced / D – Demonstrative (older E values migrated to P) |
 | Lesson plans, materials, resources | ✅ | Linked to course, class offering, week and CLOs. Files attached through Evidence (Drive, link or file on this PC) |
 | Assessments, Tables of Specifications, rubrics | ✅ | TOS builder allocates items by teaching hours and Bloom levels (largest remainder, so totals always match) with item placement. Rubric builder: levels × criteria, optional weights. Both export to Word |
 | Class activity records | ✅ | Sessions with attendance; attendance rate per offering |
@@ -158,6 +160,19 @@ been run on a Windows machine.
   - A Harvard-layout CV exported as PDF through the Save dialog.
   - Re-running the Phase 3 CV walkthrough found no regressions.
 - **Generated Word documents rendered in LibreOffice to check layout.** Table column widths are fixed so headers don't break mid-word.
+
+### Release 0.5 — UI, Nexus command display, data safety, URS documents
+
+| Item | Status | Notes |
+|---|---|---|
+| Saturated violet primary on the SOUL ARCHIVE palette | ✅ | Violet fills (`#8a3ffc`); small violet text uses `#b98aff` so it meets 4.5:1 |
+| Full-width pages, wrapping fields, centred pop-ups, smooth scrolling | ✅ | Record forms and the context panel open as centred Evangelion-style modals |
+| Central Nexus command display | ✅ | LCD clock (12-hour, AM/PM lamps), 30-day sync graph, MAGI status, deadline lamps, workload bars |
+| Status bar | ✅ | Database integrity, last save, last backup, record count, live clock |
+| Save-path quality control | ✅ | WAL + synchronous=FULL; autosave with dirty guards; backups at startup, every 6 h, on demand, before updates and restores (15 automatic kept); verified restore on next start |
+| URS letterhead, syllabus format and importer | ✅ | See Academic Workspace rows above |
+
+See `docs/QC_REPORT.md` for the quality-control results.
 
 ## Upcoming phases
 

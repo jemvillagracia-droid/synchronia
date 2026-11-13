@@ -4,7 +4,7 @@
 
 An academic and professional advancement environment for managing teaching, research, extension, professional
 portfolio, curriculum vitae and administrative work in one place. Built in phases per the SYNCHRONIA Master Product
-Directive. **Phases 1–4 (Identity and Foundation, Professional Portfolio, Curriculum Vitae Studio, Academic Workspace) are complete.** SYNCHRONIA is a Windows
+Directive. **Phases 1–4 (Identity and Foundation, Professional Portfolio, Curriculum Vitae Studio, Academic Workspace) are complete, with release 0.5 adding the Nexus command display, backups and the URS syllabus tools.** SYNCHRONIA is a Windows
 desktop application for a single owner.
 
 ## Installing on Windows
@@ -15,6 +15,22 @@ desktop shortcuts. SYNCHRONIA opens straight into your workspace; there is no si
 Your data lives in `%APPDATA%\SYNCHRONIA\data` (Settings › Application › *Show in Explorer*). Back up that folder: it
 holds `synchronia.db` and `secret.key`, the key that decrypts licence numbers. Uninstalling does not delete it.
 Settings › Data & recovery also exports every record as JSON.
+
+### Backups and recovery
+
+Every change is written to disk before the app reports it saved (SQLite WAL with full synchronisation). Editors save
+automatically and ask before closing with unsaved changes. A verified snapshot of the database is taken at startup,
+every six hours, before any update and before any restore, kept in `data\backups` (the 15 most recent automatic
+snapshots are kept; manual ones are never pruned). Settings › Data & recovery lists them, checks database integrity
+and restores a snapshot on the next start, after verifying it.
+
+### Institution, letterhead and syllabi
+
+Settings › Institution holds the vision, mission, goals, college and default signatories, and imports the official
+letterhead from your office's blank Word template (the header and footer banners are copied; the template itself is
+not bundled with the app). Syllabi export in the University outcomes-based format on 8.5 × 13 landscape. An existing
+Word syllabus, however loosely formatted, can be imported from Academic Workspace › *Import syllabus (.docx)*: the
+preview shows what was recognised before anything is saved.
 
 ### How access is protected without a sign-in
 

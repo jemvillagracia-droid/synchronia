@@ -45,7 +45,7 @@ function Clock({ d }: { d: Command['deadlines'] }) {
         <div className="sr-only">{now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })}</div>
         <div className="eva-date">{weekdayName(now).toUpperCase()} · {now.getDate()} {monthName(now).toUpperCase()} {now.getFullYear()}</div>
         <div className="eva-lamps" role="group" aria-label={`Deadline status: ${d.level}`}>
-          {lamps.map(([k, l]) => <span key={k} className={`lamp ${k} ${d.level === k ? 'on' : ''}`}>{l}</span>)}
+          {lamps.map(([k, l]) => <span key={k} className={`lamp ${k} ${d.level === k ? 'on' : ''}`} aria-hidden={d.level !== k}>{l}</span>)}
           <span className="eva-lamp-note">{d.overdue} overdue · {d.due_today} due today · {d.due_week} this week</span>
         </div>
       </div>

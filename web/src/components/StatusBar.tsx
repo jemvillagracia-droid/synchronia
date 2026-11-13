@@ -20,7 +20,7 @@ export function StatusBar() {
     return () => { off(); clearInterval(t); };
   }, []);
   return (
-    <footer className="statusbar" role="status" aria-live="off">
+    <footer className="statusbar" aria-label="Status">
       <span className={st?.integrity === 'ok' ? 'ok' : 'warn'}>{st ? (st.integrity === 'ok' ? '■ DATABASE OK' : '■ DATABASE CHECK FAILED') : '■ …'}</span>
       <span className="grow">
         {st?.last_saved_at ? `Last saved ${fmtTime12(new Date(st.last_saved_at))}` : 'No changes saved yet'}

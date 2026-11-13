@@ -326,7 +326,7 @@ export async function exportTos(db, userId, id) {
   const children = [
     field('Assessment', t.assessment?.title || t.tos.title), field('Course', course ? `${course.code} — ${course.title}` : null),
     field('Total items', t.total_items), p('Cells show the number of items and, in parentheses, their item numbers.', { run: { italics: true, size: 18 } }),
-    table([head, ...rows, totals], { widths: [22, 7, 6, 5, 6, 9, 9, 9, 9, 9, 9], center: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], contentWidth: 12960 }),
+    table([head, ...rows, totals], { widths: [19, 7, 6, 5, 6, 9.5, 9.5, 9.5, 9.5, 9.5, 9.5], center: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], contentWidth: 12960, size: 17 }),
     ...t.warnings.map((w) => p(`Note: ${w}`, { run: { italics: true } })),
   ];
   const buffer = await buildDocument({ title: 'Table of Specifications', subtitle: t.tos.title, children, landscape: true, letterhead: letterheadFor(db, userId) });

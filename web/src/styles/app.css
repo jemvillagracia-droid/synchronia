@@ -967,3 +967,20 @@ html[data-desktop] .drawer { max-height: calc(100vh - var(--topbar-h) - 36px); }
 .import-details > summary { cursor: pointer; padding: var(--s-2) 0; font-family: var(--font-cond); font-weight: 600; font-size: 14.5px; letter-spacing: .04em; color: var(--text); }
 .import-details[open] > summary { color: var(--accent-2); }
 .import-details .dl dt { text-transform: capitalize; }
+
+/* ── QC fixes (v0.5) ─────────────────────────────────────────────────────── */
+/* Small violet text uses the lighter violet so it meets 4.5:1 on the dark panels; fills keep the saturated violet. */
+.mode-chip, .tag.orange, .btn:hover, a.btn:not(.btn-primary):not(.btn-accent), .modal-head h2 { color: var(--accent-2); }
+.mode-chip .txt { color: var(--accent-2); }
+/* The top bar never pushes the window sideways: the search box shrinks first, then labels give way to icons. */
+.searchbox { min-width: 0; flex: 1 1 auto; }
+.topbar > * { flex-shrink: 0; }
+.topbar > .searchbox { flex-shrink: 1; }
+@media (max-width: 1180px) { .searchbox .kbd { display: none; } .mode-chip .txt { display: none; } .mode-chip { padding: 0 var(--s-2); } }
+@media (max-width: 940px) {
+  .topbar { gap: var(--s-1); }
+  .topbar .hide-mobile { display: none !important; }
+  .topbar .show-mobile { display: grid !important; }
+  .searchbox .grow { display: none; }
+  .searchbox { flex: 0 0 auto; width: 34px; padding: 0; justify-content: center; border-color: transparent; background: transparent; }
+}
