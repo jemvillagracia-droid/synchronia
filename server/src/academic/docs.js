@@ -132,15 +132,16 @@ export async function buildDocument({ title, subtitle, children, landscape = fal
 export const numbered = (text) => new Paragraph({ numbering: { reference: 'doc-numbers', level: 0 }, spacing: { after: 40 }, children: [new TextRun(String(text))] });
 
 /** Save a generated report, record it, and return its download metadata. */
-export function saveReport(db, userId, { type, title, buffer, fileStem, periodStart = null, periodEnd = null, params = null }) {
+export function saveReport(db, userId, { type, title, buffer, fileStem, periodStart = null, periodEnd = null, params = null, format = 'docx' }) {
+  if (!['docx', 'pdf', 'xlsx', 'csv'].includes(format)) throw new Error(`Unsupported report format ${format}`);
   const dir = path.join(DATA_DIR, 'exports', 'reports');
   fs.mkdirSync(dir, { recursive: true });
   const safe = String(fileStem).normalize('NFKD').replace(/[^\w-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 90) || 'report';
-  let name = `${safe}_${new Date().toISOString().slice(0, 10)}.docx`;
-  for (let i = 2; fs.existsSync(path.join(dir, name)); i += 1) name = name.replace(/(_\d+)?\.docx$/, `_${i}.docx`);
+  let name = `${safe}_${new Date().toISOString().slice(0, 10)}.${format}`;
+  for (let i = 2; fs.existsSync(path.join(dir, name)); i += 1) name = `${safe}_${new Date().toISOString().slice(0, 10)}_${i}.${format}`;
   const rel = path.join('exports', 'reports', name);
   fs.writeFileSync(path.join(DATA_DIR, rel), buffer);
   const r = db.prepare('INSERT INTO reports (user_id, report_type, title, period_start, period_end, format, file_path, params_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(userId, type, title, periodStart, periodEnd, 'docx', rel, params ? JSON.stringify(params) : null);
+    .run(userId, type, title, periodStart, periodEnd, format, rel, params ? JSON.stringify(params) : null);
   return { id: Number(r.lastInsertRowid), file_name: name, download: `/api/academic/reports/${r.lastInsertRowid}/download`, size_bytes: buffer.length };
 }

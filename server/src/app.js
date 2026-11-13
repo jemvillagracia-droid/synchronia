@@ -8,6 +8,7 @@ import { RESOURCES } from './resources.js';
 import { nexus, notifications, search, capture, normaliseLayout, profileRow, portfolioSummary, WIDGETS } from './nexus.js';
 import { decrypt } from './secrets.js';
 import { cvRouter, imageRouter } from './cv/routes.js';
+import { intelligenceRouter } from './intelligence/routes.js';
 import { academicRouter } from './academic/routes.js';
 import { backupNow, integrity, listBackups, scheduleRestore } from './backup.js';
 import { tx } from './db.js';
@@ -222,6 +223,7 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
 
   // ── Curriculum Vitae Studio and photograph library ───────
   api.use('/cv', cvRouter(db, { pdfRenderer }));
+  api.use('/intelligence', intelligenceRouter(db, { pdfRenderer }));
   api.use('/images', imageRouter(db));
   api.use('/academic', academicRouter(db));
 

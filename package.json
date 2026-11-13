@@ -2,7 +2,7 @@
   "name": "synchronia",
   "productName": "SYNCHRONIA",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "SYNCHRONIA — The Academic Ascension System. Synchronize. Evolve. Transcend.",
   "author": "SYNCHRONIA",
   "type": "module",
@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "docx": "^9.5.1",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "jszip": "^3.10.1",
     "pdfjs-dist": "^4.10.38"

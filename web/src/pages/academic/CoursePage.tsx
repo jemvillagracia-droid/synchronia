@@ -262,7 +262,7 @@ function RubricEditor({ id, onClose }: { id: number; onClose: () => void }) {
                 <AutoText value={l.label} onChange={(v) => setLevel(i, { label: v })} aria-label={`Level ${i + 1} label`} />
                 <input className="input mt-2" type="number" min={0} value={l.points} onChange={(e) => setLevel(i, { points: Number(e.target.value) })} aria-label={`Level ${i + 1} points`} />
               </th>
-            ))}<th /></tr></thead>
+            ))}<th><span className="sr-only">Actions</span></th></tr></thead>
           <tbody>{c.criteria.map((k: any, i: number) => (
             <tr key={i}>
               <td><AutoText value={k.name} onChange={(v) => setCrit(i, { name: v })} aria-label="Criterion" /></td>
@@ -342,7 +342,7 @@ export function CoursePage() {
           <div><button className="btn btn-primary" onClick={() => openNew('teaching_assignments', { course_id: c.id, status: 'active' })}><Icon name="plus" />Add class / offering</button></div>
           {w.offerings.length === 0 ? <div className="empty">No offerings yet. Add each section you handle per term.</div> : (
             <div className="table-wrap"><table className="table">
-              <thead><tr><th>Term</th><th>Section</th><th>Schedule</th><th>Students</th><th>Status</th><th>Sessions recorded</th><th>Attendance</th><th /></tr></thead>
+              <thead><tr><th>Term</th><th>Section</th><th>Schedule</th><th>Students</th><th>Status</th><th>Sessions recorded</th><th>Attendance</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>{w.offerings.map((o) => (
                 <tr key={o.id}><td>{o.academic_year} · {TERM[o.semester]}</td><td>{o.section || '—'}</td><td>{o.schedule || '—'}</td><td className="num">{o.student_count ?? '—'}</td>
                   <td><span className="tag">{humanize(o.status)}</span></td><td className="num">{o.activities}</td><td className="num">{o.attendance_pct != null ? `${o.attendance_pct}%` : '—'}</td>

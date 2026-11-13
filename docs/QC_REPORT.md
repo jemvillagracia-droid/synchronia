@@ -53,3 +53,25 @@ documents are now true landscape, and a test checks the page size.
 
 - The installer is not code-signed, so Windows SmartScreen shows “Unknown publisher” on first run.
 - Phases 5–7 (Intelligence, Administrative Operations, Integration) are still placeholders.
+
+---
+
+# Quality-control addendum — release 0.6.0 (Phase 5, Intelligence)
+
+| Check | Result |
+|---|---|
+| Automated tests | **55 / 55 passing** (`intelligence.test.js` adds 8) |
+| Counting rules | Verified against a seeded school year: in-period, out-of-period and undated records; school-year overlap; ongoing spans; distinct partners ignoring letter case; current assignments started before the period |
+| Traceability | Every indicator lists its records with type, ID, date basis and support level; reports cite [S#] and list all sources with record IDs |
+| Formats | Word and PDF rendered and inspected (letterhead; PDF footer banner on every page); spreadsheet read back: three sheets, frozen header, filters, real dates |
+| Interface | 55 page loads at three widths plus the indicator pop-up: no errors, no sideways scroll, no clipped text |
+
+Defects found and fixed during this pass:
+
+- A custom report with no sections selected silently included every section; it is now refused.
+- "Manuscripts in progress" counted manuscripts recorded after a historical period; it now counts only those recorded by the end of the period.
+- Course rows read "Undated" although courses are counted by their offerings; they now show "—", and class offerings show their school year (e.g. "SY 2026–2027").
+- Unit labels in report details read "45 student"; they now come from the indicator ("45 students").
+- PDF reports carried the letterhead only at the top of page 1; the footer banner now appears on every page.
+- Support tags for "Confirmed" and "Self-reported" looked alike; each support level now has its own colour, matching the legend.
+- Accessibility: the research pipeline headers had dark text on violet (below 4.5:1), now white; action columns in two tables had empty headers, now labelled for screen readers.

@@ -1,3 +1,4 @@
+import { IntelligencePage } from './pages/IntelligencePage';
 import { useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
 import { api, onUnauthorized } from './lib/api';
@@ -84,7 +85,8 @@ export function App() {
                 <Route path="/academic/courses/:id" element={<CoursePage />} />
                 <Route path="/cv" element={<CvStudio />} />
                 <Route path="/cv/:id" element={<CvEditor />} />
-                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
+                <Route path="/intelligence" element={<IntelligencePage />} />
+                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

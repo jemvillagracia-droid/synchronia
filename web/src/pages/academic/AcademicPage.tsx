@@ -193,7 +193,7 @@ function Reports() {
   return !reports ? <div className="skeleton" /> : reports.length === 0 ? <div className="empty"><strong>No documents generated yet.</strong>Syllabi, tables of specifications, rubrics and reports you generate are kept here.</div> : (
     <div className="table-wrap">
       <table className="table">
-        <thead><tr><th>Document</th><th>Type</th><th>Generated</th><th /></tr></thead>
+        <thead><tr><th>Document</th><th>Type</th><th>Generated</th><th><span className="sr-only">Actions</span></th></tr></thead>
         <tbody>{reports.map((r) => (
           <tr key={r.id}><td>{r.title}</td><td className="muted">{humanize(r.report_type)}</td><td className="num faint">{fmtDateTime(r.created_at)}</td>
             <td style={{ textAlign: 'right' }}><a className="btn btn-sm" href={`/api/academic/reports/${r.id}/download`} download><Icon name="download" />Save</a></td></tr>

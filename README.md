@@ -4,7 +4,7 @@
 
 An academic and professional advancement environment for managing teaching, research, extension, professional
 portfolio, curriculum vitae and administrative work in one place. Built in phases per the SYNCHRONIA Master Product
-Directive. **Phases 1–4 (Identity and Foundation, Professional Portfolio, Curriculum Vitae Studio, Academic Workspace) are complete, with release 0.5 adding the Nexus command display, backups and the URS syllabus tools.** SYNCHRONIA is a Windows
+Directive. **Phases 1–5 (Identity and Foundation, Professional Portfolio, Curriculum Vitae Studio, Academic Workspace, Intelligence) are complete.** SYNCHRONIA is a Windows
 desktop application for a single owner.
 
 ## Installing on Windows
@@ -23,6 +23,16 @@ automatically and ask before closing with unsaved changes. A verified snapshot o
 every six hours, before any update and before any restore, kept in `data\backups` (the 15 most recent automatic
 snapshots are kept; manual ones are never pruned). Settings › Data & recovery lists them, checks database integrity
 and restores a snapshot on the next start, after verifying it.
+
+### Intelligence: analytics and reports
+
+Intelligence counts only what is recorded. Choose a period (school year June–May, calendar year, last 12 months, all,
+or custom dates), the sections (A Academic, B Research, C Extension, D Portfolio, E Administrative) and whether to
+include self-reported records. Every figure opens to the records it was counted from. Reports — annual academic
+accomplishment, faculty development, research productivity, extension, professional development, portfolio summary,
+administrative and custom — are produced as Word, PDF or spreadsheet; each line cites a numbered source record, and
+each record is marked as evidenced, confirmed, self-reported or prepared in SYNCHRONIA. Records without a date are
+listed as left out of a dated period, never guessed.
 
 ### Institution, letterhead and syllabi
 

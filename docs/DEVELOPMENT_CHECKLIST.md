@@ -174,8 +174,28 @@ been run on a Windows machine.
 
 See `docs/QC_REPORT.md` for the quality-control results.
 
+## Phase 5 — Intelligence ✅
+
+| Requirement (directive §VII) | Status | Implementation |
+|---|---|---|
+| A. Academic analytics | ✅ | Courses managed, classes handled (students), syllabi, materials, teaching activities, assessments, TOS, rubrics, faculty development (hours, CPD) |
+| B. Research analytics | ✅ | Initiated, ongoing, completed, published, manuscripts in progress, presentations, collaborations, research training |
+| C. Extension analytics | ✅ | Extension projects, community activities, trainings conducted (participants, hours), resource-person engagements, distinct partners, completed programs |
+| D. Portfolio analytics | ✅ | Qualifications, licences (valid/expired), trainings, awards, appointments, employment, institutional service, memberships, development goals, accomplishments |
+| E. Administrative analytics | ✅ | Incoming/outgoing correspondence, meetings, reports prepared, secretariat responsibilities, completed administrative tasks |
+| F. Report generation | ✅ | Annual academic accomplishment, faculty development, research productivity, extension accomplishment, professional development, portfolio summary, administrative accomplishment, custom period-based; CV stays in CV Studio |
+| DOCX, PDF and spreadsheet output | ✅ | Word and PDF with the official letterhead (PDF footer banner on every page); XLSX with Summary, Records and Sources sheets, frozen headers, filters, real dates; analytics view exportable as XLSX |
+| Date and category filtering | ✅ | Period presets (school year June–May, calendar year, last 12 months, all) or custom dates; sections A–E; support level (all / confirmed or evidenced / evidence only) |
+| Source-record traceability | ✅ | Every indicator opens to its records (click through to the record); reports cite numbered sources [S#] with record type and ID |
+| Never fabricate | ✅ | Only stored records are counted; undated records are reported as left out rather than guessed; an empty period says so |
+| Distinguish user-entered from verified | ✅ | Each record is classed as evidence linked/verified, confirmed by you, self-reported, or prepared/logged in SYNCHRONIA; shown per indicator, per record and in reports |
+
+### Verified (Phase 5)
+
+- `npm test`: **55 tests, all passing** (8 new: catalog, period counting with undated handling, traceability and support filter, validation, Word, spreadsheet, PDF, empty-period and custom-section rules).
+- In Electron: seeded a realistic school year, generated Word, PDF and spreadsheet reports through the Save dialog, rendered them in LibreOffice and checked the layout; UI sweep at 1500/1024/760 px with axe-core including the indicator pop-up.
+
 ## Upcoming phases
 
-- [ ] **Phase 5 — Intelligence**: analytics and evidence-traceable reports (DOCX/PDF/XLSX)
 - [ ] **Phase 6 — Administrative Operations**: correspondence registry, routing, minutes, turnover documentation
 - [ ] **Phase 7 — Integration and Continuity**: Google Drive OAuth, unified timeline, backup/restore, security testing
