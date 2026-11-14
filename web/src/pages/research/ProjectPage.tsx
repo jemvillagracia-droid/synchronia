@@ -5,6 +5,7 @@ import { fmtDate, humanize, relTime } from '../../lib/format';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
 import { KIND, exportFile, type NextAction, type Progress, type Stage } from '../../lib/research';
+import { askText } from '../../components/AskText';
 import { newDocument } from './ResearchPage';
 
 interface Workspace {
@@ -220,7 +221,7 @@ function Methods({ w }: { w: Workspace }) {
   const p = w.project;
   const methodology = w.documents.find((d) => d.kind === 'methodology') || w.documents.find((d) => d.kind === 'proposal');
   async function newInstrument() {
-    const title = window.prompt('Name of the instrument:');
+    const title = await askText('Name of the instrument');
     if (!title?.trim()) return;
     try { const r = await api.post<{ instrument: { id: number } }>('/research/instruments', { title: title.trim(), project_id: p.id }); dataChanged(); navigate(`/research/instruments/${r.instrument.id}`); } catch (e) { toast((e as Error).message, 'error'); }
   }

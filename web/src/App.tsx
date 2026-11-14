@@ -22,6 +22,7 @@ import { PortfolioOverview, PortfolioCategoryPage } from './pages/PortfolioPage'
 import { CvStudio } from './pages/cv/CvStudio';
 import { CvEditor } from './pages/cv/CvEditor';
 import { AcademicPage } from './pages/academic/AcademicPage';
+import { AskTextHost } from './components/AskText';
 import { SyllabusPage } from './pages/academic/SyllabusPage';
 import { ResearchPage } from './pages/research/ResearchPage';
 import { ProjectPage } from './pages/research/ProjectPage';
@@ -111,6 +112,7 @@ export function App() {
             </Shell>
             {capture && <QuickCapture onClose={() => setCapture(false)} />}
             {search && <SearchPalette onClose={() => setSearch(false)} />}
+            <AskTextHost />
             {record && <RecordDrawer key={`${record.type}-${record.id}`} type={record.type} id={record.id} defaults={record.defaults} onClose={() => setRecord(null)} />}
             <div className="toasts" aria-live="polite">
               {toasts.map((t) => (

@@ -8,6 +8,7 @@ import Image from '@tiptap/extension-image';
 import { TableKit } from '@tiptap/extension-table';
 import { desktop } from '../lib/desktop';
 import { insertPictures, localizePictures, portableSrc, rememberPictures, storePicture, LOCAL } from '../lib/docImages';
+import { askText } from './AskText';
 import { useApp } from './AppContext';
 
 export type Page = { size: 'letter' | 'a4' | 'folio' | 'legal'; landscape: boolean };
@@ -192,7 +193,7 @@ function Toolbar({ editor: e, upload }: { editor: Editor; upload: (files: File[]
         <Btn label="Insert picture (PNG, JPEG, GIF, WebP…)" on={() => file.current?.click()}>▣ Picture</Btn>
         {picture && (<>
           {[25, 50, 75, 100].map((w) => <Btn key={w} label={`Picture width ${w}%`} active={(pic?.width ?? 100) === w} on={() => setPic({ width: w })}>{w}%</Btn>)}
-          <Btn label="Describe the picture (alternative text)" on={() => { const alt = window.prompt('Describe this picture (read aloud by screen readers and shown if it cannot be displayed):', pic?.alt || ''); if (alt !== null) setPic({ alt: alt.trim() || null }); }}>Alt text</Btn>
+          <Btn label="Describe the picture (alternative text)" on={async () => { const alt = await askText('Describe this picture', pic?.alt || '', 'Read aloud by screen readers, and shown if the picture cannot be displayed.'); if (alt !== null) setPic({ alt: alt || null }); }}>Alt text</Btn>
           <Btn label="Delete picture" on={() => c().deleteSelection().run()}>✕ Picture</Btn>
         </>)}
       </div>

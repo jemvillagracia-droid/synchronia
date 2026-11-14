@@ -4,6 +4,7 @@ import { api, dataChanged, onDataChanged } from '../../lib/api';
 import { fmtDate, humanize, relTime } from '../../lib/format';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
+import { askText } from '../../components/AskText';
 import { KIND, exportFile, type Overview, type ProjectCard, type Stage } from '../../lib/research';
 
 type Tab = 'overview' | 'projects' | 'literature' | 'instruments' | 'writing' | 'dissemination' | 'stages';
@@ -223,7 +224,7 @@ function Instruments() {
   const load = useCallback(() => { api.get<{ items: any[] }>('/records/research_instruments?limit=200').then((d) => setRows(d.items)).catch(() => {}); }, []);
   useEffect(() => { load(); return onDataChanged(load); }, [load]);
   async function add() {
-    const title = window.prompt('Name of the instrument (e.g. Blended Learning Readiness Scale):');
+    const title = await askText('Name of the instrument', '', 'For example: Blended Learning Readiness Scale');
     if (!title?.trim()) return;
     try { const w = await api.post<{ instrument: { id: number } }>('/research/instruments', { title: title.trim() }); dataChanged(); navigate(`/research/instruments/${w.instrument.id}`); } catch (e) { toast((e as Error).message, 'error'); }
   }

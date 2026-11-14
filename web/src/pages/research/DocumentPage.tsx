@@ -7,6 +7,7 @@ import { useDirty } from '../../lib/dirty';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
 import { DocEditor } from '../../components/DocEditor';
+import { askText } from '../../components/AskText';
 import { exportFile } from '../../lib/research';
 
 interface Section { id: number; heading: string; section_key: string | null; status: string; notes: string | null; body: JSONContent | null; words: number; updated_at: string }
@@ -61,7 +62,7 @@ export function DocumentPage() {
   }
   async function setStatus(status: string) { await save({ status }); load(); dataChanged(); }
   async function addSection() {
-    const heading = window.prompt('Heading of the new section:');
+    const heading = await askText('Heading of the new section');
     if (!heading?.trim()) return;
     try { const d = await api.post<View>(`/research/documents/${id}/sections`, { heading: heading.trim() }); setV(d); } catch (e) { toast((e as Error).message, 'error'); }
   }
