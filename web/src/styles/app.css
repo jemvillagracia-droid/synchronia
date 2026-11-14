@@ -1413,3 +1413,5 @@ html[data-motion='reduced'] *, html[data-motion='reduced'] *::before, html[data-
 /* The same identity, quieter, across every module: a faint violet glow at the top of each page and violet-topped panels. */
 .main { background: radial-gradient(1000px 360px at 10% -6%, rgba(123, 63, 252, .09), transparent 60%), var(--bg); }
 .page:not(.nexus-page) .panel { border-top: 1px solid rgba(155, 92, 255, .45); }
+.cal-ev.k-research { border-left-color: #c4a3ff; background: rgba(168, 116, 255, .12); }
+.cal-legend i.k-research { background: #c4a3ff; }

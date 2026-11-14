@@ -108,6 +108,18 @@ export function events(db, userId, from, to) {
     (r) => ({ date: r.target_date, kind: 'goal', title: `Goal: ${r.title}`, type: 'development_goals', id: r.id, done: r.status === 'achieved' }));
   add(q(`SELECT id, title, start_date, end_date FROM ${T('extension_projects')} WHERE user_id = ? AND deleted_at IS NULL AND start_date BETWEEN ? AND ?`, from, to),
     (r) => ({ date: r.start_date, kind: 'extension', title: r.title, type: 'extension_projects', id: r.id }));
+  // Research: milestones and deadlines from the research workspace (one calendar, not a second one).
+  add(q(`SELECT m.id, m.title, m.due_date, m.status, p.title AS project FROM research_milestones m JOIN research_projects p ON p.id = m.project_id
+      WHERE m.user_id = ? AND m.deleted_at IS NULL AND p.deleted_at IS NULL AND m.status <> 'skipped' AND m.due_date BETWEEN ? AND ?`, from, to),
+    (r) => ({ date: r.due_date, kind: 'research', title: r.title, type: 'research_milestones', id: r.id, done: r.status === 'done', detail: r.project }));
+  add(q(`SELECT id, committee, revisions_due, status FROM ethics_reviews WHERE user_id = ? AND deleted_at IS NULL AND status = 'revisions_required' AND revisions_due BETWEEN ? AND ?`, from, to),
+    (r) => ({ date: r.revisions_due, kind: 'deadline', title: `Ethics revisions due${r.committee ? ` — ${r.committee}` : ''}`, type: 'ethics_reviews', id: r.id, done: false }));
+  add(q(`SELECT id, committee, expiry_date FROM ethics_reviews WHERE user_id = ? AND deleted_at IS NULL AND expiry_date BETWEEN ? AND ?`, from, to),
+    (r) => ({ date: r.expiry_date, kind: 'deadline', title: `Ethics approval expires${r.committee ? ` — ${r.committee}` : ''}`, type: 'ethics_reviews', id: r.id, done: false }));
+  add(q(`SELECT id, title, venue, revision_due FROM research_submissions WHERE user_id = ? AND deleted_at IS NULL AND status = 'revision_required' AND revision_due BETWEEN ? AND ?`, from, to),
+    (r) => ({ date: r.revision_due, kind: 'deadline', title: `Revision due: ${r.title}`, type: 'research_submissions', id: r.id, done: false, detail: r.venue }));
+  add(q(`SELECT id, opportunity, organization, deadline, submission_status FROM research_funding WHERE user_id = ? AND deleted_at IS NULL AND deadline BETWEEN ? AND ?`, from, to),
+    (r) => ({ date: r.deadline, kind: 'deadline', title: `Funding: ${r.opportunity}`, type: 'research_funding', id: r.id, done: r.submission_status === 'submitted', detail: r.organization }));
   return out.sort((a, b) => a.date.localeCompare(b.date) || String(a.time || '99').localeCompare(String(b.time || '99')));
 }
 

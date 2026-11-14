@@ -20,7 +20,7 @@ export const weekdayHeaders = (weekStart = 0) => Array.from({ length: 7 }, (_, i
 
 export const KIND_LABEL: Record<string, string> = {
   deadline: 'Deadline', task: 'Task', meeting: 'Meeting', class: 'Class', assessment: 'Assessment', training: 'Training',
-  speaking: 'Speaking', renewal: 'Licence', goal: 'Goal', extension: 'Extension',
+  speaking: 'Speaking', renewal: 'Licence', goal: 'Goal', extension: 'Extension', research: 'Research milestone',
 };
 export const holidayLabel = (h: Holiday) =>
   h.region === 'PH' ? (h.type === 'regular' ? 'Regular holiday' : h.type === 'special_working' ? 'Special working day' : 'Special non-working day') : `Public holiday${h.state ? ` · ${h.state}` : ''}`;

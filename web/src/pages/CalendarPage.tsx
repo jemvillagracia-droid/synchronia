@@ -129,7 +129,7 @@ export function CalendarPage() {
             ))}
           </div>
           </div>
-          <div className="cal-legend"><span><i className="ph" />Philippine holiday</span><span><i className="au" />Australian holiday</span><span><i className="est" />Estimate — set by proclamation</span><span><i className="k-deadline" />Deadline</span><span><i className="k-meeting" />Meeting</span><span><i className="k-class" />Class / assessment</span><span><i className="k-training" />Training / speaking</span></div>
+          <div className="cal-legend"><span><i className="ph" />Philippine holiday</span><span><i className="au" />Australian holiday</span><span><i className="est" />Estimate — set by proclamation</span><span><i className="k-deadline" />Deadline</span><span><i className="k-meeting" />Meeting</span><span><i className="k-class" />Class / assessment</span><span><i className="k-training" />Training / speaking</span><span><i className="k-research" />Research milestone</span></div>
         </section>
         <aside className="panel cal-day" aria-label={`Agenda for ${longDay(sel)}`}>
           <header className="panel-head"><span className="code">DAY</span><h2>{longDay(sel)}</h2></header>
