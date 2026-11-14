@@ -14,6 +14,7 @@ import { knowledgeRouter } from './knowledge/routes.js';
 import { calendarRouter } from './calendar/routes.js';
 import { portfolioImportRouter } from './portfolio/routes.js';
 import { googleCallbackRouter, integrationsRouter } from './integrations/routes.js';
+import { docImagesRouter } from './docimages.js';
 import { academicRouter } from './academic/routes.js';
 import { backupFile, backupNow, importBackup, integrity, listBackups, scheduleRestore } from './backup.js';
 import { tx } from './db.js';
@@ -246,10 +247,11 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
   api.use('/admin', adminRouter(db));
   api.use('/knowledge', knowledgeRouter(db));
   api.use('/calendar', calendarRouter(db));
+  api.use('/doc-images', docImagesRouter(db));
   api.use('/portfolio', portfolioImportRouter(db));
   api.use('/integrations', integrationsRouter(db));
   api.use('/images', imageRouter(db));
-  api.use('/academic', academicRouter(db));
+  api.use('/academic', academicRouter(db, { pdfRenderer }));
 
   // ── Generic record API for every registered type ──────────
   api.get('/records/:type', (req, res) => {

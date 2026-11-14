@@ -49,7 +49,7 @@ export function table(rows, { widths = null, header = true, center = [], content
   });
 }
 
-const PAGES = { letter: [12240, 15840], a4: [11906, 16838], folio: [12240, 18720] };
+const PAGES = { letter: [12240, 15840], a4: [11906, 16838], folio: [12240, 18720], legal: [12240, 20160] };
 const SIDE = 1440; // 1-inch side margins, as in the official templates
 
 /** Page width/height and usable content width (twips) for a paper size and orientation. */

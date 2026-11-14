@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BrandMark, Icon } from './Icon';
 import { useApp } from './AppContext';
-import { MODULES } from '../lib/modules';
+import { NAV, isActive, navCode } from '../lib/nav';
 import { api, onDataChanged, dataChanged } from '../lib/api';
 import { MODE_LABEL, MODE_DESC, initials, relTime, dueLabel } from '../lib/format';
 import type { Mode, Notification, RecordRow } from '../lib/types';
@@ -23,36 +23,47 @@ function useClickAway(open: boolean, close: () => void) {
 }
 
 function Sidebar({ collapsed, mobileOpen, onToggle, onNavigate }: { collapsed: boolean; mobileOpen: boolean; onToggle: () => void; onNavigate: () => void }) {
+  const { openCapture, openSearch } = useApp();
+  const loc = useLocation();
+  const [version, setVersion] = useState('');
+  useEffect(() => { api.get<{ version: string }>('/meta').then((m) => setVersion(m.version)).catch(() => {}); }, []);
   return (
     <nav className={`sidebar ${mobileOpen ? 'open' : ''}`} aria-label="Primary">
-      <Link to="/" className="brand" onClick={onNavigate} style={{ textDecoration: 'none' }} aria-label="SYNCHRONIA — Central Nexus">
-        <BrandMark className="brand-mark" />
-        <span className="brand-text">
-          <div className="brand-word display">SYNCHRONIA</div>
-          <div className="brand-sub">Academic Ascension System</div>
-        </span>
-      </Link>
+      <div className="sidebar-top">
+        <Link to="/" className="brand" onClick={onNavigate} style={{ textDecoration: 'none' }} aria-label="SYNCHRONIA — Central Nexus">
+          <BrandMark className="brand-mark" />
+          <span className="brand-text">
+            <div className="brand-word display">SYNCHRONIA</div>
+            <div className="brand-sub">Academic Ascension System</div>
+          </span>
+        </Link>
+        <button className="collapse-toggle hide-mobile" onClick={onToggle} aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'} title={collapsed ? 'Expand navigation' : 'Collapse navigation'} aria-expanded={!collapsed}>
+          <Icon name={collapsed ? 'expand' : 'collapse'} size={16} />
+        </button>
+      </div>
+      <button className="nav-search" onClick={() => { onNavigate(); openSearch(); }} aria-label="Search everything" title={collapsed ? 'Search everything (Ctrl K)' : undefined}>
+        <Icon name="search" size={15} /><span className="txt">Search…</span><span className="kbd txt">Ctrl K</span>
+      </button>
       <div className="nav">
-        <div className="nav-section label">Systems</div>
-        {MODULES.map((m) => (
-          <NavLink key={m.id} to={m.path} end={m.path === '/'} onClick={onNavigate} title={collapsed ? m.label : undefined} aria-label={m.label}>
-            <span className="code">{m.code}</span>
-            <Icon name={m.icon} />
-            <span className="txt">{m.label}</span>
-          </NavLink>
+        {NAV.map((g) => (
+          <div key={g.label} className="nav-group" role="group" aria-label={g.label}>
+            <div className="nav-section label">{g.label}</div>
+            {g.items.map((it) => {
+              const inner = (<><span className="code">{navCode[it.id]}</span><Icon name={it.icon} /><span className="txt">{it.label}</span></>);
+              if (it.action === 'capture') {
+                return <button key={it.id} type="button" className="nav-item" onClick={() => { onNavigate(); openCapture(); }} title={collapsed ? `${it.label} (C)` : undefined} aria-label={it.label}>{inner}</button>;
+              }
+              const active = isActive(it, loc.pathname, loc.search);
+              return (
+                <Link key={it.id} to={it.to} className={`nav-item ${active ? 'active' : ''}`} aria-current={active ? 'page' : undefined}
+                  onClick={onNavigate} title={collapsed ? it.label : undefined} aria-label={it.label}>{inner}</Link>
+              );
+            })}
+          </div>
         ))}
-        <div className="nav-section label">System</div>
-        <NavLink to="/settings" onClick={onNavigate} title={collapsed ? 'Settings' : undefined} aria-label="Settings">
-          <span className="code" aria-hidden>··</span>
-          <Icon name="settings" />
-          <span className="txt">Settings</span>
-        </NavLink>
       </div>
       <div className="sidebar-foot">
-        <button className="icon-btn sm collapse-toggle hide-mobile" onClick={onToggle} aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}>
-          <Icon name={collapsed ? 'expand' : 'collapse'} />
-        </button>
-        <span className="txt label" style={{ fontSize: 9.5 }}>Synchronize · Evolve · Transcend</span>
+        <span className="txt">SYNCHRONIA{version ? ` v${version}` : ''}<br />Local database · offline</span>
       </div>
     </nav>
   );
@@ -269,11 +280,7 @@ export function Shell({ children }: { children: ReactNode }) {
       {mobileNav && <div className="sidebar-scrim show-mobile" onClick={() => setMobileNav(false)} />}
       <header className="topbar">
         <button className="icon-btn show-mobile" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Icon name="menu" /></button>
-        <button className="searchbox" onClick={openSearch} aria-label="Global search">
-          <Icon name="search" size={16} />
-          <span className="grow">Search records, courses, publications…</span>
-          <span className="kbd">Ctrl K</span>
-        </button>
+        <button className="icon-btn show-mobile" onClick={openSearch} aria-label="Global search"><Icon name="search" /></button>
         <span className="spacer" />
         <button className="btn btn-accent btn-sm hide-mobile" onClick={openCapture}><Icon name="plus" />Capture</button>
         <button className="icon-btn show-mobile" onClick={openCapture} aria-label="Quick Capture" style={{ color: 'var(--orange)' }}><Icon name="plus" /></button>
@@ -282,8 +289,6 @@ export function Shell({ children }: { children: ReactNode }) {
         <button className="icon-btn hide-mobile" onClick={toggleContext} aria-label={contextOpen ? 'Hide context' : 'Show context: pending tasks and recent changes'} aria-pressed={contextOpen}>
           <Icon name="panel" />
         </button>
-        <Link to="/calendar" className="icon-btn hide-mobile" aria-label="Calendar" title="Calendar"><Icon name="calendar" /></Link>
-        <Link to="/settings" className="icon-btn hide-mobile" aria-label="System settings"><Icon name="settings" /></Link>
         <ProfileMenu />
       </header>
       <main className="main" id="main" tabIndex={-1}>{children}</main>

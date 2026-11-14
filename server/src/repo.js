@@ -1,5 +1,6 @@
 // Generic, registry-driven data access: validation, ownership scoping, soft delete,
 // audit trail (which doubles as version history) and full-text index maintenance.
+import { plainText } from './richdoc.js';
 import { RESOURCES, DATE_ORDER } from './resources.js';
 import { encrypt, decrypt } from './secrets.js';
 import { tx } from './db.js';
@@ -188,6 +189,8 @@ function jsonText(j, out = [], budget = { n: 30000 }) {
 function indexText(r, row) {
   const parts = r.searchFields.filter((n) => n !== r.title).map((n) => row[n]).filter(Boolean);
   for (const n of r.searchJson || []) if (row[n]) jsonText(row[n], parts);
+  // Word-processor documents: index their words, not the editor's structure.
+  for (const n of r.searchRich || []) if (row[n]) { try { parts.push(plainText(JSON.parse(row[n])).slice(0, 60000)); } catch { /* unreadable: skip */ } }
   return { title: displayTitle(r, row), body: parts.join(' \n ') };
 }
 
@@ -299,6 +302,8 @@ function guardVerification(db, r, values, id) {
 
 /** Per-resource defaults applied before validation on create (e.g. registry numbering). Registered by feature modules. */
 export const createHooks = {};
+/** Per-resource input adjustments applied before validation on update (e.g. a derived field). */
+export const updateHooks = {};
 
 export function create(db, userId, key, input) {
   const r = getResource(key);
@@ -321,6 +326,7 @@ export function create(db, userId, key, input) {
 
 export function update(db, userId, key, id, input) {
   const r = getResource(key);
+  if (updateHooks[key] && input && typeof input === 'object' && !Array.isArray(input)) input = updateHooks[key](db, userId, id, { ...input });
   const values = validate(db, userId, r, input, { partial: true });
   guardVerification(db, r, values, id);
   if (key === 'tasks' && 'status' in values) values.completed_at = values.status === 'done' ? now() : null;

@@ -166,21 +166,117 @@ export const RESOURCES = {
   },
 
   research_projects: {
-    table: 'research_projects', label: 'Research Project', module: 'academic', group: 'research',
-    title: 'title', subtitle: ['status', 'role'], date: 'start_date',
+    table: 'research_projects', label: 'Research Project', module: 'research', group: 'research',
+    title: 'title', subtitle: ['stage', 'role'], date: 'start_date',
     recommended: ['role', 'start_date', 'objectives', 'methodology'],
     fields: {
       title: text(req), role: text(),
+      // stage: the customizable workflow stage (validated against the owner's stage list); status is derived from it.
+      stage: text({ max: 60 }),
       status: oneOf(['idea', 'proposal', 'approved', 'data_collection', 'analysis', 'writing', 'completed', 'discontinued']),
-      start_date: pdate(), end_date: pdate(), research_questions: long(), objectives: long(), methodology: long(),
+      research_area: text(), tags: text({ max: 1000 }),
+      start_date: pdate(), end_date: pdate(), problem: long(), research_questions: long(), objectives: long(), significance: long(),
+      variables: long(), population: long(), theory: long(), methodology: long(),
       instruments: long(), ethics_reference: text(), collaborators: long(), funding: text(),
       progress_pct: int({ min: 0, max: 100 }), target_sample: int({ min: 0 }), collected_sample: int({ min: 0 }),
       validation_status: oneOf(['not_started', 'in_progress', 'validated', 'not_applicable']),
-      ethics_status: oneOf(['not_required', 'to_submit', 'under_review', 'approved', 'revisions_requested']), ...verification,
+      ethics_status: oneOf(['not_required', 'to_submit', 'under_review', 'approved', 'revisions_requested']),
+      archived_at: text({ max: 40 }), ...verification,
+    },
+  },
+  research_milestones: {
+    table: 'research_milestones', label: 'Research Milestone', module: 'research', title: 'title', subtitle: ['status'], date: 'due_date',
+    fields: {
+      project_id: ref('research_projects', req), title: text(req), stage: text({ max: 60 }), due_date: date(),
+      status: oneOf(['pending', 'done', 'skipped']), completed_on: date(), notes: long(), sort_order: int(),
+    },
+  },
+  research_documents: {
+    table: 'research_documents', label: 'Research Document', module: 'research', title: 'title', subtitle: ['kind', 'status'],
+    fields: {
+      project_id: ref('research_projects'), kind: oneOf(['proposal', 'concept_paper', 'methodology', 'manuscript', 'other'], req),
+      title: text(req), target: text(), requirements: long(), word_limit: int({ min: 1 }),
+      status: oneOf(['drafting', 'for_review', 'revising', 'final']), notes: long(),
+    },
+  },
+  research_sections: {
+    table: 'research_sections', label: 'Document Section', module: 'research', title: 'heading', subtitle: ['status'],
+    fields: {
+      document_id: ref('research_documents', req), section_key: text({ max: 60 }), heading: text(req), body: long({ max: 200000 }),
+      status: oneOf(['not_started', 'drafting', 'complete', 'not_applicable']), notes: long(), sort_order: int(),
+    },
+  },
+  literature: {
+    table: 'literature', label: 'Literature', module: 'research', title: 'title', subtitle: ['authors', 'year'], date: 'year',
+    fields: {
+      item_type: oneOf(['journal_article', 'book', 'book_chapter', 'conference_paper', 'thesis', 'report', 'web', 'other']),
+      title: text({ required: true, max: 1000 }), authors: text({ max: 2000 }), year: text({ max: 20 }), source: text(), volume: text({ max: 40 }),
+      issue: text({ max: 40 }), pages: text({ max: 40 }), publisher: text(), doi: text(), url: text({ max: 2000 }),
+      abstract: long(), objectives: long(), methodology: long(), findings: long(), limitations: long(), relevance: long(),
+      citations: long(), notes: long(), theme: text(), tags: text({ max: 1000 }),
+    },
+  },
+  research_instruments: {
+    table: 'research_instruments', label: 'Research Instrument', module: 'research', title: 'title', subtitle: ['origin', 'stage'],
+    fields: {
+      title: text(req), origin: oneOf(['developed', 'adopted', 'adapted']), source: long(),
+      permission_status: oneOf(['not_needed', 'to_request', 'requested', 'granted', 'declined']), permission_notes: long(),
+      stage: oneOf(['initial', 'expert_review', 'revision', 'final']), purpose: long(), external_results: long(), notes: long(),
+    },
+  },
+  instrument_versions: {
+    table: 'instrument_versions', label: 'Instrument Version', module: 'research', title: 'label', subtitle: ['stage'],
+    fields: {
+      instrument_id: ref('research_instruments', req), version_no: int({ required: true, min: 1 }), label: text(),
+      stage: oneOf(['initial', 'expert_review', 'revision', 'final']), instructions: long(), response_scale: long(), scoring: long(),
+      interpretation: long(), structure_json: json(), change_notes: long(),
+    },
+  },
+  instrument_reviews: {
+    table: 'instrument_reviews', label: 'Expert Review', module: 'research', title: 'validator', subtitle: ['recommendation'], date: 'review_date',
+    fields: {
+      instrument_id: ref('research_instruments', req), version_id: ref('instrument_versions'), validator: text(req), credentials: text(),
+      review_date: date(), recommendation: oneOf(['accept', 'minor_revision', 'major_revision', 'reject']), rating: text(), comments: long(),
+      addressed: bool(),
+    },
+  },
+  ethics_reviews: {
+    table: 'ethics_reviews', label: 'Ethics Review', module: 'research', title: 'committee', subtitle: ['status', 'reference_no'], date: 'submission_date',
+    fields: {
+      project_id: ref('research_projects', req), committee: text(),
+      status: oneOf(['preparing', 'submitted', 'under_review', 'revisions_required', 'approved', 'approved_with_conditions', 'exempt', 'rejected', 'expired']),
+      submission_date: date(), approval_date: date(), reference_no: text(), required_revisions: long(), revisions_due: date(),
+      conditions: long(), expiry_date: date(), notes: long(),
+    },
+  },
+  research_submissions: {
+    table: 'research_submissions', label: 'Submission', module: 'research', title: 'title', subtitle: ['venue', 'status'], date: 'submission_date',
+    fields: {
+      project_id: ref('research_projects'), document_id: ref('research_documents'), kind: oneOf(['journal', 'conference', 'book', 'other']),
+      title: text(req), venue: text(),
+      status: oneOf(['planned', 'in_preparation', 'submitted', 'under_review', 'revision_required', 'accepted', 'published', 'presented', 'rejected', 'withdrawn']),
+      submission_date: date(), revision_due: date(), resubmission_date: date(), acceptance_date: date(), publication_date: pdate(),
+      doi: text(), url: text({ max: 2000 }), revision_requests: long(), conference_details: long(), notes: long(),
+      publication_id: ref('publications'), presentation_id: ref('presentations'),
+    },
+  },
+  research_funding: {
+    table: 'research_funding', label: 'Funding', module: 'research', title: 'opportunity', subtitle: ['organization', 'award_status'], date: 'deadline',
+    fields: {
+      project_id: ref('research_projects', req), opportunity: text(req), organization: text(), deadline: date(),
+      submission_status: oneOf(['planned', 'preparing', 'submitted', 'not_submitted']), award_status: oneOf(['pending', 'awarded', 'not_awarded', 'withdrawn']),
+      amount: real({ min: 0 }), currency: text({ max: 10 }), notes: long(),
+    },
+  },
+  research_collaborators: {
+    table: 'research_collaborators', label: 'Collaborator', module: 'research', title: 'name', subtitle: ['affiliation', 'project_role'],
+    fields: {
+      project_id: ref('research_projects', req), name: text(req), affiliation: text(), project_role: text(), responsibilities: long(),
+      status: oneOf(['invited', 'active', 'completed', 'inactive']), communication_notes: long(),
     },
   },
   publications: {
-    table: 'publications', label: 'Publication', module: 'academic', group: 'research',
+    table: 'publications', label: 'Publication', module: 'research', group: 'research',
     title: 'title', subtitle: ['venue', 'status'], date: 'publication_date',
     recommended: ['venue', 'publication_date'],
     fields: {
@@ -192,7 +288,7 @@ export const RESOURCES = {
     },
   },
   presentations: {
-    table: 'conference_presentations', label: 'Conference Presentation', module: 'academic', group: 'research',
+    table: 'conference_presentations', label: 'Conference Presentation', module: 'research', group: 'research',
     title: 'title', subtitle: ['conference'], date: 'presentation_date',
     recommended: ['location', 'presentation_date'],
     fields: {
@@ -313,6 +409,8 @@ export const RESOURCES = {
 const SEARCH_JSON = { syllabi: ['content_json'], materials: ['content_json'], tos: ['content_json'], rubrics: ['criteria_json'],
   meetings: ['agenda_json', 'minutes_json'], turnover_documents: ['notes_json'] };
 for (const [k, fields] of Object.entries(SEARCH_JSON)) if (RESOURCES[k]) RESOURCES[k].searchJson = fields;
+RESOURCES.syllabi.searchRich = ['document_json'];
+RESOURCES.research_sections.searchRich = ['body'];
 
 // Searchable text: every text field (secrets and JSON excluded).
 for (const [key, r] of Object.entries(RESOURCES)) {

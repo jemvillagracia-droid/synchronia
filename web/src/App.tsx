@@ -22,6 +22,8 @@ import { PortfolioOverview, PortfolioCategoryPage } from './pages/PortfolioPage'
 import { CvStudio } from './pages/cv/CvStudio';
 import { CvEditor } from './pages/cv/CvEditor';
 import { AcademicPage } from './pages/academic/AcademicPage';
+import { SyllabusPage } from './pages/academic/SyllabusPage';
+import { ResearchPage } from './pages/research/ResearchPage';
 import { CoursePage } from './pages/academic/CoursePage';
 import { desktop } from './lib/desktop';
 
@@ -88,13 +90,15 @@ export function App() {
                 <Route path="/portfolio/:category" element={<PortfolioCategoryPage />} />
                 <Route path="/academic" element={<AcademicPage />} />
                 <Route path="/academic/courses/:id" element={<CoursePage />} />
+                <Route path="/academic/syllabi/:id" element={<SyllabusPage />} />
+                <Route path="/research" element={<ResearchPage />} />
                 <Route path="/cv" element={<CvStudio />} />
                 <Route path="/cv/:id" element={<CvEditor />} />
                 <Route path="/intelligence" element={<IntelligencePage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/knowledge" element={<KnowledgePage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
-                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence', 'admin', 'knowledge'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
+                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence', 'admin', 'knowledge', 'research'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

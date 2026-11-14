@@ -73,6 +73,10 @@ if (!app.requestSingleInstanceLock()) {
     if (typeof url === 'string' && /^https?:\/\//i.test(url)) await shell.openExternal(url);
   });
   ipcMain.handle('synchronia:show-data-folder', () => shell.openPath(dataDir));
+  // Editing commands for toolbar buttons (Cut, Copy, Paste, Paste as plain text, Select all): the same native
+  // actions as the keyboard shortcuts, so pictures and formatted text from the clipboard paste exactly as with Ctrl+V.
+  const EDIT = new Set(['cut', 'copy', 'paste', 'pasteAndMatchStyle', 'selectAll', 'undo', 'redo', 'delete']);
+  ipcMain.handle('synchronia:edit', (e, action) => { if (EDIT.has(action)) e.sender[action](); });
   ipcMain.handle('synchronia:relaunch', () => { app.relaunch(); app.quit(); });
   ipcMain.handle('synchronia:show-item', (_e, p) => {
     if (typeof p === 'string' && path.isAbsolute(p) && fs.existsSync(p)) shell.showItemInFolder(p);
