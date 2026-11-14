@@ -60,8 +60,7 @@ export function QuickCapture({ onClose }: { onClose: () => void }) {
 
   return (
     <Overlay onClose={onClose} label="Quick Capture">
-      <form className="modal" onSubmit={submit}
-        onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); } }}>
+      <form className="modal" onSubmit={submit}>
         <div className="modal-head">
           <Icon name="bolt" size={18} />
           <h2>Quick Capture</h2>

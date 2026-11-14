@@ -222,6 +222,7 @@ export function RecordDrawer({ type, id, onClose, onCreated, defaults }: { type:
             <div className="modal-body" style={{ flex: 1 }}>{form}</div>
             <div className="modal-foot">
               <button key="cancel" type="button" className="btn btn-ghost" onClick={guardedClose} disabled={busy}>Cancel</button>
+              <span className="kbd hide-mobile" title="Ctrl+Enter saves">Ctrl ↵</span>
               <button key="create" className="btn btn-primary" type="submit" form="record-form" disabled={busy}>{busy ? 'Saving…' : 'Save record'}</button>
             </div>
           </>
@@ -338,6 +339,7 @@ export function RecordDrawer({ type, id, onClose, onCreated, defaults }: { type:
               {editing ? (
                 <>
                   <button key="cancel" type="button" className="btn btn-ghost" onClick={() => { if (isDirty && !confirmDiscard()) return; setEditing(false); }} disabled={busy}>Cancel</button>
+                  <span className="kbd hide-mobile" title="Ctrl+Enter saves">Ctrl ↵</span>
                   <button key="save" className="btn btn-primary" type="submit" form="record-form" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button>
                 </>
               ) : confirmDelete ? (
