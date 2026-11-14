@@ -389,7 +389,7 @@ export function NexusPage() {
     <div className="page nexus-page">
       <div className="page-head">
         <div>
-          <div className="crumb"><span className="bar" /><span className="label">00 · Central Nexus</span></div>
+          <div className="crumb"><span className="bar" /><span className="label">Command Center · Central Nexus</span></div>
           <h1 className="display">{greetingName ? `${greeting}, ${greetingName}.` : 'Central Nexus'}</h1>
           <div className="sub">
             {fmtDate(data.today)} · <span style={{ color: 'var(--orange)' }}>{MODE_LABEL[data.mode]} mode</span> · Synchronize knowledge, achievement, and purpose into a coherent academic identity.

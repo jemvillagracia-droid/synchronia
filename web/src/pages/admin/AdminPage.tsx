@@ -298,7 +298,7 @@ export function AdminPage() {
     <div className="page">
       <div className="page-head">
         <div>
-          <div className="crumb"><span className="bar" /><span className="label">05 · Administrative Operations</span></div>
+          <div className="crumb"><span className="bar" /><span className="label">Administrative Operations · Overview</span></div>
           <h1 className="display">Administrative Operations</h1>
           <div className="sub">Correspondence, routing, meetings, secretariat records and your daily log — kept lean, beside the academic work.</div>
         </div>

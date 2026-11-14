@@ -105,6 +105,7 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
       layout_customised: !!layout,
       context_panel_open: !!p.context_panel_open,
       sidebar_collapsed: !!p.sidebar_collapsed,
+      reduce_motion: !!p.reduce_motion,
     };
   };
   api.get('/preferences', (req, res) => res.json(readPrefs(req.user.id)));
@@ -126,8 +127,8 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
         sets.push('dashboard_layout = ?'); params.push(JSON.stringify(clean)); changes.dashboard_layout = 'customised';
       }
     }
-    for (const k of ['context_panel_open', 'sidebar_collapsed']) {
-      if (k in b) { sets.push(`${k} = ?`); params.push(b[k] ? 1 : 0); }
+    for (const k of ['context_panel_open', 'sidebar_collapsed', 'reduce_motion']) {
+      if (k in b) { sets.push(`${k} = ?`); params.push(b[k] ? 1 : 0); if (k === 'reduce_motion') changes.reduce_motion = !!b[k]; }
     }
     if (sets.length) {
       db.prepare(`UPDATE user_profiles SET ${sets.join(', ')}, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE user_id = ?`).run(...params, req.user.id);

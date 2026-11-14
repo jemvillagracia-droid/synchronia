@@ -31,14 +31,24 @@ function cleanPage(p) {
 const signLine = (name) => { const [n, ...rest] = String(name || '').split(','); return [n.toUpperCase(), ...rest].join(','); };
 
 /** The document a structured (pre-1.2) syllabus would have printed. */
+const SEM_BOX = { first: '1st sem', second: '2nd sem', summer: 'Summer' };
+const semKey = (v) => (SEM_BOX[v] ? v : /^(1|first)/i.test(v || '') ? 'first' : /^(2|second)/i.test(v || '') ? 'second' : /summer/i.test(v || '') ? 'summer' : null);
+
 export function legacyDocument(S) {
-  const { syllabus: s, content: c, course, clos, pos, institution: inst, effective_signatories: sig } = S;
-  const term = SEM[s.semester] || s.semester || '';
-  const goals = [inst.goals_national && `National: ${inst.goals_national}`, inst.goals_regional && `Regional: ${inst.goals_regional}`, inst.goals_university && `University: ${inst.goals_university}`].filter(Boolean).join('\n');
+  const { syllabus: s, content: c, course, clos, pos, institution: inst, effective_signatories: sig, alignments = [] } = S;
+  const sem = semKey(s.semester);
+  const box = (k) => `( ${sem === k ? '✓' : '  '} ) ${SEM_BOX[k]}`;
+  // Outcome map columns: only program outcomes this course addresses; "PILO n" reads as "Pn" when all codes share a family.
+  const lvl = (cloId, poId) => alignments.find((a) => a.course_outcome_id === cloId && a.program_outcome_id === poId)?.level || '–';
+  const mapPos = alignments.length ? pos.filter((po) => alignments.some((x) => x.program_outcome_id === po.id)) : pos;
+  const oneFamily = new Set(mapPos.map((po) => (/^[A-Za-z]+/.exec(po.code) || [''])[0].toUpperCase())).size <= 1;
+  const shortPo = (code) => (oneFamily ? code.replace(/^(PILO|PO)\s*/i, 'P') : code).replace(/\s+/g, '');
+  const v = c.vmgo || {};
+  const goals = [v.goals_national && `National: ${v.goals_national}`, v.goals_regional && `Regional: ${v.goals_regional}`, v.goals_university && `University: ${v.goals_university}`].filter(Boolean).join('\n');
   const total = c.grading.reduce((n, x) => n + x.weight, 0);
   const content = [
     ...(inst.college ? [para(inst.college, { bold: true, align: 'center' })] : []),
-    para([s.academic_year && `SY ${s.academic_year}`, term].filter(Boolean).join('   ·   '), { align: 'center' }),
+    para(`SY ${s.academic_year || '________'}     ${box('first')}     ${box('second')}     ${box('summer')}`, { align: 'center' }),
     heading('COURSE SYLLABUS', 1, 'center'),
     tableOf([
       [{ text: 'Course Title', bold: true }, course.title || '', { text: 'Course Code', bold: true }, course.code || ''],
@@ -47,14 +57,19 @@ export function legacyDocument(S) {
     ], { header: false }),
     heading('Vision, Mission and Goals', 2),
     tableOf([
-      [{ text: 'Vision', bold: true }, inst.vision || ''], [{ text: 'Mission', bold: true }, inst.mission || ''], [{ text: 'Goals', bold: true }, goals],
-      [{ text: 'Core Values', bold: true }, inst.core_values || ''], [{ text: 'Graduate Attributes', bold: true }, inst.graduate_attributes || ''],
+      [{ text: 'Vision', bold: true }, v.vision || ''], [{ text: 'Mission', bold: true }, v.mission || ''], [{ text: 'Goals', bold: true }, goals],
+      [{ text: 'Core Values', bold: true }, v.core_values || ''], [{ text: 'Graduate Attributes', bold: true }, v.graduate_attributes || ''],
     ], { header: false }),
     heading('Program Outcomes', 2), para('The graduates have the ability to:'),
     ...(pos.length ? [numbered(pos.map((po) => `${po.code}. ${po.description}`))] : [para('')]),
     heading('Course Intended Learning Outcomes', 2), para(`At the end of the course, the ${c.learner_term || 'students'} can:`),
     ...(clos.length ? [numbered(clos.map((o) => `${o.code}. ${o.description}`))] : [para('')]),
     heading('Course Description', 2), para(c.description || course.description || ''),
+    ...(clos.length && pos.length ? [
+      heading('Mapping of Course Intended Learning Outcomes to Program Outcomes', 2),
+      tableOf([['CILO', ...mapPos.map((po) => shortPo(po.code))], ...clos.map((o) => [`${o.code}. ${o.description}`, ...mapPos.map((po) => lvl(o.id, po.id))])]),
+      para('Legend: I – Introductory   P – Practiced   D – Demonstrative'),
+    ] : []),
     heading('Course Outline', 2),
     tableOf([
       ['Week / Time Allotment', 'Intended Learning Outcomes', 'Outcome-Based Assessment', 'Content', 'Teaching and Learning Activities', 'Learning Resources'],
@@ -65,6 +80,7 @@ export function legacyDocument(S) {
     heading('Course Policies', 2), ...(c.policies ? [numbered(c.policies.split('\n').map((x) => x.trim()).filter(Boolean))] : [para('')]),
     heading('Grading System', 2),
     tableOf([['Component', 'Weight'], ...(c.grading.length ? [...c.grading.map((x) => [x.component, `${x.weight}%`]), [{ text: 'Total', bold: true }, `${total}%`]] : [['', '']])]),
+    ...(c.grading.length && total !== 100 ? [para(`Note: grading weights total ${total}%, not 100%.`)] : []),
     heading('Consultation Hours', 2), para(c.consultation || ''),
     para(''),
     signatureTable(sig),
@@ -133,7 +149,10 @@ function view(db, userId, s) {
 export function openSyllabusDocument(db, userId, id) {
   let s = owned(db, userId, id);
   if (!s.document_json) {
-    const doc = legacyDocument(getSyllabus(db, userId, id));
+    const S = getSyllabus(db, userId, id);
+    const ids = S.clos.map((o) => o.id);
+    S.alignments = ids.length ? db.prepare(`SELECT * FROM outcome_alignments WHERE course_outcome_id IN (${ids.map(() => '?').join(',')})`).all(...ids) : [];
+    const doc = legacyDocument(S);
     tx(db, () => {
       db.prepare('UPDATE syllabi SET document_json = ?, page_json = COALESCE(page_json, ?) WHERE id = ?').run(JSON.stringify(doc), JSON.stringify(DEFAULT_PAGE), s.id);
       s = owned(db, userId, id);

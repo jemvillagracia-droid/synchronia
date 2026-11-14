@@ -255,6 +255,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
 
   useEffect(() => { setMobileNav(false); }, [location.pathname]);
+  // Settings › Appearance: turn off non-essential motion.
+  useEffect(() => { document.documentElement.dataset.motion = prefs?.reduce_motion ? 'reduced' : 'normal'; }, [prefs?.reduce_motion]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

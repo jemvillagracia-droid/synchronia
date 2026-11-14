@@ -4,7 +4,7 @@
 import JSZip from 'jszip';
 import { HttpError, create as createRecord, update as updateRecord } from '../repo.js';
 import { tx } from '../db.js';
-import { cleanSyllabus, programOutcomes, setAlignments } from './service.js';
+import { VMGO_KEYS, cleanSyllabus, programOutcomes, setAlignments } from './service.js';
 import { fillInstitutionGaps } from './institution.js';
 
 // ───────────────────────── Word XML → blocks ─────────────────────────
@@ -310,15 +310,15 @@ export async function parseSyllabusDocx(buffer, fileName = 'syllabus.docx') {
       if (key) { signatories[`${key}_name`] = rest[0] || ''; signatories[`${key}_title`] = rest.slice(1).join(', '); }
     }
   }
-  if (signatories.reviewed_by_name) { institution.program_head_name = signatories.reviewed_by_name; institution.program_head_title = signatories.reviewed_by_title; }
-  if (signatories.approved_by_name) { institution.dean_name = signatories.approved_by_name; institution.dean_title = signatories.approved_by_title; }
 
   if (!course.code) warnings.push('The course code was not found; enter it before importing.');
   if (!course.title) warnings.push('The course title was not found; enter it before importing.');
   const total = grading.reduce((n, g) => n + g.weight, 0);
   if (grading.length && total !== 100) warnings.push(`Grading weights total ${total}%, not 100%.`);
 
-  const content = cleanSyllabus({ description, prerequisites, learner_term: learnerTerm, weeks, grading, references, policies, consultation, signatories });
+  // The syllabus's own statements (VMGO) and signatories stay with the syllabus.
+  const vmgo = Object.fromEntries(VMGO_KEYS.map((k) => [k, institution[k] || '']));
+  const content = cleanSyllabus({ description, prerequisites, learner_term: learnerTerm, weeks, grading, references, policies, consultation, signatories, vmgo });
   return {
     source: String(fileName).split(/[\\/]/).pop().slice(0, 200),
     course: { ...course, description },
@@ -381,12 +381,15 @@ export function importSyllabus(db, userId, preview) {
       .filter((a) => a.clo_id && a.po_id && a.level);
     if (pairs.length) { setAlignments(db, userId, course.id, pairs); counts.alignments = pairs.length; }
 
+    const inst = preview.institution && typeof preview.institution === 'object' ? preview.institution : {};
+    const content = preview.content || {};
+    const vmgo = { ...Object.fromEntries(VMGO_KEYS.map((k) => [k, inst[k] || ''])), ...(content.vmgo || {}) };
     const syllabus = createRecord(db, userId, 'syllabi', {
       course_id: course.id, version_label: ay ? `AY ${ay}` : `Imported ${new Date().toISOString().slice(0, 10)}`,
-      academic_year: ay || null, semester, status: 'draft', content_json: cleanSyllabus(preview.content || {}),
+      academic_year: ay || null, semester, status: 'draft', content_json: cleanSyllabus({ ...content, vmgo }),
     });
-    const inst = preview.institution && typeof preview.institution === 'object' ? preview.institution : {};
-    const filled = fillInstitutionGaps(db, userId, inst);
+    // Only the institution's name lines (used in document headers) go to Settings; never statements or signatories.
+    const filled = fillInstitutionGaps(db, userId, { university: inst.university, campus: inst.campus, college: inst.college });
     return { course_id: course.id, syllabus_id: syllabus.id, counts, institution_filled: filled };
   });
 }

@@ -219,7 +219,7 @@ export function KnowledgePage() {
     <div className="page">
       <div className="page-head">
         <div>
-          <div className="crumb"><span className="bar" /><span className="label">06 · Knowledge and References</span></div>
+          <div className="crumb"><span className="bar" /><span className="label">Knowledge Management · Knowledge and References</span></div>
           <h1 className="display">Knowledge and References</h1>
           <div className="sub">Your documents stay where they are. SYNCHRONIA keeps references to them, finds them, and links them to your records. See also the <Link className="link" to="/portfolio/timeline">professional timeline</Link>.</div>
         </div>

@@ -10,9 +10,9 @@ import { SaveIndicator } from '../components/SaveIndicator';
 
 type Inst = Record<string, string> & { letterhead?: any; updated_at?: string | null };
 const TEXT: [string, string, string?][] = [['university', 'University'], ['campus', 'Campus'], ['college', 'College / office', 'Printed at the top of the syllabus, e.g. COLLEGE OF EDUCATION']];
-const LONG: [string, string][] = [['vision', 'Vision'], ['mission', 'Mission'], ['goals_national', 'Goals — National'], ['goals_regional', 'Goals — Regional'],
-  ['goals_university', 'Goals — University'], ['core_values', 'Core values'], ['graduate_attributes', 'Graduate attributes']];
-const FIELDS = ['university', 'campus', 'college', 'office_line', 'contact_line', ...LONG.map(([k]) => k), 'program_head_name', 'program_head_title', 'dean_name', 'dean_title'];
+// Settings keeps only what applies to every exported document (the letterhead and the institution's name lines).
+// Vision, mission, goals and signatories are written in each document that needs them (1.2).
+const FIELDS = ['university', 'campus', 'college', 'office_line', 'contact_line'];
 const pick = (i: Inst) => Object.fromEntries(FIELDS.map((k) => [k, i[k] || '']));
 
 export function InstitutionSettings() {
@@ -80,27 +80,11 @@ export function InstitutionSettings() {
       </section>
 
       <section className="panel">
-        <header className="panel-head"><span className="code">VMGO</span><h2>Institution, vision, mission and goals</h2></header>
+        <header className="panel-head"><span className="code">DOC</span><h2>Document headers</h2></header>
         <div className="panel-body stack">
-          <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>Printed in every syllabus. Importing a syllabus fills any of these that are still empty.</p>
+          <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>The institution's name lines used in exported documents. Vision, mission, goals and signatories are not set here: write them in the syllabus or document that needs them, so nothing is assumed.</p>
           <div className="form-grid">
             {TEXT.map(([k, label, hint]) => <Field key={k} label={label} hint={hint}><AutoText value={v[k]} onChange={(x) => set(k, x)} /></Field>)}
-          </div>
-          <div className="form-grid">
-            {LONG.map(([k, label]) => <Field key={k} label={label} className={k === 'vision' || k === 'mission' ? 'span-2' : undefined}><textarea className="textarea" rows={3} value={v[k]} onChange={(e) => set(k, e.target.value)} spellCheck /></Field>)}
-          </div>
-        </div>
-      </section>
-
-      <section className="panel">
-        <header className="panel-head"><span className="code">SIG</span><h2>Default signatories</h2></header>
-        <div className="panel-body stack">
-          <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>Used for “Reviewed by” and “Approved by” on syllabi unless a syllabus names someone else. “Prepared by” is your profile name.</p>
-          <div className="form-grid">
-            <Field label="Program head — name"><AutoText value={v.program_head_name} onChange={(x) => set('program_head_name', x)} placeholder="Name, degree" /></Field>
-            <Field label="Program head — position"><AutoText value={v.program_head_title} onChange={(x) => set('program_head_title', x)} placeholder="Program Head, BSEd" /></Field>
-            <Field label="Dean — name"><AutoText value={v.dean_name} onChange={(x) => set('dean_name', x)} placeholder="Name, degree" /></Field>
-            <Field label="Dean — position"><AutoText value={v.dean_title} onChange={(x) => set('dean_title', x)} placeholder="College Dean" /></Field>
           </div>
           {inst.updated_at && <div className="faint" style={{ fontSize: 12.5 }}>Last saved {fmtDateTime(inst.updated_at)}</div>}
         </div>

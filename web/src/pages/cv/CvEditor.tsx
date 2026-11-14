@@ -604,7 +604,7 @@ export function CvEditor() {
       <div className="cv-editor-head">
         <Link to="/cv" className="icon-btn" aria-label="Back to CV Studio"><Icon name="left" size={16} /></Link>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="label">03 · CV Studio · {CV_TYPES[cv.cv_type]}</div>
+          <div className="label">Professional Development · CV Studio · {CV_TYPES[cv.cv_type]}</div>
           {readOnly ? <h1 className="cv-title">{cv.name}</h1> : (
             <input className="cv-title" value={name} aria-label="CV name" onChange={(e) => setName(e.target.value)}
               onBlur={() => name.trim() && name !== cv.name && mutate(api.patch(`/cv/${cv.id}`, { name }), 'Renamed')} />

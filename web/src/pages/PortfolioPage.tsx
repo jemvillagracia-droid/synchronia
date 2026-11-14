@@ -56,7 +56,7 @@ export function PortfolioShell({ children, title, crumb, sub, actions }: { child
     <div className="page">
       <div className="page-head">
         <div>
-          <div className="crumb"><span className="bar" /><span className="label">02 · Professional Portfolio{crumb ? ` · ${crumb}` : ''}</span></div>
+          <div className="crumb"><span className="bar" /><span className="label">Professional Development · Portfolio{crumb ? ` · ${crumb}` : ''}</span></div>
           <h1 className="display">{title}</h1>
           {sub && <div className="sub">{sub}</div>}
         </div>

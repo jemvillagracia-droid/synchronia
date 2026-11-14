@@ -57,10 +57,10 @@ function Clock({ d, cal }: { d: Command['deadlines']; cal: CalData | null }) {
 }
 
 const SERIES: { key: 'portfolio' | 'academic' | 'cv' | 'other'; label: string; color: string }[] = [
-  { key: 'academic', label: 'Academic', color: '#9cff3a' },
-  { key: 'portfolio', label: 'Portfolio', color: '#ffb000' },
-  { key: 'cv', label: 'CV Studio', color: '#ff2fa6' },
-  { key: 'other', label: 'Other', color: '#8a3ffc' },
+  { key: 'academic', label: 'Academic', color: '#c4a3ff' },
+  { key: 'portfolio', label: 'Portfolio', color: '#ff9f43' },
+  { key: 'cv', label: 'CV Studio', color: '#e05aa8' },
+  { key: 'other', label: 'Other', color: '#6f7cff' },
 ];
 
 function smooth(points: [number, number][]) {
@@ -104,7 +104,7 @@ function SyncGraph({ a }: { a: Command['activity'] }) {
             ))}
           </defs>
           {Array.from({ length: 9 }).map((_, i) => (
-            <line key={i} x1="0" x2={W} y1={PAD + (i * (H - PAD * 2)) / 8} y2={PAD + (i * (H - PAD * 2)) / 8} stroke={i < 4 ? '#3cd26c' : '#ff5a1f'} strokeOpacity=".35" strokeWidth="1" />
+            <line key={i} x1="0" x2={W} y1={PAD + (i * (H - PAD * 2)) / 8} y2={PAD + (i * (H - PAD * 2)) / 8} stroke={i < 4 ? '#6a4bb8' : '#9a3f86'} strokeOpacity=".35" strokeWidth="1" />
           ))}
           {layers.map((l) => <path key={l.key} d={l.path} fill={`url(#g-${l.key})`} />)}
           {layers.map((l) => <path key={`${l.key}-l`} d={l.line} fill="none" stroke="#fff" strokeOpacity=".85" strokeWidth="1.2" filter="url(#glow)" />)}

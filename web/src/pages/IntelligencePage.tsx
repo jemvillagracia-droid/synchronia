@@ -111,12 +111,14 @@ function ReportBuilder({ cat, filters, sections }: { cat: Catalog; filters: { fr
   const [format, setFormat] = useState<'docx' | 'pdf' | 'xlsx'>('docx');
   const [busy, setBusy] = useState<string | null>(null);
   const [recent, setRecent] = useState<GeneratedReport[]>([]);
+  // "Noted by" is printed only when named here; no signatory is assumed.
+  const [noted, setNoted] = useState({ name: '', title: '' });
   const load = useCallback(() => { api.get<GeneratedReport[]>('/intelligence/reports').then(setRecent).catch(() => {}); }, []);
   useEffect(() => { load(); return onDataChanged(load); }, [load]);
   async function generate(type: string) {
     setBusy(type);
     try {
-      const r = await api.post<{ file_name: string; download: string; sources: number; validation?: { summary: string } }>('/intelligence/reports', { type, format, from: filters.from || null, to: filters.to || null, support: filters.support, sections: type === 'custom' ? sections : undefined });
+      const r = await api.post<{ file_name: string; download: string; sources: number; validation?: { summary: string } }>('/intelligence/reports', { type, format, from: filters.from || null, to: filters.to || null, support: filters.support, sections: type === 'custom' ? sections : undefined, noted_by_name: noted.name || undefined, noted_by_title: noted.title || undefined });
       download(r.download, r.file_name);
       toast(`Generated ${r.file_name} from ${r.sources} source record${r.sources === 1 ? '' : 's'}${r.validation ? ` — ${r.validation.summary}` : ''}`, 'ok');
       dataChanged();
@@ -133,6 +135,13 @@ function ReportBuilder({ cat, filters, sections }: { cat: Catalog; filters: { fr
       <div className="panel-body stack">
         <p className="muted" style={{ margin: 0, fontSize: 14 }}>Reports use the period and support filter above. Every line cites a numbered source record, listed at the end; your letterhead is applied to Word and PDF.
           The curriculum vitae is produced in <Link to="/cv" className="link">Curriculum Vitae Studio</Link>.</p>
+        <div className="row wrap" style={{ gap: 'var(--s-3)', alignItems: 'flex-end' }}>
+          <label className="field" style={{ minWidth: 220, flex: '1 1 220px' }}><span className="label">Noted by (optional)</span>
+            <input className="input" value={noted.name} maxLength={200} onChange={(e) => setNoted({ ...noted, name: e.target.value })} placeholder="Name, if the report needs one" /></label>
+          <label className="field" style={{ minWidth: 200, flex: '1 1 200px' }}><span className="label">Position</span>
+            <input className="input" value={noted.title} maxLength={200} onChange={(e) => setNoted({ ...noted, title: e.target.value })} placeholder="e.g. College Dean" disabled={!noted.name} /></label>
+          <span className="faint" style={{ fontSize: 12.5, flex: '2 1 260px' }}>Leave empty to print only “Prepared by” (you).</span>
+        </div>
         <div className="report-grid">
           {cat.reports.map((r) => (
             <div key={r.key} className="report-card">
@@ -185,7 +194,7 @@ export function IntelligencePage() {
     <div className="page">
       <div className="page-head">
         <div>
-          <div className="crumb"><span className="bar" /><span className="label">04 · Intelligence</span></div>
+          <div className="crumb"><span className="bar" /><span className="label">Intelligence · Reports and Analytics</span></div>
           <h1 className="display">Intelligence</h1>
           <div className="sub">Analytics and reports computed only from your records. Every figure opens to the records behind it.</div>
         </div>

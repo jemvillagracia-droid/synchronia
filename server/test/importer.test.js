@@ -181,11 +181,16 @@ test('import commit creates the course, outcomes, alignments and a draft syllabu
   assert.deepEqual(r.body.counts, { course: 'created', program_outcomes: 4, course_outcomes: 2, alignments: 4 });
   const ws = (await call('GET', `/academic/courses/${r.body.course_id}`)).body;
   assert.equal(ws.course.contact_hours, 54);
+  // 1.2: the syllabus keeps its own statements and signatories; Settings gains neither.
   const inst = (await call('GET', '/academic/institution')).body;
   assert.equal(inst.university, 'Example State University', 'existing values are kept');
-  assert.equal(inst.dean_name, 'Dr. Dean', 'existing values are kept');
-  assert.equal(inst.vision, 'A leading university of human development.', 'empty values are filled');
-  assert.equal(inst.program_head_name, 'BEN CRUZ, MAEd');
+  assert.equal(inst.dean_name, 'Dr. Dean', 'existing values are kept (not used for new documents)');
+  assert.equal(inst.vision, '', 'statements are not copied into Settings');
+  assert.equal(inst.program_head_name, '', 'signatories are not copied into Settings');
+  const own = (await call('GET', `/academic/syllabi/${r.body.syllabus_id}/document`)).body;
+  const ownText = JSON.stringify(own.document);
+  assert.ok(ownText.includes('A leading university of human development.'), 'the vision stays with the syllabus');
+  assert.ok(ownText.includes('BEN CRUZ, MAEd'), 'the signatories stay with the syllabus');
 
   // Importing again reuses the course and outcomes instead of duplicating them.
   const again = await call('POST', '/academic/syllabi/import/commit', preview);

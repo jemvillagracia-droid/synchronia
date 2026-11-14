@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { desktop } from '../lib/desktop';
 import { api, dataChanged, onDataChanged } from '../lib/api';
 import { fmtDateTime, humanize, MODE_DESC, MODE_LABEL } from '../lib/format';
@@ -8,7 +9,8 @@ import { Icon } from '../components/Icon';
 import { download } from '../lib/download';
 import { InstitutionSettings } from './InstitutionSettings';
 
-type Tab = 'workspace' | 'institution' | 'application' | 'data';
+type Tab = 'workspace' | 'appearance' | 'documents' | 'data' | 'application';
+const TABS: [Tab, string][] = [['workspace', 'Workspace and navigation'], ['appearance', 'Appearance'], ['documents', 'Document export'], ['data', 'Backup and recovery'], ['application', 'Security and privacy']];
 
 function Workspace() {
   const { prefs, updatePrefs, toast } = useApp();
@@ -41,7 +43,7 @@ function Workspace() {
             <div><div>Central Nexus widgets</div><div className="faint" style={{ fontSize: 13 }}>{prefs.layout_customised ? 'Customised order and visibility' : 'Using the default for your academic mode'}</div></div>
             <button className="btn btn-sm" disabled={!prefs.layout_customised} onClick={async () => { await updatePrefs({ dashboard_layout: null }); dataChanged(); toast('Layout reset', 'ok'); }}><Icon name="restore" />Reset</button>
           </div>
-          <label className="checkline"><input type="checkbox" className="check" checked={prefs.sidebar_collapsed} onChange={(e) => updatePrefs({ sidebar_collapsed: e.target.checked })} />Collapse navigation sidebar</label>
+          <label className="checkline"><input type="checkbox" className="check" checked={prefs.sidebar_collapsed} onChange={(e) => updatePrefs({ sidebar_collapsed: e.target.checked })} />Collapse the navigation sidebar to icons (names show on hover)</label>
           <label className="checkline"><input type="checkbox" className="check" checked={prefs.context_panel_open} onChange={(e) => updatePrefs({ context_panel_open: e.target.checked })} />Open the context panel by default (wide screens)</label>
         </div>
       </section>
@@ -217,8 +219,29 @@ function Data() {
   );
 }
 
+function Appearance() {
+  const { prefs, updatePrefs, toast } = useApp();
+  if (!prefs) return <div className="skeleton" />;
+  return (
+    <div className="stack">
+      <section className="panel">
+        <header className="panel-head"><span className="code">MOT</span><h2>Motion</h2></header>
+        <div className="panel-body stack">
+          <label className="checkline"><input type="checkbox" className="check" checked={!!prefs.reduce_motion}
+            onChange={async (e) => { await updatePrefs({ reduce_motion: e.target.checked }); toast(e.target.checked ? 'Non-essential motion turned off' : 'Short transitions turned back on', 'ok'); }} />
+            Turn off non-essential motion (pop-ups and menus appear instantly)</label>
+          <p className="faint" style={{ margin: 0, fontSize: 13 }}>SYNCHRONIA already keeps motion short and avoids continuous animation. If your computer is set to reduce motion, that is followed too.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function SettingsPage() {
-  const [tab, setTab] = useState<Tab>('workspace');
+  const [params, setParams] = useSearchParams();
+  const asked = params.get('tab') === 'institution' ? 'documents' : params.get('tab');
+  const tab: Tab = TABS.some(([k]) => k === asked) ? (asked as Tab) : 'workspace';
+  const setTab = (t: Tab) => setParams({ tab: t });
   return (
     <div className="page">
       <div className="page-head">
@@ -228,12 +251,13 @@ export function SettingsPage() {
         </div>
       </div>
       <div className="tabs" role="tablist">
-        {(['workspace', 'institution', 'data', 'application'] as Tab[]).map((t) => (
-          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t === 'data' ? 'Data & recovery' : humanize(t)}</button>
+        {TABS.map(([t, label]) => (
+          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{label}</button>
         ))}
       </div>
       {tab === 'workspace' && <Workspace />}
-      {tab === 'institution' && <InstitutionSettings />}
+      {tab === 'appearance' && <Appearance />}
+      {tab === 'documents' && <InstitutionSettings />}
       {tab === 'application' && <Application />}
       {tab === 'data' && <Data />}
     </div>

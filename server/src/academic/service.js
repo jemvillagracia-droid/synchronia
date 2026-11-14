@@ -117,6 +117,7 @@ export function setAlignments(db, userId, courseId, pairs) {
 
 const str = (v, max = 4000) => (typeof v === 'string' ? v.slice(0, max) : v == null ? '' : String(v).slice(0, max));
 
+export const VMGO_KEYS = ['vision', 'mission', 'goals_national', 'goals_regional', 'goals_university', 'core_values', 'graduate_attributes'];
 const SIGN_KEYS = ['prepared_by_name', 'prepared_by_title', 'reviewed_by_name', 'reviewed_by_title', 'approved_by_name', 'approved_by_title'];
 
 /** URS outcomes-based syllabus content. Older content (week.topics) is read as week.content. */
@@ -146,6 +147,8 @@ export function cleanSyllabus(c) {
     policies: str(policies, 12000),
     consultation: str(c.consultation, 500),
     signatories: Object.fromEntries(SIGN_KEYS.map((k) => [k, str(sig[k], 200)])),
+    // Vision, mission, goals, core values and graduate attributes belong to the syllabus (1.2), not to Settings.
+    vmgo: Object.fromEntries(VMGO_KEYS.map((k) => [k, str(c.vmgo?.[k], 3000)])),
   };
 }
 
@@ -157,13 +160,9 @@ export function getSyllabus(db, userId, id) {
   const content = cleanSyllabus(parse(s.content_json, {}));
   const inst = getInstitution(db, userId);
   const prof = db.prepare('SELECT full_name FROM professional_profiles WHERE user_id = ?').get(userId) || {};
-  // Signatory defaults: the faculty member, and the program head / dean from the institution profile.
+  // Only the author is assumed (as "Prepared by"); reviewers and approvers are whoever the syllabus itself names.
   const sg = content.signatories;
-  const defaults = {
-    prepared_by_name: prof.full_name || '', prepared_by_title: 'Faculty',
-    reviewed_by_name: inst.program_head_name, reviewed_by_title: inst.program_head_title || (course.program ? `Program Head, ${course.program}` : 'Program Head'),
-    approved_by_name: inst.dean_name, approved_by_title: inst.dean_title || 'College Dean',
-  };
+  const defaults = { prepared_by_name: prof.full_name || '', prepared_by_title: 'Faculty' };
   return { syllabus: { ...s, content_json: undefined }, content, course, clos, pos, institution: inst, signatory_defaults: defaults,
     effective_signatories: Object.fromEntries(SIGN_KEYS.map((k) => [k, sg[k] || defaults[k] || ''])) };
 }

@@ -77,7 +77,7 @@ export function CvStudio() {
     <div className="page">
       <div className="page-head">
         <div>
-          <div className="crumb"><span className="bar" /><span className="label">03 · Curriculum Vitae Studio</span></div>
+          <div className="crumb"><span className="bar" /><span className="label">Professional Development · Curriculum Vitae Studio</span></div>
           <h1 className="display">Curriculum Vitae Studio</h1>
           <div className="sub">Comprehensive academic CVs built from your Professional Portfolio. Editable Word and text-based PDF output, checked for applicant tracking systems.</div>
         </div>

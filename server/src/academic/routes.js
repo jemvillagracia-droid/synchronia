@@ -42,7 +42,8 @@ export function academicRouter(db, { pdfRenderer } = {}) {
   r.post('/syllabi/:id/document/export', async (req, res) => res.status(201).json(await sd.exportSyllabusDocument(db, u(req), req.params.id, req.body?.format || 'docx', { pdfRenderer })));
   r.get('/syllabi/:id', (req, res) => res.json(a.getSyllabus(db, u(req), req.params.id)));
   r.put('/syllabi/:id/content', (req, res) => res.json(a.saveSyllabus(db, u(req), req.params.id, req.body)));
-  r.post('/syllabi/:id/export', async (req, res) => res.status(201).json(await a.exportSyllabus(db, u(req), req.params.id)));
+  // One export path: the syllabus document (pre-1.2 syllabi are converted on first use).
+  r.post('/syllabi/:id/export', async (req, res) => res.status(201).json(await sd.exportSyllabusDocument(db, u(req), req.params.id, 'docx', { pdfRenderer })));
 
   r.get('/tos/:id', (req, res) => res.json(a.getTos(db, u(req), req.params.id)));
   r.put('/tos/:id/content', (req, res) => res.json(a.saveTos(db, u(req), req.params.id, req.body)));

@@ -9,6 +9,7 @@ export interface Preferences {
   layout_customised: boolean;
   context_panel_open: boolean;
   sidebar_collapsed: boolean;
+  reduce_motion?: boolean;
 }
 
 export interface FieldSpec {

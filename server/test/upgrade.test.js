@@ -41,3 +41,33 @@ test('a 1.0.0 database with CVs upgrades without losing sections, and accepts th
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM cv_sections').get().n, 0, 'cascade still applies after the rebuild');
   db.close();
 });
+
+test('1.2: statements and signatories entered in Settings move into existing syllabi, filling only empty places', async () => {
+  const { createRequire } = await import('node:module');
+  const require = createRequire(import.meta.url);
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'synchronia-upg2-')), 'synchronia.db');
+  const old = new DatabaseSync(file);
+  old.exec('PRAGMA foreign_keys = ON');
+  old.exec("CREATE TABLE schema_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))");
+  for (const f of fs.readdirSync(DIR).filter((f) => f < '015').sort()) {
+    if (f.endsWith('.sql')) old.exec(fs.readFileSync(path.join(DIR, f), 'utf8'));
+    else if (f.endsWith('.cjs')) require(path.join(DIR, f))(old);
+    else continue;
+    old.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(f);
+  }
+  const uid = old.prepare("INSERT INTO users (email, password_hash) VALUES ('o@local', 'x') RETURNING id").get().id;
+  old.prepare('INSERT INTO institution_settings (user_id, data_json) VALUES (?, ?)').run(uid, JSON.stringify({ vision: 'Excellence in teacher education', dean_name: 'Dr. Dean', dean_title: 'College Dean', program_head_name: 'Prof. Head' }));
+  const course = old.prepare("INSERT INTO courses (user_id, code, title) VALUES (?, 'ED 1', 'Ed') RETURNING id").get(uid).id;
+  const a = old.prepare('INSERT INTO syllabi (user_id, course_id, content_json) VALUES (?, ?, ?) RETURNING id').get(uid, course, JSON.stringify({ signatories: { approved_by_name: 'Own Approver' } })).id;
+  const b = old.prepare("INSERT INTO syllabi (user_id, course_id, content_json, document_json) VALUES (?, ?, '{}', ?) RETURNING id").get(uid, course, JSON.stringify({ type: 'doc', content: [] })).id;
+  old.close();
+
+  const db = openDatabase(file);
+  const ca = JSON.parse(db.prepare('SELECT content_json FROM syllabi WHERE id = ?').get(a).content_json);
+  assert.equal(ca.vmgo.vision, 'Excellence in teacher education');
+  assert.equal(ca.signatories.reviewed_by_name, 'Prof. Head');
+  assert.equal(ca.signatories.approved_by_name, 'Own Approver', 'a syllabus\'s own signatory is never replaced');
+  assert.equal(db.prepare('SELECT content_json FROM syllabi WHERE id = ?').get(b).content_json, '{}', 'already-converted documents are left alone');
+  assert.match(db.prepare('SELECT data_json FROM institution_settings').get().data_json, /Dr\. Dean/, 'the original values stay stored');
+  db.close();
+});

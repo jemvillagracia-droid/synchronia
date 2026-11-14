@@ -60,6 +60,11 @@ export const REPORT_TYPES = {
 };
 
 const FORMATS = ['docx', 'pdf', 'xlsx'];
+function notedBy(body) {
+  const name = typeof body.noted_by_name === 'string' ? body.noted_by_name.trim().slice(0, 200) : '';
+  const title = typeof body.noted_by_title === 'string' ? body.noted_by_title.trim().slice(0, 200) : '';
+  return name ? { name, title } : null;
+}
 
 /** Build the report model: summary rows, per-metric detail with source references, and the numbered source list. */
 export function reportModel(db, userId, body = {}) {
@@ -88,7 +93,8 @@ export function reportModel(db, userId, body = {}) {
   return {
     type: body.type, title: def.label, period: a.period, filters: a.filters, generated_at: a.generated_at,
     person: { name: prof.full_name || '', position: prof.current_position || prof.professional_title || '', office: prof.current_office || '', institution: prof.current_institution || inst.university || '' },
-    noted_by: inst.dean_name ? { name: inst.dean_name, title: inst.dean_title || 'College Dean' } : null,
+    // "Noted by" only when the person generating the report names someone; no signatory is assumed.
+    noted_by: notedBy(body),
     groups: groups.map((g) => ({ key: g.key, code: g.code, label: g.label, metrics: g.metrics.map((m) => ({ ...m, rows: m.sources.map((s) => ({ ...s, ref: refs.get(`${s.type}:${s.id}`) })) })) })),
     sources, support,
   };
