@@ -1,0 +1,76 @@
+# Builds the Windows installer on GitHub and attaches it to a release.
+#
+# Publish a release on GitHub (tag vX.Y.Z, matching "version" in package.json): the tests run, the installer is built
+# on Windows and SYNCHRONIA-Setup-X.Y.Z.exe is attached to that release.
+# Run it by hand (Actions › Windows release › Run workflow) to build an installer without a release; it is then kept
+# as a downloadable artifact of the run for 30 days.
+name: Windows release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The web build comes first: the security tests check the headers on the app's own page.
+      - run: npm run build
+      - run: npm test
+
+  build:
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check the release tag matches the app version
+        if: github.event_name == 'release'
+        shell: bash
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          version="$(node -p "require('./package.json').version")"
+          if [ "${tag#v}" != "$version" ]; then
+            echo "::error::Release tag $tag does not match package.json version $version. Bump the version or retag."
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run dist:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Keep the installer with this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: SYNCHRONIA-Setup
+          path: release/SYNCHRONIA-Setup-*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach the installer to the release
+        if: github.event_name == 'release'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.event.release.tag_name }}" release/SYNCHRONIA-Setup-*.exe --clobber --repo "${{ github.repository }}"
