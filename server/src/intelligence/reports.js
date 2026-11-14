@@ -245,10 +245,10 @@ export async function generateReport(db, userId, body = {}, { pdfRenderer } = {}
     buffer = await pdfRenderer(toHtml(model, lh), { title: model.title, footerTemplate: PDF_FOOTER(model.title, lh?.footer) });
   }
   const stamp = model.period.from || model.period.to ? `${model.period.from || 'start'}_to_${model.period.to || 'date'}` : 'to_date';
-  const out = saveReport(db, userId, {
+  const out = await saveReport(db, userId, {
     type: `intelligence_${model.type}`, title: `${model.title} — ${model.period.label}`, buffer, format,
     fileStem: `${model.title.replace(/\s+/g, '_')}_${stamp}`, periodStart: model.period.from, periodEnd: model.period.to,
-    params: { type: model.type, from: model.period.from, to: model.period.to, sections: model.filters.sections, support: model.filters.support, sources: model.sources.length },
+    params: { type: model.type, from: model.period.from, to: model.period.to, sections: model.filters.sections, support: model.filters.support, sources: model.sources.length }, expect: [model.title],
   });
   return { ...out, format, sources: model.sources.length, support: model.support };
 }

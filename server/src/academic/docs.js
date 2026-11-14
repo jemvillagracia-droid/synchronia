@@ -9,6 +9,7 @@ import {
 } from 'docx';
 import { DATA_DIR } from '../config.js';
 import { indexReport } from '../repo.js';
+import { requireValid } from '../exportcheck.js';
 
 const FONT = 'Times New Roman';
 const border = { style: BorderStyle.SINGLE, size: 4, color: '808080' };
@@ -135,8 +136,10 @@ export async function buildDocument({ title, subtitle, children, landscape = fal
 export const numbered = (text, instance = 0) => new Paragraph({ numbering: { reference: 'doc-numbers', level: 0, ...(instance ? { instance } : {}) }, spacing: { after: 40 }, children: [new TextRun(String(text))] });
 
 /** Save a generated report, record it, and return its download metadata. */
-export function saveReport(db, userId, { type, title, buffer, fileStem, periodStart = null, periodEnd = null, params = null, format = 'docx' }) {
+export async function saveReport(db, userId, { type, title, buffer, fileStem, periodStart = null, periodEnd = null, params = null, format = 'docx', expect = [] }) {
   if (!['docx', 'pdf', 'xlsx', 'csv'].includes(format)) throw new Error(`Unsupported report format ${format}`);
+  // Re-open the file with an independent reader before saving it; a broken document is never reported as saved.
+  const validation = format === 'csv' ? null : await requireValid(buffer, format, { expect });
   const dir = path.join(DATA_DIR, 'exports', 'reports');
   fs.mkdirSync(dir, { recursive: true });
   const safe = String(fileStem).normalize('NFKD').replace(/[^\w-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 90) || 'report';
@@ -145,7 +148,7 @@ export function saveReport(db, userId, { type, title, buffer, fileStem, periodSt
   const rel = path.join('exports', 'reports', name);
   fs.writeFileSync(path.join(DATA_DIR, rel), buffer);
   const r = db.prepare('INSERT INTO reports (user_id, report_type, title, period_start, period_end, format, file_path, params_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(userId, type, title, periodStart, periodEnd, format, rel, params ? JSON.stringify(params) : null);
+    .run(userId, type, title, periodStart, periodEnd, format, rel, JSON.stringify({ ...(params || {}), validation: validation && { summary: validation.summary, pages: validation.pages, words: validation.words } }));
   indexReport(db, db.prepare('SELECT * FROM reports WHERE id = ?').get(r.lastInsertRowid));
-  return { id: Number(r.lastInsertRowid), file_name: name, download: `/api/academic/reports/${r.lastInsertRowid}/download`, size_bytes: buffer.length };
+  return { id: Number(r.lastInsertRowid), file_name: name, download: `/api/academic/reports/${r.lastInsertRowid}/download`, size_bytes: buffer.length, validation };
 }

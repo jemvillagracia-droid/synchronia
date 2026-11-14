@@ -24,6 +24,8 @@ const list = (t) => (t ? String(t).split(/[;\n]|,(?![^()]*\))/).map((s) => s.tri
 const join = (...xs) => xs.filter(Boolean).join(', ');
 const human = (s) => (s ? s.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) : '');
 
+const SPEAKING_ROLES = ['speaker', 'facilitator', 'organizer'];
+
 const PUB_STATUS = { in_preparation: 'In preparation', submitted: 'Submitted', under_review: 'Under review', accepted: 'Accepted / in press' };
 
 function citation(p) {
@@ -64,7 +66,7 @@ export const SECTIONS = [
         : fmtDate(r.graduation_date, o.dateStyle) || fmtRange(r.start_date, r.end_date, { style: o.dateStyle }),
       details: [r.thesis_title && `Thesis: ${r.thesis_title}${r.advisor ? `. Advisor: ${r.advisor}` : ''}`, ...lines(r.distinctions)].filter(Boolean),
       note: r.status === 'units_earned' ? 'Units earned' : r.status === 'ongoing' ? 'In progress' : null,
-      sortDate: r.graduation_date || r.end_date || r.start_date || (r.status === 'ongoing' ? '9999' : null),
+      sortDate: r.status === 'ongoing' ? '9999' : (r.graduation_date || r.end_date || r.start_date || null),
       missing: [!r.graduation_date && !r.end_date && r.status === 'completed' && 'graduation_date'].filter(Boolean),
     }) },
   { key: 'licenses', heading: 'Licenses and Certifications', ats: 'Licenses and Certifications', source: ['licenses', 'trainings'], kind: 'item',
@@ -147,12 +149,20 @@ export const SECTIONS = [
       details: lines(r.description), sortDate: r.date_received, missing: [!r.date_received && 'date_received'].filter(Boolean),
     }) },
   { key: 'development', heading: 'Professional Development', ats: 'Professional Development', source: 'trainings', kind: 'item',
-    filter: { trainings: (r) => r.training_type !== 'certification' },
+    filter: { trainings: (r) => r.training_type !== 'certification' && !SPEAKING_ROLES.includes(r.role) },
     map: (r, o) => ({
       title: r.title,
       subtitle: [join(r.organizer, r.location), r.role && r.role !== 'participant' ? human(r.role) : null].filter(Boolean).join(' · '),
       dates: fmtRange(r.start_date, r.end_date, { style: o.dateStyle }),
       note: r.hours != null ? `${Number(r.hours)} hours${r.cpd_units != null ? `, ${Number(r.cpd_units)} CPD units` : ''}` : null,
+      sortDate: r.start_date, missing: [!r.start_date && 'start_date', !r.organizer && 'organizer'].filter(Boolean),
+    }) },
+  { key: 'speaking', heading: 'Resource Speakership and Invited Talks', ats: 'Speaking Engagements', source: 'trainings', kind: 'item',
+    filter: { trainings: (r) => SPEAKING_ROLES.includes(r.role) },
+    map: (r, o) => ({
+      title: r.title,
+      subtitle: [join(r.organizer, r.location), r.role && r.role !== 'speaker' ? human(r.role) : null].filter(Boolean).join(' · '),
+      dates: fmtRange(r.start_date, r.end_date, { style: o.dateStyle }),
       sortDate: r.start_date, missing: [!r.start_date && 'start_date', !r.organizer && 'organizer'].filter(Boolean),
     }) },
   { key: 'service', heading: 'Institutional Service', ats: 'Institutional Service', source: 'committees', kind: 'item',
@@ -199,20 +209,23 @@ export const STANDARD_ATS_HEADINGS = new Set([
 // languages, skills and references. Summaries are not customary on Harvard-style academic CVs, so they start hidden there.
 export const DEFAULT_ORDER = {
   academic: ['education', 'appointments', 'awards', 'grants', 'publications', 'books', 'presentations', 'teaching', 'research',
-    'employment', 'licenses', 'development', 'extension', 'service', 'committees', 'affiliations', 'research_interests', 'languages', 'skills', 'references'],
-  faculty: ['education', 'appointments', 'teaching', 'licenses', 'awards', 'development', 'publications', 'presentations',
+    'employment', 'licenses', 'development', 'speaking', 'extension', 'service', 'committees', 'affiliations', 'research_interests', 'languages', 'skills', 'references'],
+  faculty: ['education', 'appointments', 'teaching', 'licenses', 'awards', 'development', 'speaking', 'publications', 'presentations',
     'research', 'employment', 'service', 'committees', 'extension', 'affiliations', 'languages', 'references'],
-  research: ['education', 'appointments', 'research_interests', 'research', 'publications', 'books', 'presentations', 'grants',
+  research: ['education', 'appointments', 'research_interests', 'research', 'publications', 'books', 'presentations', 'speaking', 'grants',
     'awards', 'teaching', 'employment', 'affiliations', 'languages', 'references'],
-  administrative: ['summary', 'employment', 'education', 'licenses', 'service', 'committees', 'development', 'awards', 'skills',
+  administrative: ['summary', 'employment', 'education', 'licenses', 'service', 'committees', 'development', 'speaking', 'awards', 'skills',
     'affiliations', 'achievements', 'languages', 'references'],
-  professional: ['summary', 'employment', 'education', 'licenses', 'development', 'awards', 'skills', 'affiliations', 'languages', 'references'],
+  professional: ['summary', 'employment', 'education', 'licenses', 'development', 'speaking', 'awards', 'skills', 'affiliations', 'languages', 'references'],
   application: ['education', 'appointments', 'licenses', 'employment', 'teaching', 'research', 'publications', 'presentations',
-    'awards', 'development', 'service', 'affiliations', 'languages', 'references'],
+    'awards', 'development', 'speaking', 'service', 'affiliations', 'languages', 'references'],
   short_bio: ['summary'],
+  // Academic and professional portfolio CV: every portfolio section, in Harvard order, for a complete record.
+  portfolio: ['education', 'appointments', 'employment', 'licenses', 'teaching', 'research', 'publications', 'books', 'presentations',
+    'speaking', 'extension', 'awards', 'grants', 'development', 'service', 'committees', 'affiliations', 'achievements', 'research_interests', 'languages', 'skills', 'references'],
 };
 
 export const DEFAULT_TEMPLATE = {
   academic: 'harvard_academic', faculty: 'faculty_teaching', research: 'research', administrative: 'comprehensive',
-  professional: 'modern_faculty', application: 'harvard_academic', short_bio: 'traditional_academic',
+  professional: 'modern_faculty', application: 'harvard_academic', short_bio: 'traditional_academic', portfolio: 'comprehensive',
 };

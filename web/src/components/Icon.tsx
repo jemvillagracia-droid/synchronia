@@ -32,6 +32,7 @@ const P: Record<string, JSX.Element> = {
   download: <><path d="M12 3.5v12M7 11l5 5 5-5M4 20.5h16" /></>,
   upload: <><path d="M12 16.5v-12M7 9l5-5 5 5M4 20.5h16" /></>,
   file: <><path d="M6 2.5h8l4 4v15H6zM14 2.5v4h4M9 12h6M9 16h6" /></>,
+  calendar: <><rect x="3.5" y="5" width="17" height="15.5" /><path d="M3.5 9.5h17M8 3v4M16 3v4M7.5 13h2M11 13h2M14.5 13h2M7.5 16.5h2M11 16.5h2" /></>,
   clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>,
   alert: <><path d="M12 3.5 22 20.5H2z" /><path d="M12 10v4.5M12 17.2v.3" /></>,
   sliders: <><path d="M4 6.5h9M17 6.5h3M4 12h3M11 12h9M4 17.5h11M19 17.5h1" /><path d="M15 4.5v4M9 10v4M17 15.5v4" /></>,

@@ -21,9 +21,9 @@ export const t12 = (hhmm?: string | null) => {
 
 async function generate(url: string, toast: ReturnType<typeof useApp>['toast']) {
   try {
-    const r = await api.post<{ download: string; file_name: string }>(url);
+    const r = await api.post<{ download: string; file_name: string; validation?: { summary: string } }>(url);
     download(r.download, r.file_name);
-    toast(`Generated ${r.file_name}`, 'ok');
+    toast(`Generated ${r.file_name}${r.validation ? ` — ${r.validation.summary}` : ''}`, 'ok');
     dataChanged();
   } catch (e) { toast((e as Error).message, 'error'); }
 }

@@ -386,7 +386,7 @@ export function NexusPage() {
   const hidden = layout.filter((w) => !w.visible);
 
   return (
-    <div className="page">
+    <div className="page nexus-page">
       <div className="page-head">
         <div>
           <div className="crumb"><span className="bar" /><span className="label">00 · Central Nexus</span></div>
@@ -410,7 +410,7 @@ export function NexusPage() {
         </div>
       </div>
 
-      {data.command && <CommandDisplay c={data.command} />}
+      {data.command && <CommandDisplay c={data.command} mode={data.mode} />}
 
       {editing && (
         <div className="panel accent-violet" style={{ marginBottom: 'var(--s-4)' }}>
@@ -433,7 +433,7 @@ export function NexusPage() {
       <div className="widget-grid" style={{ gridAutoFlow: 'dense' }}>
         {visible.map((w, i) => (
           <section key={w.id}
-            className={`panel widget ${SIZE[w.id] || 'w-4'} ${w.id === 'profile' ? 'accent-orange' : ''} ${editing ? 'is-editing' : ''} ${dragId === w.id ? 'is-dragging' : ''} ${dropId === w.id ? 'is-drop' : ''}`}
+            className={`panel widget eva-widget ${SIZE[w.id] || 'w-4'} ${w.id === 'profile' ? 'accent-orange' : ''} ${editing ? 'is-editing' : ''} ${dragId === w.id ? 'is-dragging' : ''} ${dropId === w.id ? 'is-drop' : ''}`}
             aria-labelledby={`w-${w.id}`}
             draggable={editing}
             onDragStart={(e) => { setDragId(w.id); e.dataTransfer.effectAllowed = 'move'; }}

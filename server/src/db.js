@@ -1,5 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
+
+const requireCjs = createRequire(import.meta.url);
 import { DatabaseSync } from 'node:sqlite';
 import { ROOT } from './config.js';
 
@@ -15,6 +18,14 @@ export function openDatabase(file) {
   db.exec('PRAGMA synchronous = FULL;');
   db.exec('PRAGMA busy_timeout = 5000;');
   migrate(db, file);
+  // Partial dates ("2019", "2019-06") compare by the span they cover.
+  db.function('date_start', { deterministic: true }, (d) => (d == null ? null : d.length === 4 ? `${d}-01-01` : d.length === 7 ? `${d}-01` : d));
+  db.function('date_end', { deterministic: true }, (d) => {
+    if (d == null || d.length === 10) return d;
+    if (d.length === 4) return `${d}-12-31`;
+    const [y, m] = d.split('-').map(Number);
+    return `${d}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
+  });
   return db;
 }
 
@@ -24,7 +35,7 @@ function migrate(db, file = ':memory:') {
     applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
   )`);
   const applied = new Set(db.prepare('SELECT name FROM schema_migrations').all().map((r) => r.name));
-  const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
+  const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql') || f.endsWith('.cjs')).sort();
   const pending = files.filter((f) => !applied.has(f));
   // Before changing the structure of an existing database, keep a snapshot of it.
   if (pending.length && applied.size && file !== ':memory:') {
@@ -36,15 +47,21 @@ function migrate(db, file = ':memory:') {
   }
   for (const f of files) {
     if (applied.has(f)) continue;
-    const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, f), 'utf8');
+    // .sql migrations run as SQL; .cjs migrations export a function (db) => void for changes SQL alone cannot make.
+    // A .cjs migration that rebuilds a table sets foreignKeysOff, so dropping the old table does not cascade.
+    const up = f.endsWith('.cjs') ? requireCjs(path.join(MIGRATIONS_DIR, f)) : null;
+    if (up?.foreignKeysOff) db.exec('PRAGMA foreign_keys = OFF');
     db.exec('BEGIN');
     try {
-      db.exec(sql);
+      if (up) up(db);
+      else db.exec(fs.readFileSync(path.join(MIGRATIONS_DIR, f), 'utf8'));
       db.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(f);
       db.exec('COMMIT');
     } catch (err) {
       db.exec('ROLLBACK');
       throw new Error(`Migration ${f} failed: ${err.message}`);
+    } finally {
+      if (up?.foreignKeysOff) db.exec('PRAGMA foreign_keys = ON');
     }
   }
 }

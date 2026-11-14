@@ -168,10 +168,10 @@ const bind = (sql, all) => Object.fromEntries(Object.entries(all).filter(([k]) =
 
 function periodSql(p) {
   switch (p.kind) {
-    case 'event': return { sql: `${p.expr} BETWEEN :from AND :to`, undated: `${p.expr} IS NULL OR ${p.expr} = ''`, date: p.expr };
+    case 'event': return { sql: `date_end(${p.expr}) >= :from AND date_start(${p.expr}) <= :to`, undated: `${p.expr} IS NULL OR ${p.expr} = ''`, date: p.expr };
     case 'span': {
-      const ongoing = p.current ? `(${p.end} IS NULL OR ${p.end} >= :from OR ${p.current} = 1)` : `(${p.end} IS NULL OR ${p.end} >= :from)`;
-      return { sql: `${p.start} <= :to AND ${ongoing}`, undated: `${p.start} IS NULL OR ${p.start} = ''`, date: p.start };
+      const ongoing = p.current ? `(${p.end} IS NULL OR date_end(${p.end}) >= :from OR ${p.current} = 1)` : `(${p.end} IS NULL OR date_end(${p.end}) >= :from)`;
+      return { sql: `date_start(${p.start}) <= :to AND ${ongoing}`, undated: `${p.start} IS NULL OR ${p.start} = ''`, date: p.start };
     }
     case 'ay': {
       const inAy = `${AY_OK(p.col)} AND ${AY_START(p.col)} <= :to AND ${AY_END(p.col)} >= :from`;
@@ -284,7 +284,7 @@ export function analytics(db, userId, q = {}) {
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-export const longDate = (d) => (d ? `${MONTHS[Number(d.slice(5, 7)) - 1]} ${Number(d.slice(8, 10))}, ${d.slice(0, 4)}` : '');
+export const longDate = (d) => (!d ? '' : d.length === 4 ? d : d.length === 7 ? `${MONTHS[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}` : `${MONTHS[Number(d.slice(5, 7)) - 1]} ${Number(d.slice(8, 10))}, ${d.slice(0, 4)}`);
 export function periodLabel(from, to) {
   if (!from && !to) return 'All records to date';
   if (from && to) return `${longDate(from)} – ${longDate(to)}`;

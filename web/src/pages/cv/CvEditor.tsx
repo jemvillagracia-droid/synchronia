@@ -439,9 +439,23 @@ function CheckPanel({ cv, readOnly, onFinalized }: { cv: CvView; readOnly: boole
               <span className="faint num" style={{ fontSize: 12 }}>{a.checklist.counts.complete} complete · {a.checklist.counts.incomplete} incomplete · {a.checklist.counts.missing} missing</span></div>
             <ul className="list mt-2">{a.checklist.items.map((c) => <CheckRow key={c.id} c={c} />)}</ul>
           </section>
-          <section className="verify-box stack" style={{ gap: 'var(--s-3)' }}>
-            <h3 className="label" style={{ margin: 0 }}>AI-assisted review</h3>
-            <p className="faint" style={{ margin: 0, fontSize: 13 }}>Not available in this offline build. The checks above are rule-based and read your actual files; no content is generated or changed for you.</p>
+          <section>
+            <div className="between"><h3 className="label" style={{ margin: 0 }}>Wording suggestions</h3>
+              <span className="faint num" style={{ fontSize: 12 }}>{a.checklist.suggestions?.length || 0} found · rule-based, offline</span></div>
+            {a.checklist.suggestions?.length ? (
+              <ul className="list mt-2 wording">{a.checklist.suggestions.map((sg, i) => (
+                <li key={i}><div className="grow">
+                  <div className="s">{sg.section}{sg.entry ? ` · ${sg.entry}` : ''} · {sg.why}</div>
+                  <div className="wd-pair"><span className="wd-old">{sg.original}</span><span aria-hidden>→</span><span className="wd-new">{sg.suggested}</span></div>
+                  <div className="s">{sg.overridden ? 'Changes this CV only (the entry is customised here).' : 'Changes the portfolio record, so every CV that uses it gets the new wording; the old text stays in its history.'}</div>
+                </div>
+                {!readOnly && <button className="btn btn-sm" onClick={async () => {
+                  try { const r = await api.post<{ cv: CvView; applied_to: string }>(`/cv/${cv.id}/wording`, { entry_id: sg.entry_id, original: sg.original, suggested: sg.suggested }); toast(r.applied_to === 'cv' ? 'Applied in this CV' : 'Applied to the portfolio record', 'ok'); dataChanged(); onFinalized(r.cv); }
+                  catch (e) { toast((e as Error).message, 'error'); }
+                }}><Icon name="check" />Apply</button>}</li>
+              ))}</ul>
+            ) : <p className="faint" style={{ fontSize: 13 }}>No weak openings found (for example “Responsible for…”, “Worked on…”).</p>}
+            <p className="faint" style={{ fontSize: 12 }}>These suggestions come from fixed rules that only rephrase recognised weak openings; they never add experience or facts. An AI-assisted review is not built in, because it would need an external service and an API key.</p>
           </section>
           {readOnly ? (
             <div className="alert info">Approved {fmtDateTime(cv.finalized_at)}. This version is frozen; create a new draft version to make changes.</div>
@@ -566,10 +580,10 @@ export function CvEditor() {
   async function exportAs(format: string) {
     setExporting(format);
     try {
-      const x = await api.post<{ file_name: string; download: string }>(`/cv/${cv!.id}/exports`, { format });
+      const x = await api.post<{ file_name: string; download: string; validation?: { summary: string } }>(`/cv/${cv!.id}/exports`, { format });
       const a = document.createElement('a');
       a.href = x.download; a.download = x.file_name; document.body.appendChild(a); a.click(); a.remove();
-      toast(`Exported ${x.file_name}`, 'ok');
+      toast(`Exported ${x.file_name}${x.validation ? ` — ${x.validation.summary}` : ''}`, 'ok');
       dataChanged();
     } catch (e) { toast((e as Error).message, 'error'); } finally { setExporting(''); }
   }

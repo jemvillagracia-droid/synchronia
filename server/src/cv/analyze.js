@@ -239,5 +239,47 @@ export function qualityChecklist(model, editorView, ats) {
 
   const counts = { complete: 0, incomplete: 0, missing: 0, not_applicable: 0 };
   for (const i of items) counts[i.status] += 1;
-  return { items, counts };
+  return { items, counts, suggestions: wordingSuggestions(model) };
+}
+
+// ───────────────────────── Wording suggestions (rule-based, offline) ─────────────────────────
+
+const IRREGULAR = { teaching: 'Taught', writing: 'Wrote', leading: 'Led', making: 'Made', building: 'Built', running: 'Ran', giving: 'Gave',
+  holding: 'Held', keeping: 'Kept', meeting: 'Met', setting: 'Set', sending: 'Sent', speaking: 'Spoke', overseeing: 'Oversaw', doing: 'Did',
+  seeing: 'Saw', choosing: 'Chose', bringing: 'Brought', buying: 'Bought', thinking: 'Thought', drawing: 'Drew', getting: 'Got' };
+/** "handling" → "Handled", "studying" → "Studied", "planning" → "Planned". */
+export function pastTense(gerund) {
+  const g = gerund.toLowerCase();
+  if (IRREGULAR[g]) return IRREGULAR[g];
+  const stem = g.replace(/ing$/, '');
+  const past = /[^aeiou]y$/.test(stem) ? `${stem.slice(0, -1)}ied` : `${stem}ed`;
+  return past[0].toUpperCase() + past.slice(1);
+}
+
+const REWRITES = [
+  [/^(?:responsible for|in charge of|tasked with|duties included?|my duties included?)\s*:?\s+([a-z]+ing)\b\s*(.*)$/i, (m) => `${pastTense(m[1])}${m[2] ? ` ${m[2]}` : ''}`, 'Lead with an action verb'],
+  [/^worked on\s+(.+)$/i, (m) => `Contributed to ${m[1]}`, 'Name the contribution'],
+  [/^helped(?: to)?\s+([a-z]+)\b\s*(.*)$/i, (m) => `Assisted in ${m[1].endsWith('ing') ? m[1] : `${m[1].replace(/e$/, '')}ing`}${m[2] ? ` ${m[2]}` : ''}`, 'Say how you contributed'],
+];
+
+/**
+ * Rule-based wording suggestions, each with the original and the suggested text and where the line comes from.
+ * Nothing is applied automatically. This is not an AI review: it only rephrases recognised weak openings.
+ */
+export function wordingSuggestions(model) {
+  const out = [];
+  for (const s of model.sections) {
+    for (const e of s.entries) {
+      for (const d of e.details || []) {
+        for (const [re, fix, why] of REWRITES) {
+          const m = re.exec(d.trim());
+          if (!m) continue;
+          const suggested = fix(m);
+          if (suggested && suggested !== d) out.push({ section: s.heading, entry: e.title, entry_id: e.id, source: e.source || null, overridden: !!e.overridden, original: d, suggested, why });
+          break;
+        }
+      }
+    }
+  }
+  return out.slice(0, 40);
 }

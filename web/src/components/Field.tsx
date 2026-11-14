@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { humanize } from '../lib/format';
 import type { FieldSpec } from '../lib/types';
@@ -23,6 +24,29 @@ const LONG = new Set(['biography', 'description', 'responsibilities', 'accomplis
   'attendees', 'absent', 'action_required', 'action_taken', 'signatories', 'disseminated_to']);
 
 export const isLongField = (name: string, spec: FieldSpec) => spec.type === 'text' && ((spec.max || 0) > 2000 || LONG.has(name));
+
+/** A date that may be known only to the year or month: exact day, month and year, or year only. */
+function PartialDate({ id, value, onChange }: { id: string; value: string; onChange: (v: string | null) => void }) {
+  const precision = value.length === 4 ? 'year' : value.length === 7 ? 'month' : 'day';
+  const [mode, setMode] = useState<'day' | 'month' | 'year'>(value ? precision : 'day');
+  const switchTo = (m: 'day' | 'month' | 'year') => {
+    setMode(m);
+    if (!value) return;
+    if (m === 'year') onChange(value.slice(0, 4));
+    else if (m === 'month') onChange(value.length >= 7 ? value.slice(0, 7) : null);
+    else onChange(value.length === 10 ? value : null);
+  };
+  return (
+    <span className="partial-date">
+      {mode === 'day' && <input id={id} type="date" className="input" value={value.length === 10 ? value : ''} onChange={(e) => onChange(e.target.value || null)} />}
+      {mode === 'month' && <input id={id} type="month" className="input" value={value.length >= 7 ? value.slice(0, 7) : ''} onChange={(e) => onChange(e.target.value || null)} />}
+      {mode === 'year' && <input id={id} type="number" className="input" min={1900} max={2100} placeholder="YYYY" value={value.slice(0, 4)} onChange={(e) => onChange(/^\d{4}$/.test(e.target.value) ? e.target.value : e.target.value ? e.target.value : null)} />}
+      <select className="select pd-mode" value={mode} onChange={(e) => switchTo(e.target.value as any)} aria-label="Date precision">
+        <option value="day">Exact date</option><option value="month">Month only</option><option value="year">Year only</option>
+      </select>
+    </span>
+  );
+}
 
 /** Renders an input for a registry field spec. */
 export function SpecInput({ name, spec, value, onChange, refOptions, placeholder }: {
@@ -55,7 +79,7 @@ export function SpecInput({ name, spec, value, onChange, refOptions, placeholder
         </select>
       );
     case 'date':
-      return <input id={id} type="date" className="input" value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} />;
+      return spec.partial ? <PartialDate id={id} value={value ?? ''} onChange={onChange} /> : <input id={id} type="date" className="input" value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} />;
     case 'int':
     case 'real':
       return <input id={id} type="number" className="input" min={spec.min} step={spec.type === 'int' ? 1 : 'any'} value={value ?? ''}

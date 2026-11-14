@@ -1,12 +1,12 @@
 // CV Studio service: profiles, sections, entries, portfolio synchronisation, composition and versioning.
 import { RESOURCES } from '../resources.js';
-import { HttpError, audit } from '../repo.js';
+import { HttpError, audit, update as updateRecord } from '../repo.js';
 import { tx } from '../db.js';
 import { SECTIONS, SECTION_BY_KEY, DEFAULT_ORDER, DEFAULT_TEMPLATE } from './sections.js';
 import { TEMPLATES } from './templates.js';
 
 const now = () => new Date().toISOString();
-const CV_TYPES = ['academic', 'faculty', 'research', 'administrative', 'professional', 'application', 'short_bio'];
+const CV_TYPES = ['academic', 'faculty', 'research', 'administrative', 'professional', 'application', 'short_bio', 'portfolio'];
 
 export const DEFAULT_SETTINGS = {
   page_size: 'letter',            // letter | a4 | folio (8.5 × 13 in)
@@ -335,6 +335,44 @@ export function updateEntry(db, userId, id, eid, body = {}) {
   }
   touch(db, cv.id);
   return getCv(db, userId, cv.id);
+}
+
+/**
+ * Apply an approved wording suggestion. The line is changed where it lives: in this CV's own override when the entry
+ * was customised here, otherwise in the portfolio record (with version history). Refused if the text has changed.
+ */
+export function applyWording(db, userId, id, body = {}) {
+  const cv = getCvRow(db, userId, id);
+  assertDraft(cv);
+  const original = String(body.original || '').trim();
+  const suggested = String(body.suggested || '').trim();
+  if (!original || !suggested || suggested.length > 2000) throw new HttpError(422, 'original and suggested text are required');
+  const e = entryRow(db, cv, body.entry_id);
+  const strip = (l) => l.replace(/^\s*[-•*·]\s*/, '').trim();
+  const override = parse(e.custom_content_json, null);
+  if (override?.details?.some((d) => strip(d) === original) || !e.source_type || e.source_type === 'profile') {
+    if (!override?.details?.some((d) => strip(d) === original)) throw new HttpError(409, 'That line has changed since the review. Run the review again.');
+    override.details = override.details.map((d) => (strip(d) === original ? suggested : d));
+    db.prepare('UPDATE cv_entries SET custom_content_json = ? WHERE id = ?').run(JSON.stringify(override), e.id);
+    audit(db, userId, 'cv_profiles', cv.id, 'update', `Applied a wording suggestion in this CV: “${original.slice(0, 60)}” → “${suggested.slice(0, 60)}”`);
+    touch(db, cv.id);
+    return { applied_to: 'cv', cv: getCv(db, userId, cv.id) };
+  }
+  const r = RESOURCES[e.source_type];
+  const row = r && db.prepare(`SELECT * FROM ${r.table} WHERE id = ? AND user_id = ? AND deleted_at IS NULL`).get(e.source_id, userId);
+  if (!row) throw new HttpError(404, 'The portfolio record behind this entry was not found');
+  for (const [field, f] of Object.entries(r.fields)) {
+    if (f.type !== 'text' || typeof row[field] !== 'string') continue;
+    const lines = row[field].split(/\r?\n/);
+    const i = lines.findIndex((l) => strip(l) === original);
+    if (i < 0) continue;
+    const prefix = (/^\s*[-•*·]\s*/.exec(lines[i]) || [''])[0];
+    lines[i] = prefix + suggested;
+    updateRecord(db, userId, e.source_type, row.id, { [field]: lines.join('\n') });
+    touch(db, cv.id);
+    return { applied_to: 'portfolio', record: { type: e.source_type, id: row.id, field }, cv: getCv(db, userId, cv.id) };
+  }
+  throw new HttpError(409, 'That line has changed since the review. Run the review again.');
 }
 
 export function deleteEntry(db, userId, id, eid) {

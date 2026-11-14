@@ -1118,3 +1118,140 @@ a.link { color: var(--accent-2); text-decoration: underline; text-underline-offs
 .tl-body .t { display: block; color: var(--text); font-size: 15px; line-height: 1.4; }
 .tl-body .s { display: block; color: var(--text-2); font-size: 13px; }
 .panel-head .tag, .panel-head .tag[class*="st-"] { color: var(--on-accent); border-color: rgba(255,255,255,.65); background: rgba(0,0,0,.28); }
+
+/* Pop-ups sit exactly in the middle of the window. In the desktop app the window buttons occupy the top band, so the
+   same clearance is kept below as above — the dialog is centred and never slides under the window controls. */
+html[data-desktop] .overlay { padding: calc(var(--topbar-h) + 12px) var(--s-5); }
+html[data-desktop] .drawer { max-height: calc(100vh - 2 * (var(--topbar-h) + 12px)); margin: auto; }
+html[data-desktop] .modal, html[data-desktop] .palette { margin: auto; max-height: calc(100vh - 2 * (var(--topbar-h) + 12px)); }
+
+/* ── Central Nexus command deck (Evangelion layout) ──────────────────────── */
+.eva-status { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; margin-bottom: var(--s-3); border: 1px solid #5a2a00; background: #050505;
+  font-family: var(--font-mono); font-size: 12.5px; letter-spacing: .08em; color: #ffb366; position: relative; overflow: hidden; }
+.eva-status > span { padding: 7px 14px; border-right: 1px solid #3a1d00; display: inline-flex; gap: 8px; align-items: center; white-space: nowrap; }
+.eva-status b { color: #c99566; font-weight: 400; }
+.eva-status-id { background: var(--orange); color: #050505 !important; font-weight: 700; letter-spacing: .14em; }
+.eva-status-id i { width: 8px; height: 8px; background: #050505; display: inline-block; animation: evaBlink 1.6s steps(2) infinite; }
+.eva-status.lvl-caution .eva-status-id { background: #ffcc00; }
+.eva-status.lvl-danger .eva-status-id { background: #ff2a2a; color: #fff !important; }
+.eva-hazard { flex: 1; min-width: 80px; border-right: 0 !important; background: repeating-linear-gradient(135deg, rgba(255,90,31,.85) 0 10px, transparent 10px 20px); opacity: .55; }
+.eva-status.lvl-danger .eva-hazard { background: repeating-linear-gradient(135deg, rgba(255,42,42,.9) 0 10px, transparent 10px 20px); }
+@keyframes evaBlink { 50% { opacity: .15; } }
+@media (prefers-reduced-motion: reduce) { .eva-status-id i { animation: none; } }
+
+.eva-grid.eva-grid-3 { grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-areas: 'clock clock clock clock clock clock clock cal cal cal cal cal' 'sync sync sync sync sync sync sync magi magi magi magi magi' 'work work work work work work work work work work work work'; }
+.eva-grid-3 .eva-clock { grid-area: clock; } .eva-grid-3 .eva-cal { grid-area: cal; } .eva-grid-3 .eva-sync { grid-area: sync; }
+.eva-grid-3 .eva-magi { grid-area: magi; } .eva-grid-3 .eva-work { grid-area: work; }
+@media (max-width: 1200px) { .eva-grid.eva-grid-3 { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'clock' 'cal' 'sync' 'magi' 'work'; } }
+
+.eva-cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; font-family: var(--font-mono); font-size: 12.5px; text-align: center; }
+.eva-cal-grid .h { color: #8a5a30; font-size: 11px; padding: 2px 0; }
+.eva-cal-grid .c { padding: 4px 0; color: #ffb366; background: #0d0904; border: 1px solid #1d1003; position: relative; }
+.eva-cal-grid .c.out { color: #5a3a1c; background: transparent; }
+.eva-cal-grid .c.today { background: var(--orange); color: #050505; font-weight: 700; border-color: var(--orange); }
+.eva-cal-grid .c.ph { box-shadow: inset 0 -3px 0 #ff3b3b; }
+.eva-cal-grid .c.au { box-shadow: inset 0 -3px 0 #2fd3c7; }
+.eva-cal-grid .c.ph.au { box-shadow: inset 0 -3px 0 #ff3b3b, inset 0 -6px 0 #2fd3c7; }
+.eva-cal-grid .c.ev::after { content: ''; position: absolute; top: 3px; right: 3px; width: 5px; height: 5px; background: var(--accent-2); }
+.eva-cal-next { list-style: none; margin: var(--s-2) 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.eva-cal-next li { display: grid; grid-template-columns: 62px 84px minmax(0, 1fr); gap: 8px; align-items: baseline; border-top: 1px solid #1d1003; padding-top: 4px; }
+.eva-cal-next .d { font-family: var(--font-mono); color: var(--orange); font-size: 12px; }
+.eva-cal-next .k { font-family: var(--font-cond); font-size: 11px; letter-spacing: .08em; color: #c9a27e; }
+.eva-cal-next .k.ph { color: #ff6b6b; } .eva-cal-next .k.au { color: #2fd3c7; }
+.eva-cal-next .t { color: var(--text); overflow-wrap: anywhere; }
+.eva-cal-next .none { display: block; color: var(--text-2); border: 0; }
+.eva-link { align-self: flex-end; margin-top: auto; font-family: var(--font-mono); font-size: 12px; letter-spacing: .1em; color: var(--orange); text-decoration: none; }
+.eva-link:hover { color: #ffb366; text-decoration: underline; }
+.eva-link:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+
+/* Lower Nexus widgets as NERV monitor panels */
+.nexus-page .panel.eva-widget { background: #050505; border: 1px solid #3a1d00; border-top: 2px solid #5a2a00; position: relative; box-shadow: none; }
+.nexus-page .panel.eva-widget::before, .nexus-page .panel.eva-widget::after { content: ''; position: absolute; width: 14px; height: 14px; pointer-events: none; border-color: var(--orange); }
+.nexus-page .panel.eva-widget::before { top: -2px; left: -1px; border-top: 2px solid; border-left: 2px solid; }
+.nexus-page .panel.eva-widget::after { bottom: -1px; right: -1px; border-bottom: 2px solid; border-right: 2px solid; }
+.nexus-page .panel.eva-widget > .panel-head { background: transparent !important; border-bottom: 1px solid #3a1d00; padding-top: var(--s-3); padding-bottom: var(--s-2); }
+.nexus-page .panel.eva-widget > .panel-head h2 { color: var(--orange); font-family: var(--font-cond); font-weight: 700; letter-spacing: .14em; }
+.nexus-page .panel.eva-widget > .panel-head .code { color: #050505; background: var(--orange); border-color: var(--orange); font-weight: 700; }
+.nexus-page .panel.eva-widget > .panel-head .faint, .nexus-page .panel.eva-widget > .panel-head .num { color: #c9a27e !important; opacity: 1; }
+.nexus-page .panel.eva-widget .stat-row { background: #1d1003; border-color: #3a1d00; }
+.nexus-page .panel.eva-widget .stat { background: #0a0703; }
+.nexus-page .panel.eva-widget .list li { border-bottom-color: #1d1003; }
+.nexus-page .panel.eva-widget .segbar span, .nexus-page .panel.eva-widget .bar > span { background-color: var(--orange); }
+
+/* ── Calendar page ───────────────────────────────────────────────────────── */
+.cal-controls { gap: var(--s-3); margin-bottom: var(--s-3); }
+.cal-month { font-family: var(--font-mono); font-size: 18px; color: var(--orange); min-width: 170px; text-align: center; letter-spacing: .06em; }
+.cal-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--s-4); align-items: start; margin-bottom: var(--s-5); }
+@media (max-width: 1100px) { .cal-layout { grid-template-columns: minmax(0, 1fr); } }
+.cal-month-grid { background: #050505; border: 1px solid #3a1d00; padding: var(--s-2); }
+.cal-head, .cal-cells { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.cal-head div { font-family: var(--font-cond); font-size: 12.5px; letter-spacing: .12em; color: #c9a27e; text-transform: uppercase; padding: 4px 6px; }
+.cal-cell { all: unset; box-sizing: border-box; cursor: pointer; min-height: 108px; padding: 5px 6px; background: #0b0805; border: 1px solid #1d1003; display: flex; flex-direction: column; gap: 3px; overflow: hidden; min-width: 0; }
+.cal-cell:hover { border-color: #5a2a00; }
+.cal-cell:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+.cal-cell[aria-selected='true'] { border-color: var(--accent-2); box-shadow: inset 0 0 0 1px var(--accent-2); }
+.cal-cell.out { opacity: .45; }
+.cal-cell.wkend { background: #090604; }
+.cal-cell.ph-reg { background: #1a0606; }
+.cal-num { font-family: var(--font-mono); font-size: 14px; color: #ffb366; }
+.cal-cell.today .cal-num { background: var(--orange); color: #050505; padding: 0 6px; align-self: flex-start; font-weight: 700; }
+.cal-hol, .cal-ev, .cal-more { font-size: 11.5px; line-height: 1.3; padding: 1px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-hol.ph { background: rgba(255,59,59,.18); color: #ff9a9a; border-left: 2px solid #ff3b3b; }
+.cal-hol.au { background: rgba(47,211,199,.14); color: #8eeee6; border-left: 2px solid #2fd3c7; }
+.cal-hol.est { border-left-style: dashed; font-style: italic; }
+.cal-ev { color: var(--text); border-left: 2px solid var(--accent); background: rgba(138,63,252,.12); }
+.cal-ev.done { text-decoration: line-through; opacity: .6; }
+.cal-ev.k-deadline, .cal-ev.k-renewal { border-left-color: #ff7a45; background: rgba(255,90,31,.12); }
+.cal-ev.k-meeting { border-left-color: var(--accent-2); }
+.cal-ev.k-class, .cal-ev.k-assessment { border-left-color: #3ec98d; background: rgba(62,201,141,.1); }
+.cal-ev.k-training, .cal-ev.k-speaking { border-left-color: #ffcc00; background: rgba(255,204,0,.08); }
+.cal-more { color: var(--text-2); }
+.cal-legend { display: flex; flex-wrap: wrap; gap: var(--s-4); padding: var(--s-2) var(--s-1) 0; font-size: 12.5px; color: var(--text-2); }
+.cal-legend i { display: inline-block; width: 12px; height: 8px; margin-right: 6px; vertical-align: middle; }
+.cal-legend i.ph { background: #ff3b3b; } .cal-legend i.au { background: #2fd3c7; } .cal-legend i.est { border: 1px dashed #ff9a9a; }
+.cal-legend i.k-deadline { background: #ff7a45; } .cal-legend i.k-meeting { background: var(--accent-2); } .cal-legend i.k-class { background: #3ec98d; } .cal-legend i.k-training { background: #ffcc00; }
+.cal-day-hol { padding: var(--s-2) var(--s-3); border-left: 3px solid #ff3b3b; background: rgba(255,59,59,.08); }
+.cal-day-hol.au { border-left-color: #2fd3c7; background: rgba(47,211,199,.07); }
+.cal-day-hol .t { font-weight: 600; color: var(--text); }
+.cal-day-hol .s { font-size: 13px; color: var(--text-2); }
+.tag.cal-kind { min-width: 84px; justify-content: center; }
+
+.eva-countdown { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: auto; padding-top: var(--s-3); border-top: 1px dashed rgba(255,140,26,.35); }
+.eva-count { border: 1px solid #5a2a00; background: #0b0603; padding: 8px 12px; min-width: 0; }
+.eva-count-cap { font-family: var(--font-cond); font-weight: 700; letter-spacing: .14em; font-size: 12px; color: #c77a2a; }
+.eva-count-row { display: flex; align-items: baseline; gap: 8px; }
+.eva-count-row .eva-num { font-size: 46px; line-height: 1.05; color: #ff2a2a; text-shadow: 0 0 12px rgba(255,42,42,.55); }
+.eva-count-row .u { font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; color: #ff8c1a; }
+.eva-count-t { font-size: 13.5px; color: var(--text); overflow-wrap: anywhere; }
+.eva-count-t b { font-family: var(--font-cond); font-size: 11px; letter-spacing: .1em; color: #c9a27e; margin-right: 4px; }
+.eva-clock-inner { display: flex; flex-direction: column; gap: var(--s-2); height: 100%; }
+.cal-hol, .cal-ev, .cal-more { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; } .cal-cell { overflow: visible; }
+
+.partial-date { display: flex; gap: var(--s-2); align-items: center; } .partial-date .input { flex: 1; min-width: 0; } .partial-date .pd-mode { width: auto; flex: 0 0 auto; }
+
+/* ── CV import review ───────────────────────────────────────────────────── */
+.imp-items { display: grid; gap: var(--s-2); }
+.imp-item { padding: var(--s-2) var(--s-3); border: 1px solid var(--line-2); background: var(--bg-1); display: grid; gap: 6px; }
+.imp-item.on { border-left: 3px solid var(--accent); }
+.imp-item.needs { border-left-color: var(--orange); }
+.imp-head { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+.imp-title { font-family: var(--font-cond); font-weight: 600; font-size: 15px; color: var(--text); overflow-wrap: anywhere; }
+.imp-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s-2) var(--s-3); }
+.imp-field { display: grid; gap: 4px; font-size: 12.5px; color: var(--text-2); }
+.imp-field.miss span { color: #ff7a45; font-weight: 600; }
+.imp-src { margin: 0; padding: var(--s-2) var(--s-3); background: #0b0b0b; border: 1px dashed var(--line-3); font-family: var(--font-mono); font-size: 12.5px; color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.imp-skip { font-size: 14px; color: var(--text-2); display: grid; gap: 6px; margin-bottom: var(--s-2); }
+
+.wording .wd-pair { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin: 4px 0; font-size: 14.5px; }
+.wording .wd-old { text-decoration: line-through; color: var(--text-2); }
+.wording .wd-new { color: #3ec98d; font-weight: 600; }
+
+/* 1.1.0 a11y: calendar rows are real ARIA rows; dim out-of-month days and done items with colour, not opacity. */
+.cal-week { display: contents; }
+.cal-cell.out { opacity: 1; background: repeating-linear-gradient(135deg, #070504 0 6px, #0a0705 6px 12px); }
+.cal-cell.out .cal-num { color: #a57b55; }
+.cal-cell.out .cal-hol.ph { color: #e98a8a; background: rgba(255,59,59,.1); }
+.cal-cell.out .cal-hol.au { color: #7fd6cf; background: rgba(47,211,199,.08); }
+.cal-cell.out .cal-ev { color: var(--text-2); }
+.cal-ev.done { opacity: 1; color: var(--text-2); }

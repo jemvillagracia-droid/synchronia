@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import express from 'express';
+import { requireValid } from '../exportcheck.js';
 import { DATA_DIR } from '../config.js';
 import { HttpError, audit } from '../repo.js';
 import * as cv from './model.js';
@@ -85,6 +86,7 @@ export function cvRouter(db, { pdfRenderer } = {}) {
   r.patch('/:id/entries/:eid', (req, res) => res.json(cv.updateEntry(db, req.user.id, req.params.id, req.params.eid, req.body)));
   r.delete('/:id/entries/:eid', (req, res) => res.json(cv.deleteEntry(db, req.user.id, req.params.id, req.params.eid)));
   r.post('/:id/sync', (req, res) => res.json(cv.syncPending(db, req.user.id, req.params.id, req.body)));
+  r.post('/:id/wording', (req, res) => res.json(cv.applyWording(db, req.user.id, req.params.id, req.body || {})));
 
   // ── Output ──
   r.get('/:id/preview.pdf', async (req, res) => {
@@ -134,11 +136,12 @@ export function cvRouter(db, { pdfRenderer } = {}) {
     fs.mkdirSync(dir, { recursive: true });
     let rel = path.join('exports', fileName);
     for (let i = 2; fs.existsSync(path.join(DATA_DIR, rel)); i += 1) rel = path.join('exports', fileName.replace(`.${fmt.ext}`, `_${i}.${fmt.ext}`));
+    const validation = await requireValid(data, fmt.ext, { expect: [profile.full_name ? profile.full_name.split(',')[0] : null] });
     fs.writeFileSync(path.join(DATA_DIR, rel), data);
     const out = db.prepare(`INSERT INTO cv_exports (user_id, cv_profile_id, format, file_name, file_path, size_bytes, cv_version, cv_status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(userId, view.id, req.body.format, path.basename(rel), rel, data.length, view.version, view.status);
     audit(db, userId, 'cv_profiles', view.id, 'export', `Exported ${path.basename(rel)}`);
-    res.status(201).json({ id: Number(out.lastInsertRowid), file_name: path.basename(rel), format: req.body.format, size_bytes: data.length, download: `/api/cv/exports/${out.lastInsertRowid}/download` });
+    res.status(201).json({ id: Number(out.lastInsertRowid), file_name: path.basename(rel), format: req.body.format, size_bytes: data.length, download: `/api/cv/exports/${out.lastInsertRowid}/download`, validation });
   });
 
   return r;

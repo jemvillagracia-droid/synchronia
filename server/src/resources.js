@@ -6,6 +6,8 @@ const VERIFICATION = ['self_reported', 'user_confirmed', 'evidence_verified'];
 const text = (o = {}) => ({ type: 'text', max: 500, ...o });
 const long = (o = {}) => ({ type: 'text', max: 20000, ...o });
 const date = (o = {}) => ({ type: 'date', ...o });
+/** A date that may be known only to the year or month (as CVs often give it): YYYY, YYYY-MM or YYYY-MM-DD. */
+const pdate = (o = {}) => ({ type: 'date', partial: true, ...o });
 const int = (o = {}) => ({ type: 'int', ...o });
 const real = (o = {}) => ({ type: 'real', ...o });
 const bool = (o = {}) => ({ type: 'bool', ...o });
@@ -32,7 +34,7 @@ export const RESOURCES = {
     recommended: ['major', 'location', 'graduation_date'],
     fields: {
       degree: text(req), major: text(), institution: text(req), location: text(), thesis_title: text({ max: 1000 }), advisor: text(),
-      start_date: date(), end_date: date(), graduation_date: date(),
+      start_date: pdate(), end_date: pdate(), graduation_date: pdate(),
       status: oneOf(['completed', 'ongoing', 'units_earned']), distinctions: long(), ...verification,
     },
   },
@@ -42,7 +44,7 @@ export const RESOURCES = {
     recommended: ['registration_number', 'registration_date', 'valid_until'],
     fields: {
       license_type: text(req), registration_number: secret(), issuing_authority: text(req),
-      registration_date: date(), valid_until: date(), ...verification,
+      registration_date: pdate(), valid_until: date(), ...verification,
     },
   },
   employment: {
@@ -51,7 +53,7 @@ export const RESOURCES = {
     recommended: ['office', 'location', 'start_date', 'responsibilities'],
     fields: {
       position: text(req), institution: text(req), office: text(), location: text(), employment_type: text(),
-      start_date: date(), end_date: date(), is_current: bool(),
+      start_date: pdate(), end_date: pdate(), is_current: bool(),
       responsibilities: long(), accomplishments: long(), ...verification,
     },
   },
@@ -61,7 +63,7 @@ export const RESOURCES = {
     recommended: ['faculty_designation', 'department', 'start_date', 'teaching_responsibilities'],
     fields: {
       academic_rank: text(req), faculty_designation: text(), institution: text(req), department: text(), location: text(),
-      start_date: date(), end_date: date(), is_current: bool(), teaching_responsibilities: long(), ...verification,
+      start_date: pdate(), end_date: pdate(), is_current: bool(), teaching_responsibilities: long(), ...verification,
     },
   },
   trainings: {
@@ -72,7 +74,7 @@ export const RESOURCES = {
       title: text(req),
       training_type: oneOf(['training', 'seminar', 'workshop', 'conference', 'webinar', 'course', 'certification', 'other']),
       role: oneOf(['participant', 'speaker', 'facilitator', 'organizer']),
-      organizer: text(), location: text(), start_date: date(), end_date: date(),
+      organizer: text(), location: text(), start_date: pdate(), end_date: pdate(),
       hours: real({ min: 0 }), cpd_units: real({ min: 0 }), ...verification,
     },
   },
@@ -80,7 +82,7 @@ export const RESOURCES = {
     table: 'awards', label: 'Award', module: 'portfolio', group: 'awards',
     title: 'title', subtitle: ['issuer'], date: 'date_received',
     recommended: ['issuer', 'date_received', 'description'],
-    fields: { title: text(req), issuer: text(), date_received: date(), level: text(), description: long(), ...verification },
+    fields: { title: text(req), issuer: text(), date_received: pdate(), level: text(), description: long(), ...verification },
   },
   memberships: {
     table: 'professional_memberships', label: 'Professional Affiliation', module: 'portfolio', group: 'service',
@@ -88,7 +90,7 @@ export const RESOURCES = {
     recommended: ['membership_type', 'start_date'],
     fields: {
       organization: text(req), membership_type: text(), member_id: text(),
-      start_date: date(), end_date: date(), is_current: bool(), ...verification,
+      start_date: pdate(), end_date: pdate(), is_current: bool(), ...verification,
     },
   },
   committees: {
@@ -98,14 +100,14 @@ export const RESOURCES = {
     fields: {
       committee: text(req), role: text(), institution: text(),
       assignment_type: oneOf(['committee', 'secretariat', 'administrative', 'institutional_project', 'academic_service', 'leadership']),
-      start_date: date(), end_date: date(), is_current: bool(), description: long(), ...verification,
+      start_date: pdate(), end_date: pdate(), is_current: bool(), description: long(), ...verification,
     },
   },
   portfolio_entries: {
     table: 'portfolio_entries', label: 'Accomplishment', module: 'portfolio', group: 'accomplishments',
     title: 'title', subtitle: ['category'], date: 'event_date',
     recommended: ['event_date', 'description'],
-    fields: { category: text(), title: text(req), description: long(), event_date: date(), verification: oneOf(VERIFICATION) },
+    fields: { category: text(), title: text(req), description: long(), event_date: pdate(), verification: oneOf(VERIFICATION) },
   },
 
   courses: {
@@ -170,7 +172,7 @@ export const RESOURCES = {
     fields: {
       title: text(req), role: text(),
       status: oneOf(['idea', 'proposal', 'approved', 'data_collection', 'analysis', 'writing', 'completed', 'discontinued']),
-      start_date: date(), end_date: date(), research_questions: long(), objectives: long(), methodology: long(),
+      start_date: pdate(), end_date: pdate(), research_questions: long(), objectives: long(), methodology: long(),
       instruments: long(), ethics_reference: text(), collaborators: long(), funding: text(),
       progress_pct: int({ min: 0, max: 100 }), target_sample: int({ min: 0 }), collected_sample: int({ min: 0 }),
       validation_status: oneOf(['not_started', 'in_progress', 'validated', 'not_applicable']),
@@ -184,7 +186,7 @@ export const RESOURCES = {
     fields: {
       research_project_id: ref('research_projects'), title: text(req), authors: text({ required: true, max: 2000 }),
       publication_type: oneOf(['journal_article', 'book', 'book_chapter', 'conference_paper', 'report', 'thesis', 'other']),
-      venue: text(), publisher: text(), volume: text(), issue: text(), pages: text(), publication_date: date(),
+      venue: text(), publisher: text(), volume: text(), issue: text(), pages: text(), publication_date: pdate(),
       doi: text(), url: text({ max: 2000 }),
       status: oneOf(['in_preparation', 'submitted', 'under_review', 'accepted', 'published']), indexing: text(), ...verification,
     },
@@ -195,7 +197,7 @@ export const RESOURCES = {
     recommended: ['location', 'presentation_date'],
     fields: {
       research_project_id: ref('research_projects'), title: text(req), authors: text({ max: 2000 }), conference: text(req),
-      location: text(), presentation_date: date(),
+      location: text(), presentation_date: pdate(),
       presentation_type: oneOf(['oral', 'poster', 'keynote', 'panel', 'workshop', 'other']), ...verification,
     },
   },
@@ -205,7 +207,7 @@ export const RESOURCES = {
     fields: {
       title: text(req),
       project_type: oneOf(['extension_project', 'community_program', 'training_conducted', 'seminar', 'engagement', 'other']),
-      partner: text(), location: text(), start_date: date(), end_date: date(),
+      partner: text(), location: text(), start_date: pdate(), end_date: pdate(),
       status: oneOf(['planned', 'ongoing', 'completed', 'cancelled']), role: text(), beneficiaries: long(),
       participants_count: int({ min: 0 }), training_hours: real({ min: 0 }),
       objectives: long(), outcomes: long(), narrative: long(), ...verification,
@@ -301,7 +303,7 @@ export const RESOURCES = {
   cv_profiles: {
     table: 'cv_profiles', label: 'CV Profile', module: 'cv', title: 'name', subtitle: ['cv_type', 'status'],
     fields: {
-      name: text(req), cv_type: oneOf(['academic', 'professional', 'faculty', 'research', 'administrative', 'short_bio', 'application']),
+      name: text(req), cv_type: oneOf(['academic', 'professional', 'faculty', 'research', 'administrative', 'short_bio', 'application', 'portfolio']),
       template_id: { type: 'int' }, settings_json: json(),
     },
   },

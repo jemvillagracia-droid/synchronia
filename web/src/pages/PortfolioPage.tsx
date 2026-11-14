@@ -1,3 +1,4 @@
+import { CvImportButton } from './CvImport';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, useParams } from 'react-router-dom';
 import { api, onDataChanged } from '../lib/api';
@@ -77,7 +78,7 @@ export function PortfolioOverview() {
   const { openRecord } = useApp();
 
   return (
-    <PortfolioShell title="Professional Portfolio" crumb="" sub="The master record of your professional identity. Every entry is editable, searchable and linkable to evidence — and nothing is shown as verified until you confirm it or attach proof.">
+    <PortfolioShell title="Professional Portfolio" crumb="" sub="The master record of your professional identity. Every entry is editable, searchable and linkable to evidence — and nothing is shown as verified until you confirm it or attach proof." actions={<CvImportButton />}>
       {!s ? <div className="skeleton" style={{ height: 200 }} /> : (
         <div className="stack" style={{ gap: 'var(--s-6)' }}>
           <section className="panel accent-violet">

@@ -24,9 +24,9 @@ type Tab = 'teaching' | 'research' | 'extension' | 'development' | 'reports';
 
 export async function exportAndSave(url: string, toast: (t: string, k?: 'ok' | 'error' | 'info') => void) {
   try {
-    const r = await api.post<{ file_name: string; download: string }>(url);
+    const r = await api.post<{ file_name: string; download: string; validation?: { summary: string } }>(url);
     download(r.download, r.file_name);
-    toast(`Generated ${r.file_name}`, 'ok');
+    toast(`Generated ${r.file_name}${r.validation ? ` — ${r.validation.summary}` : ''}`, 'ok');
     dataChanged();
   } catch (e) { toast((e as Error).message, 'error'); }
 }
@@ -38,8 +38,8 @@ function Teaching({ o }: { o: Overview }) {
   async function report() {
     const [academic_year, semester] = term.split('|');
     try {
-      const r = await api.post<{ file_name: string; download: string }>('/academic/reports/teaching', { academic_year, semester });
-      download(r.download, r.file_name); toast(`Generated ${r.file_name}`, 'ok'); dataChanged();
+      const r = await api.post<{ file_name: string; download: string; validation?: { summary: string } }>('/academic/reports/teaching', { academic_year, semester });
+      download(r.download, r.file_name); toast(`Generated ${r.file_name}${r.validation ? ` — ${r.validation.summary}` : ''}`, 'ok'); dataChanged();
     } catch (e) { toast((e as Error).message, 'error'); }
   }
   return (

@@ -11,6 +11,8 @@ import { cvRouter, imageRouter } from './cv/routes.js';
 import { intelligenceRouter } from './intelligence/routes.js';
 import { adminRouter } from './admin/routes.js';
 import { knowledgeRouter } from './knowledge/routes.js';
+import { calendarRouter } from './calendar/routes.js';
+import { portfolioImportRouter } from './portfolio/routes.js';
 import { googleCallbackRouter, integrationsRouter } from './integrations/routes.js';
 import { academicRouter } from './academic/routes.js';
 import { backupFile, backupNow, importBackup, integrity, listBackups, scheduleRestore } from './backup.js';
@@ -141,7 +143,7 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
         label: r.label, module: r.module, title: r.title, subtitle: r.subtitle || [], date: r.date || null,
         group: r.group || null, recommended: r.recommended || [],
         fields: Object.fromEntries(Object.entries(r.fields).map(([n, f]) => [n, {
-          type: f.type, required: !!f.required, values: f.values, resource: f.resource, max: f.max, min: f.min, format: f.format,
+          type: f.type, required: !!f.required, values: f.values, resource: f.resource, max: f.max, min: f.min, format: f.format, partial: f.partial || undefined,
         }])),
       };
     }
@@ -226,7 +228,7 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
   });
   api.post('/system/backups/import', express.raw({ type: () => true, limit: '2gb' }), (req, res) => {
     if (!dataDir) throw new HttpError(503, 'Backups are available in the desktop app');
-    const known = fs.readdirSync(path.join(ROOT, 'server', 'migrations')).filter((f) => f.endsWith('.sql'));
+    const known = fs.readdirSync(path.join(ROOT, 'server', 'migrations')).filter((f) => f.endsWith('.sql') || f.endsWith('.cjs'));
     const r = importBackup(dataDir, req.body, known);
     audit(db, req.user.id, 'export', null, 'settings', `Imported backup ${r.file} (verified)`);
     res.status(201).json(r);
@@ -243,6 +245,8 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
   api.use('/intelligence', intelligenceRouter(db, { pdfRenderer }));
   api.use('/admin', adminRouter(db));
   api.use('/knowledge', knowledgeRouter(db));
+  api.use('/calendar', calendarRouter(db));
+  api.use('/portfolio', portfolioImportRouter(db));
   api.use('/integrations', integrationsRouter(db));
   api.use('/images', imageRouter(db));
   api.use('/academic', academicRouter(db));

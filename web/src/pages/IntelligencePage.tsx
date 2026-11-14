@@ -116,9 +116,9 @@ function ReportBuilder({ cat, filters, sections }: { cat: Catalog; filters: { fr
   async function generate(type: string) {
     setBusy(type);
     try {
-      const r = await api.post<{ file_name: string; download: string; sources: number }>('/intelligence/reports', { type, format, from: filters.from || null, to: filters.to || null, support: filters.support, sections: type === 'custom' ? sections : undefined });
+      const r = await api.post<{ file_name: string; download: string; sources: number; validation?: { summary: string } }>('/intelligence/reports', { type, format, from: filters.from || null, to: filters.to || null, support: filters.support, sections: type === 'custom' ? sections : undefined });
       download(r.download, r.file_name);
-      toast(`Generated ${r.file_name} from ${r.sources} source record${r.sources === 1 ? '' : 's'}`, 'ok');
+      toast(`Generated ${r.file_name} from ${r.sources} source record${r.sources === 1 ? '' : 's'}${r.validation ? ` — ${r.validation.summary}` : ''}`, 'ok');
       dataChanged();
     } catch (e) { toast((e as Error).message, 'error'); } finally { setBusy(null); }
   }

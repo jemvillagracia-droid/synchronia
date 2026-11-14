@@ -1,3 +1,5 @@
+import { EvaCalendar, useCalendar } from './EvaCalendar';
+import { CalData, KIND_LABEL, todayIso } from '../lib/calendar';
 import { useEffect, useMemo, useState } from 'react';
 import dsegUrl from 'dseg/fonts/DSEG7-Classic/DSEG7Classic-BoldItalic.woff2?url';
 import { monthName, weekdayName } from '../lib/format';
@@ -25,7 +27,7 @@ function useClock() {
   return now;
 }
 
-function Clock({ d }: { d: Command['deadlines'] }) {
+function Clock({ d, cal }: { d: Command['deadlines']; cal: CalData | null }) {
   const now = useClock();
   const h = now.getHours() % 12 || 12;
   const pm = now.getHours() >= 12;
@@ -48,6 +50,7 @@ function Clock({ d }: { d: Command['deadlines'] }) {
           {lamps.map(([k, l]) => <span key={k} className={`lamp ${k} ${d.level === k ? 'on' : ''}`} aria-hidden={d.level !== k}>{l}</span>)}
           <span className="eva-lamp-note">{d.overdue} overdue · {d.due_today} due today · {d.due_week} this week</span>
         </div>
+        <Countdown cal={cal} />
       </div>
     </section>
   );
@@ -169,13 +172,62 @@ function Workload({ w }: { w: Command['workload'] }) {
   );
 }
 
-export function CommandDisplay({ c }: { c: Command }) {
+const dayDiff = (iso: string) => { const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((new Date(`${iso}T00:00:00`).getTime() - t.getTime()) / 86400000); };
+
+/** "Time remaining" readouts: days to the next open item and to the next holiday. */
+function Countdown({ cal }: { cal: CalData | null }) {
+  if (!cal) return null;
+  const today = todayIso();
+  const nextEv = cal.events.filter((e) => e.date >= today && !e.done).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const nextHol = cal.holidays.filter((h) => h.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const cell = (label: string, item: { date: string; title: string; tag: string } | null) => {
+    const n = item ? dayDiff(item.date) : null;
+    return (
+      <div className="eva-count" role="group" aria-label={item ? `${label}: ${item.title}, ${n === 0 ? 'today' : `in ${n} day${n === 1 ? '' : 's'}`}` : `${label}: none`}>
+        <div className="eva-count-cap">{label}</div>
+        <div className="eva-count-row" aria-hidden>
+          <span className="eva-num">{item ? String(Math.min(n!, 999)).padStart(3, '0') : '---'}</span><span className="u">{n === 0 ? 'TODAY' : 'DAYS'}</span>
+        </div>
+        <div className="eva-count-t">{item ? <><b>{item.tag}</b> {item.title}</> : 'Nothing scheduled'}</div>
+      </div>
+    );
+  };
   return (
-    <div className="eva-grid">
-      <Clock d={c.deadlines} />
-      <SyncGraph a={c.activity} />
-      <Magi m={c.magi} />
-      <Workload w={c.workload} />
+    <div className="eva-countdown">
+      {cell('NEXT ITEM', nextEv ? { date: nextEv.date, title: nextEv.title, tag: (KIND_LABEL[nextEv.kind] || nextEv.kind).toUpperCase() } : null)}
+      {cell('NEXT HOLIDAY', nextHol ? { date: nextHol.date, title: nextHol.name, tag: nextHol.region } : null)}
     </div>
+  );
+}
+
+/** NERV-style status strip: mode, alert state and synchronization at a glance. */
+function StatusStrip({ c, mode }: { c: Command; mode: string }) {
+  const lvl = c.deadlines.level;
+  const delta = c.activity.this_week - c.activity.last_week;
+  return (
+    <div className={`eva-status lvl-${lvl}`} role="status" aria-label={`System status: ${lvl}`}>
+      <span className="eva-status-id"><i aria-hidden />CENTRAL NEXUS</span>
+      <span><b>PATTERN</b>{mode.toUpperCase()}</span>
+      <span><b>ALERT</b>{lvl === 'nominal' ? 'NOMINAL' : lvl === 'caution' ? 'CAUTION' : 'DANGER'}{c.deadlines.overdue ? ` · ${c.deadlines.overdue} OVERDUE` : ''}</span>
+      <span><b>SYNC</b>{String(c.activity.this_week).padStart(3, '0')} THIS WEEK · {delta >= 0 ? '+' : ''}{delta}</span>
+      <span><b>MAGI</b>{c.magi.filter((m) => m.status === 'ready').length}/3 READY</span>
+      {lvl !== 'nominal' && <span className="eva-hazard" aria-hidden />}
+    </div>
+  );
+}
+
+export function CommandDisplay({ c, mode = 'administrative' }: { c: Command; mode?: string }) {
+  const cal = useCalendar();
+  return (
+    <>
+      <StatusStrip c={c} mode={mode.replace(/_/g, ' ')} />
+      <div className="eva-grid eva-grid-3">
+        <Clock d={c.deadlines} cal={cal.data} />
+        <EvaCalendar cal={cal} />
+        <Magi m={c.magi} />
+        <SyncGraph a={c.activity} />
+        <Workload w={c.workload} />
+      </div>
+    </>
   );
 }

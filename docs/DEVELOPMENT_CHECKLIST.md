@@ -241,6 +241,27 @@ See `docs/QC_REPORT.md` for the quality-control results.
 - Electron 45 end-to-end: Drive setup, browser sign-in, Drive search, add to library, link Drive evidence, refresh details, library usage, search everything, timeline, archive, backup copy and import — no console errors; earlier walkthroughs (administrative operations, Intelligence reports including PDF, syllabus import) re-run on Electron 45.
 - Accessibility and layout: 64 page loads at three widths plus 28 administrative views and pop-ups.
 
+## Release 1.1 — owner requests and *SYNCHRONIA Quality Check* ✅
+
+| Requirement | Status | Implementation |
+|---|---|---|
+| Pop-ups centred on screen | ✅ | Drawers, capture, search and context pop-ups centred in the window (title bar allowed for) |
+| Central Nexus in an Evangelion command style | ✅ | Status strip (pattern, alert, sync, MAGI), red countdowns to the next item and holiday, calendar monitor, monitor-styled widgets |
+| Calendar with Philippine and Australian options | ✅ | `/calendar`; PH (RA 9492 as amended) and AU (national + chosen state, substitute days); estimates marked; owner corrections |
+| Use the owner's existing CV | ✅ | CV importer (PDF/.docx) with full review; self-reported; the owner's CV is not stored in the repository |
+| Export self-validation; never claim success without verification | ✅ | `exportcheck.js` on every DOCX/PDF/XLSX; refused if it fails; summary shown |
+| CV modes | ✅ | Academic, professional, faculty, research, administrative, short bio, application, and **Academic and Professional Portfolio** |
+| Wording / language review | ✅ (rule-based) | Wording suggestions with one-click apply; AI review not built in (stated in the app) |
+| Truthful dates | ✅ | Partial dates; nothing invented |
+| QA checklist and defect log | ✅ | `docs/QC_REPORT.md` (1.1.0 addendum) |
+| Multi-device sync, cloud, PWA/mobile | ⛔ Out of scope | Owner's decision: Windows desktop only |
+
+### Verified (1.1)
+
+- `npm test`: **102 tests, all passing**.
+- Electron 45: upgrade of a populated 1.0.0 database, fresh install, CV import and CV export, calendar, Nexus,
+  67 page loads at three widths plus 28 administrative views (accessibility and layout).
+
 ## All phases complete
 
-SYNCHRONIA 1.0.0 implements Phases 1–7 of the directive.
+SYNCHRONIA 1.0.0 implemented Phases 1–7 of the directive; 1.1.0 adds the items above.

@@ -4,7 +4,7 @@
 
 An academic and professional advancement environment for managing teaching, research, extension, professional
 portfolio, curriculum vitae and administrative work in one place. Built in phases per the SYNCHRONIA Master Product
-Directive. **All seven phases of the directive are complete (version 1.0).** SYNCHRONIA is a Windows
+Directive. **All seven phases of the directive are complete; version 1.1 adds the calendar, CV import and export verification.** SYNCHRONIA is a Windows
 desktop application for a single owner.
 
 ## Installing on Windows
@@ -72,6 +72,48 @@ letterhead from your office's blank Word template (the header and footer banners
 not bundled with the app). Syllabi export in the University outcomes-based format on 8.5 × 13 landscape. An existing
 Word syllabus, however loosely formatted, can be imported from Academic Workspace › *Import syllabus (.docx)*: the
 preview shows what was recognised before anything is saved.
+
+### Calendar (Philippine and Australian)
+
+The calendar (top bar, or *Open calendar* on the Central Nexus) shows your deadlines, meetings, classes and
+assessments, trainings and talks, correspondence and routing due dates, licence expiries and development goals in a
+month view, with a day agenda. Holidays can be shown for the **Philippines** (regular, special non-working and special
+working days under RA 9492 as amended, including Holy Week and National Heroes Day) and **Australia** (national days
+plus the state or territory you choose, with substitute days when a holiday falls on a weekend). Islamic holidays
+(Eid'l Fitr, Eid'l Adha) and some others are fixed each year by proclamation; SYNCHRONIA marks them as *estimates* and
+lets you set the proclaimed date, hide a day, or add your own. The week can start on Sunday or Monday.
+
+### Importing an existing CV
+
+Portfolio › *Import from existing CV* reads a PDF or Word (.docx) CV and shows everything it found before anything is
+saved: education, employment, licences, trainings and talks, memberships, awards and publications, plus your name and
+contact details. You tick what to import, correct anything read wrongly, and see the CV lines each item came from.
+Items already in your portfolio are flagged and unticked. Dates keep the precision the CV gives (a year stays a year).
+Imported records are marked **self-reported** until you confirm them or attach evidence. Sections such as references
+and skills are listed as not imported, with their text, so nothing disappears silently.
+
+### Dates you only partly remember
+
+Historical fields (education, employment, appointments, trainings, awards, memberships, publications and similar)
+accept an exact date, a month (`2019-06`) or a year (`2019`). SYNCHRONIA never invents a day or month: CVs and the
+timeline print what you entered ("Jun 2019", "2019"), and analytics count a partial date as the whole span it covers.
+
+### CV Studio additions
+
+- **Academic and Professional Portfolio CV**: a comprehensive CV type that includes every section.
+- **Resource speakership and invited talks** has its own section, separate from trainings attended.
+- **Wording suggestions** (rule-based, not AI): the quality checklist flags weak phrasing such as "responsible for
+  managing" or "helped with" and suggests a direct past-tense form; *Apply* changes the CV text (or, if the CV uses the
+  portfolio wording, the portfolio record, with version history). Nothing is changed without your click. SYNCHRONIA has
+  no AI writing review built in.
+
+### Every export is checked before it is saved
+
+Every generated document (CVs, syllabi, reports, minutes, turnover notes, Intelligence reports) is opened again with an
+independent reader before SYNCHRONIA says it was saved: Word files must open and be editable, PDFs must open with
+selectable text and a page count, workbooks must open, and none may contain rendering artefacts such as "undefined",
+"NaN" or "[object Object]". The confirmation shows what was verified (for example "Verified: opens, 3 pages, 1,204
+words, text selectable"). A document that fails is not saved, and the message says which check failed.
 
 ### How access is protected without a sign-in
 

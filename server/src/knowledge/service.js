@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import JSZip from 'jszip';
 import { DATA_DIR, APP_NAME, APP_VERSION } from '../config.js';
 import { RESOURCES } from '../resources.js';
-import { HttpError, createHooks, displayTitle, driveFileId, getResource } from '../repo.js';
+import { HttpError, createHooks, dateEnd, dateStart, displayTitle, driveFileId, getResource } from '../repo.js';
 import { decrypt } from '../secrets.js';
 
 const parse = (j, d) => { try { return j ? JSON.parse(j) : d; } catch { return d; } };
@@ -114,7 +114,7 @@ export function timeline(db, userId, q = {}) {
       const evidence = evMap.get(`${type}:${row.id}`) || 0;
       for (const [field, title, when] of rules) {
         if (!row[field] || (when && !when(row))) continue;
-        events.push({ date: row[field], precision: 'day', category, title: title(row), type, id: row.id, label: r.label, kind: field,
+        events.push({ date: row[field], category, title: title(row), type, id: row.id, label: r.label, kind: field,
           support: support(row, evidence), evidence, recorded_at: row.created_at.slice(0, 10) });
       }
     }
@@ -138,12 +138,12 @@ export function timeline(db, userId, q = {}) {
     }
   }
   let out = events;
-  if (q.from) out = out.filter((e) => e.date >= q.from);
-  if (q.to) out = out.filter((e) => e.date <= q.to);
+  if (q.from) out = out.filter((e) => dateEnd(e.date) >= q.from);
+  if (q.to) out = out.filter((e) => dateStart(e.date) <= q.to);
   if (q.q) { const s = String(q.q).toLowerCase(); out = out.filter((e) => e.title.toLowerCase().includes(s)); }
   out.sort((a, b) => (b.date.localeCompare(a.date)) || a.title.localeCompare(b.title));
   // A retrospective entry: recorded more than 30 days after the event happened.
-  for (const e of out) e.retrospective = (Date.parse(e.recorded_at) - Date.parse(e.date)) / 86400000 > 30;
+  for (const e of out) { e.retrospective = (Date.parse(e.recorded_at) - Date.parse(dateEnd(e.date))) / 86400000 > 30; e.precision ||= e.date.length === 4 ? 'year' : e.date.length === 7 ? 'month' : 'day'; }
   const years = {};
   for (const e of out) years[e.date.slice(0, 4)] = (years[e.date.slice(0, 4)] || 0) + 1;
   return { events: out, total: out.length, years, categories: TIMELINE_CATEGORIES };

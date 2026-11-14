@@ -41,7 +41,7 @@ export interface ChecklistItem { id: string; label: string; status: 'complete' |
 export interface Analysis {
   mode: string;
   ats: { summary: Record<string, number>; checks: Check[]; keywords: { terms: string[]; found: string[] }; disclaimer: string };
-  checklist: { items: ChecklistItem[]; counts: Record<string, number> };
+  checklist: { items: ChecklistItem[]; counts: Record<string, number>; suggestions?: { section: string; entry: string | null; entry_id: number; overridden: boolean; original: string; suggested: string; why: string }[] };
   extracted: { pdf: string; pdf_pages: number; pdf_title: string | null; docx: string; docx_headings: string[] };
 }
 export interface CvExport { id: number; cv_profile_id: number; format: string; file_name: string; size_bytes: number; cv_version: number; cv_status: string; created_at: string; cv_name: string }
@@ -52,7 +52,7 @@ export interface Photo {
 
 export const CV_TYPES: Record<string, string> = {
   academic: 'Academic CV', faculty: 'Faculty CV', research: 'Research-oriented CV', administrative: 'Administrative CV',
-  professional: 'Professional CV', application: 'Customized application CV', short_bio: 'Short professional biography',
+  professional: 'Professional CV', application: 'Customized application CV', short_bio: 'Short professional biography', portfolio: 'Academic and professional portfolio CV',
 };
 export const FORMAT_LABEL: Record<string, string> = { docx: 'Word (DOCX)', pdf: 'PDF', docx_ats: 'ATS Word (DOCX)', pdf_ats: 'ATS PDF' };
 export const fmtBytes = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);

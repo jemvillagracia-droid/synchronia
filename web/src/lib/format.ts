@@ -27,8 +27,10 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 export function fmtDate(d: string | null | undefined): string {
   if (!d) return '—';
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
-  if (!m) return d;
-  return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
+  if (m) return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
+  const ym = /^(\d{4})-(\d{2})$/.exec(d);
+  if (ym) return `${MONTHS[Number(ym[2]) - 1]} ${ym[1]}`;
+  return d; // year only, or free text
 }
 
 export function fmtDateTime(iso: string | null | undefined): string {

@@ -19,6 +19,7 @@ export interface FieldSpec {
   max?: number;
   min?: number;
   format?: 'time';
+  partial?: boolean;
 }
 export interface ResourceSpec {
   label: string; module: string; title: string; subtitle: string[]; date: string | null;

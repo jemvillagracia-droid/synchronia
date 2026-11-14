@@ -13,6 +13,15 @@ export class HttpError extends Error {
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const PARTIAL_RE = /^\d{4}(-(0[1-9]|1[0-2])(-\d{2})?)?$/;
+/** Earliest and latest full date a (possibly partial) date can mean: "2019" → 2019-01-01 … 2019-12-31. */
+export const dateStart = (d) => (!d ? d : d.length === 4 ? `${d}-01-01` : d.length === 7 ? `${d}-01` : d);
+export const dateEnd = (d) => {
+  if (!d || d.length === 10) return d;
+  if (d.length === 4) return `${d}-12-31`;
+  const [y, m] = d.split('-').map(Number);
+  return `${d}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
+};
 const now = () => new Date().toISOString();
 
 export function getResource(key) {
@@ -52,7 +61,10 @@ export function validate(db, userId, r, input, { partial = false } = {}) {
         out[name] = v;
         break;
       case 'date':
-        if (typeof v !== 'string' || !DATE_RE.test(v) || Number.isNaN(Date.parse(v))) { errors[name] = 'Use YYYY-MM-DD'; break; }
+        if (f.partial && typeof v === 'string' && PARTIAL_RE.test(v) && v.length < 10) { out[name] = v; break; }
+        if (typeof v !== 'string' || !DATE_RE.test(v) || Number.isNaN(Date.parse(v)) || new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) !== v) {
+          errors[name] = f.partial ? 'Use YYYY, YYYY-MM or YYYY-MM-DD' : 'Use YYYY-MM-DD'; break;
+        }
         out[name] = v;
         break;
       case 'int':
@@ -147,7 +159,7 @@ function withEvidence(db, r, items) {
 function checkDateOrder(r, row) {
   const errors = {};
   for (const [a, b] of DATE_ORDER) {
-    if (r.fields[a] && r.fields[b] && row[a] && row[b] && row[b] < row[a]) errors[b] = `Must be on or after ${a.replace(/_/g, ' ')}`;
+    if (r.fields[a] && r.fields[b] && row[a] && row[b] && dateEnd(row[b]) < dateStart(row[a])) errors[b] = `Must be on or after ${a.replace(/_/g, ' ')}`;
   }
   if (Object.keys(errors).length) throw new HttpError(422, 'Dates are out of order', errors);
 }

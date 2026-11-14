@@ -282,6 +282,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <button className="icon-btn hide-mobile" onClick={toggleContext} aria-label={contextOpen ? 'Hide context' : 'Show context: pending tasks and recent changes'} aria-pressed={contextOpen}>
           <Icon name="panel" />
         </button>
+        <Link to="/calendar" className="icon-btn hide-mobile" aria-label="Calendar" title="Calendar"><Icon name="calendar" /></Link>
         <Link to="/settings" className="icon-btn hide-mobile" aria-label="System settings"><Icon name="settings" /></Link>
         <ProfileMenu />
       </header>

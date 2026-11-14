@@ -1,3 +1,4 @@
+import { CalendarPage } from './pages/CalendarPage';
 import { KnowledgePage } from './pages/KnowledgePage';
 import { TimelinePage } from './pages/TimelinePage';
 import { AdminPage } from './pages/admin/AdminPage';
@@ -92,6 +93,7 @@ export function App() {
                 <Route path="/intelligence" element={<IntelligencePage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/knowledge" element={<KnowledgePage />} />
+                <Route path="/calendar" element={<CalendarPage />} />
                 {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence', 'admin', 'knowledge'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFound />} />
