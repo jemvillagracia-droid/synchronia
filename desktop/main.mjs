@@ -14,6 +14,14 @@ const DEV_URL = process.env.SYNCHRONIA_DEV_URL; // Vite dev server during develo
 app.setName('SYNCHRONIA');
 app.setAppUserModelId('app.synchronia.desktop');
 
+// Portable copy (the ZIP): a "portable.txt" beside SYNCHRONIA.exe keeps everything (records, backups, settings and
+// window state) in a "SYNCHRONIA Data" folder next to the program instead of %APPDATA%, so the folder can be carried
+// on a USB drive. The installer never ships that file. Set before anything reads userData (including the
+// single-instance lock, which lives there).
+const exeDir = path.dirname(process.execPath);
+const PORTABLE = app.isPackaged && fs.existsSync(path.join(exeDir, 'portable.txt'));
+if (PORTABLE) app.setPath('userData', path.join(exeDir, 'SYNCHRONIA Data'));
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {

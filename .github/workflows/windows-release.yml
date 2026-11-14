@@ -1,11 +1,12 @@
 # Builds the Windows installer on GitHub's Windows machines and publishes it.
 #
-#  * Push to main -> tests, installer build, smoke test of the built app. If version X.Y.Z in package.json has no
-#    published release yet, release "vX.Y.Z" is published (the tag is created here) with SYNCHRONIA-Setup-X.Y.Z.exe
-#    attached; a draft release for that version is filled in and published instead. So: bump the version, push, and
-#    the new installer appears on the Releases page.
-#  * Push a version tag (vX.Y.Z) or publish a release by hand -> the same, always (re)attaching the installer.
-#  * "Run workflow" on the Actions tab -> the same build; the installer is kept as a run artifact for 30 days.
+#  * Push to main -> tests, installer and portable ZIP builds, smoke tests of both. If version X.Y.Z in package.json
+#    has no published release yet, release "vX.Y.Z" is published (the tag is created here) with
+#    SYNCHRONIA-Setup-X.Y.Z.exe and SYNCHRONIA-X.Y.Z-portable.zip attached; a draft release for that version is filled
+#    in and published instead. If it is already published, files it lacks are added (nothing is replaced) and its
+#    notes are refreshed from docs/releases/vX.Y.Z.md. So: bump the version, push, and the new downloads appear.
+#  * Push a version tag (vX.Y.Z) or publish a release by hand -> the same, always (re)attaching both files.
+#  * "Run workflow" on the Actions tab -> the same build; both files are kept as a run artifact for 30 days.
 #
 # Release notes come from docs/releases/vX.Y.Z.md when that file exists; otherwise GitHub writes them from the commits.
 name: Windows release
@@ -89,11 +90,55 @@ jobs:
           if ($LASTEXITCODE -ne 0) { Write-Error "The database was not fully set up"; exit 1 }
           Write-Host "App started, set up its database and ran for 30 s."
 
-      - name: Keep the installer with this run
+      - name: Build the portable ZIP
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $stage = Join-Path $env:RUNNER_TEMP "portable\SYNCHRONIA-$v-portable"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item -Recurse -Force "release\win-unpacked\*" $stage
+          # The marker that makes this copy keep its data beside the program (see desktop/main.mjs).
+          @(
+            "SYNCHRONIA $v - portable copy",
+            "",
+            "Start SYNCHRONIA.exe. Nothing is installed.",
+            "Everything you record (database, backups, settings) is kept in the 'SYNCHRONIA Data' folder next to this file,",
+            "so you can move or copy the whole folder, for example to a USB drive. Back up that folder.",
+            "Keep this file: without it SYNCHRONIA uses %APPDATA%\SYNCHRONIA like the installed version.",
+            "Do not run the portable copy from a folder you cannot write to (such as Program Files)."
+          ) | Set-Content -Encoding utf8 (Join-Path $stage "portable.txt")
+          7z a -tzip -mx=7 "release\SYNCHRONIA-$v-portable.zip" (Join-Path $env:RUNNER_TEMP "portable\SYNCHRONIA-$v-portable") | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-Item "release\SYNCHRONIA-$v-portable.zip" | Format-Table Name, Length
+
+      - name: Smoke test the portable copy
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $dir = Join-Path $env:RUNNER_TEMP "portable-test"
+          7z x -y "-o$dir" "release\SYNCHRONIA-$v-portable.zip" | Out-Null
+          $app = Join-Path $dir "SYNCHRONIA-$v-portable"
+          Remove-Item Env:SYNCHRONIA_DATA_DIR -ErrorAction SilentlyContinue
+          $p = Start-Process -FilePath (Join-Path $app "SYNCHRONIA.exe") -PassThru
+          Start-Sleep -Seconds 30
+          $alive = -not $p.HasExited
+          Get-Process SYNCHRONIA -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 3
+          if (-not $alive) { Write-Error "The portable app exited early (exit code $($p.ExitCode))"; exit 1 }
+          $db = Join-Path $app "SYNCHRONIA Data\data\synchronia.db"
+          if (-not (Test-Path $db)) { Write-Error "The portable app did not keep its data beside the program"; exit 1 }
+          node --disable-warning=ExperimentalWarning scripts/smoke-check-db.cjs "$db"
+          if ($LASTEXITCODE -ne 0) { Write-Error "The portable database was not fully set up"; exit 1 }
+          if (Test-Path (Join-Path $env:APPDATA "SYNCHRONIA\data\synchronia.db")) { Write-Error "The portable app wrote to %APPDATA%"; exit 1 }
+          Write-Host "Portable copy started and kept its data beside the program."
+
+      - name: Keep the installer and portable ZIP with this run
         uses: actions/upload-artifact@v4
         with:
-          name: SYNCHRONIA-Setup-${{ steps.ver.outputs.version }}
-          path: release/SYNCHRONIA-Setup-*.exe
+          name: SYNCHRONIA-${{ steps.ver.outputs.version }}-windows
+          path: |
+            release/SYNCHRONIA-Setup-*.exe
+            release/SYNCHRONIA-*-portable.zip
           if-no-files-found: error
           retention-days: 30
 
@@ -108,27 +153,32 @@ jobs:
           REF_TYPE: ${{ github.ref_type }}
         run: |
           tag="v$VERSION"
-          exe="release/SYNCHRONIA-Setup-$VERSION.exe"
+          files=("release/SYNCHRONIA-Setup-$VERSION.exe" "release/SYNCHRONIA-$VERSION-portable.zip")
           notes="docs/releases/$tag.md"
           # A release for this version, drafts included (a draft's tag does not exist yet, so match on tag_name).
           rel=$(gh api "repos/$REPO/releases?per_page=100" --jq "[.[] | select(.tag_name == \"$tag\")][0] | select(.) | \"\(.id) \(.draft)\"")
           if [ -z "$rel" ]; then
             if [ -f "$notes" ]; then set -- --notes-file "$notes"; else set -- --generate-notes; fi
-            gh release create "$tag" "$exe" --repo "$REPO" --target "$GITHUB_SHA" --title "SYNCHRONIA $VERSION" "$@"
-            echo "Published $tag with the installer."
+            gh release create "$tag" "${files[@]}" --repo "$REPO" --target "$GITHUB_SHA" --title "SYNCHRONIA $VERSION" "$@"
+            echo "Published $tag with the installer and the portable ZIP."
             exit 0
           fi
           id=${rel%% *}; draft=${rel#* }
-          if [ "$draft" = "false" ] && [ "$EVENT" = "push" ] && [ "$REF_TYPE" != "tag" ]; then
-            echo "$tag is already published; nothing to do (push the tag or publish a release to replace its installer)."
-            exit 0
+          if [ "$draft" = "true" ] || [ "$EVENT" = "release" ] || [ "$REF_TYPE" = "tag" ]; then
+            # A draft, a hand-published release or a pushed tag: attach this build's files, replacing any older ones.
+            gh release upload "$tag" "${files[@]}" --repo "$REPO" --clobber
+          else
+            # Already published and this is an ordinary push: add only the files the release does not have yet,
+            # so a published installer is never silently replaced.
+            have=$(gh api "repos/$REPO/releases/$id" --jq '[.assets[].name] | join("\n")')
+            for f in "${files[@]}"; do
+              if grep -qxF "$(basename "$f")" <<<"$have"; then echo "$(basename "$f") already attached"; else gh release upload "$tag" "$f" --repo "$REPO"; echo "Added $(basename "$f")"; fi
+            done
+            if [ -f "$notes" ]; then gh release edit "$tag" --repo "$REPO" --notes-file "$notes"; fi
           fi
-          gh release upload "$tag" "$exe" --repo "$REPO" --clobber
           if [ "$draft" = "true" ]; then
             body=()
             if [ -f "$notes" ] && [ -z "$(gh api "repos/$REPO/releases/$id" --jq '.body // ""')" ]; then body=(-F "body=@$notes"); fi
             gh api -X PATCH "repos/$REPO/releases/$id" -F draft=false -f tag_name="$tag" -f target_commitish="$GITHUB_SHA" "${body[@]}" > /dev/null
-            echo "Published the draft $tag with the installer."
-          else
-            echo "Attached the installer to $tag."
+            echo "Published the draft $tag."
           fi

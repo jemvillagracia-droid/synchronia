@@ -12,6 +12,12 @@ desktop application for a single owner.
 Run **`SYNCHRONIA-Setup-<version>.exe`**. It installs per user (no administrator rights needed) and adds Start-menu and
 desktop shortcuts. SYNCHRONIA opens straight into your workspace; there is no sign-in.
 
+**Portable copy:** `SYNCHRONIA-<version>-portable.zip` runs without installing. Unzip it to a folder you can write to
+(not Program Files) and start `SYNCHRONIA.exe`. It keeps everything (records, backups, settings) in a `SYNCHRONIA Data`
+folder beside the program, so the whole folder can be carried on a USB drive; the `portable.txt` file in it is what
+switches this on. To move from the installed version, use Settings › Data & recovery to save a backup copy and import
+it into the portable copy (or the other way round).
+
 Your data lives in `%APPDATA%\SYNCHRONIA\data` (Settings › Application › *Show in Explorer*). Back up that folder: it
 holds `synchronia.db` and `secret.key`, the key that decrypts licence numbers. Uninstalling does not delete it.
 Settings › Data & recovery also exports every record as JSON.
