@@ -26,11 +26,11 @@ function labelFor(type: string, name: string) {
 
 function sectionsFor(type: string, spec: ResourceSpec): FormSection[] {
   const layout = FORMS[type];
-  const all = Object.keys(spec.fields).filter((n) => spec.fields[n].type !== 'json');
+  const all = Object.keys(spec.fields).filter((n) => spec.fields[n].type !== 'json' && !spec.fields[n].hidden);
   if (!layout) return [{ title: 'Details', fields: all }];
   const placed = new Set(layout.sections.flatMap((s) => s.fields));
   const rest = all.filter((n) => !placed.has(n));
-  return [...layout.sections.map((s) => ({ ...s, fields: s.fields.filter((n) => spec.fields[n]) })), ...(rest.length ? [{ title: 'Other', fields: rest }] : [])];
+  return [...layout.sections.map((s) => ({ ...s, fields: s.fields.filter((n) => spec.fields[n] && !spec.fields[n].hidden) })), ...(rest.length ? [{ title: 'Other', fields: rest }] : [])];
 }
 
 /** View, create, edit, verify, evidence, delete (to recycle bin) and inspect history of any registered record. */

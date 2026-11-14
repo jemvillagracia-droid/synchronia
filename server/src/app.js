@@ -146,7 +146,7 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
         label: r.label, module: r.module, title: r.title, subtitle: r.subtitle || [], date: r.date || null,
         group: r.group || null, recommended: r.recommended || [],
         fields: Object.fromEntries(Object.entries(r.fields).map(([n, f]) => [n, {
-          type: f.type, required: !!f.required, values: f.values, resource: f.resource, max: f.max, min: f.min, format: f.format, partial: f.partial || undefined,
+          type: f.type, required: !!f.required, values: f.values, resource: f.resource, max: f.max, min: f.min, format: f.format, partial: f.partial || undefined, hidden: f.hidden || undefined,
         }])),
       };
     }

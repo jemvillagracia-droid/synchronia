@@ -172,16 +172,17 @@ export const RESOURCES = {
     fields: {
       title: text(req), role: text(),
       // stage: the customizable workflow stage (validated against the owner's stage list); status is derived from it.
-      stage: text({ max: 60 }),
-      status: oneOf(['idea', 'proposal', 'approved', 'data_collection', 'analysis', 'writing', 'completed', 'discontinued']),
+      stage: text({ max: 60, hidden: true }),
+      status: oneOf(['idea', 'proposal', 'approved', 'data_collection', 'analysis', 'writing', 'completed', 'discontinued'], { hidden: true }),
       research_area: text(), tags: text({ max: 1000 }),
       start_date: pdate(), end_date: pdate(), problem: long(), research_questions: long(), objectives: long(), significance: long(),
       variables: long(), population: long(), theory: long(), methodology: long(),
       instruments: long(), ethics_reference: text(), collaborators: long(), funding: text(),
-      progress_pct: int({ min: 0, max: 100 }), target_sample: int({ min: 0 }), collected_sample: int({ min: 0 }),
-      validation_status: oneOf(['not_started', 'in_progress', 'validated', 'not_applicable']),
-      ethics_status: oneOf(['not_required', 'to_submit', 'under_review', 'approved', 'revisions_requested']),
-      archived_at: text({ max: 40 }), ...verification,
+      // Progress is counted from milestones; instrument and ethics status come from their own records (1.2).
+      progress_pct: int({ min: 0, max: 100, hidden: true }), target_sample: int({ min: 0 }), collected_sample: int({ min: 0 }),
+      validation_status: oneOf(['not_started', 'in_progress', 'validated', 'not_applicable'], { hidden: true }),
+      ethics_status: oneOf(['not_required', 'to_submit', 'under_review', 'approved', 'revisions_requested'], { hidden: true }),
+      archived_at: text({ max: 40, hidden: true }), ...verification,
     },
   },
   research_milestones: {
@@ -202,7 +203,7 @@ export const RESOURCES = {
   research_sections: {
     table: 'research_sections', label: 'Document Section', module: 'research', title: 'heading', subtitle: ['status'],
     fields: {
-      document_id: ref('research_documents', req), section_key: text({ max: 60 }), heading: text(req), body: long({ max: 200000 }),
+      document_id: ref('research_documents', req), section_key: text({ max: 60, hidden: true }), heading: text(req), body: long({ max: 200000, hidden: true }),
       status: oneOf(['not_started', 'drafting', 'complete', 'not_applicable']), notes: long(), sort_order: int(),
     },
   },

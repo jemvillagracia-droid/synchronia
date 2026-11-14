@@ -117,13 +117,61 @@ export const FORMS: Record<string, FormLayout> = {
   },
   research_projects: {
     sections: [
-      { title: 'Project', fields: ['title', 'role', 'status', 'start_date', 'end_date'] },
-      { title: 'Progress', fields: ['progress_pct', 'target_sample', 'collected_sample', 'validation_status', 'ethics_status'] },
-      { title: 'Design', fields: ['research_questions', 'objectives', 'methodology', 'instruments'] },
-      { title: 'Governance', fields: ['ethics_reference', 'collaborators', 'funding'] },
+      { title: 'Project', fields: ['title', 'role', 'research_area', 'tags', 'start_date', 'end_date'] },
+      { title: 'Idea and concept', fields: ['problem', 'research_questions', 'objectives', 'significance', 'variables', 'population', 'theory'] },
+      { title: 'Design', fields: ['methodology', 'target_sample', 'collected_sample'] },
+      { title: 'Earlier notes', fields: ['instruments', 'ethics_reference', 'collaborators', 'funding'] },
       RECORD,
     ],
-    labels: { ethics_reference: 'Ethics clearance reference', progress_pct: 'Overall progress (%)', target_sample: 'Target respondents / sample', collected_sample: 'Data collected so far', validation_status: 'Instrument validation', ethics_status: 'Ethics review' },
+    labels: { title: 'Research title or working title', research_area: 'Research area', tags: 'Tags (comma-separated)', problem: 'Research problem or observation',
+      research_questions: 'Preliminary research questions', variables: 'Potential variables or concepts', population: 'Possible research population',
+      theory: 'Potential theoretical foundations', significance: 'Research significance', ethics_reference: 'Ethics clearance reference',
+      target_sample: 'Target respondents / sample', collected_sample: 'Data collected so far', instruments: 'Instrument notes', collaborators: 'Collaborator notes', funding: 'Funding notes' },
+  },
+  research_milestones: {
+    sections: [{ title: 'Milestone', fields: ['project_id', 'title', 'due_date', 'status', 'completed_on', 'notes'] }],
+    labels: { project_id: 'Research project', completed_on: 'Completed on' },
+  },
+  research_documents: {
+    sections: [{ title: 'Document', fields: ['title', 'kind', 'project_id', 'target', 'word_limit', 'status'] }, { title: 'Requirements', fields: ['requirements', 'notes'] }],
+    labels: { project_id: 'Research project', kind: 'Type', target: 'Target journal, conference or office', word_limit: 'Word limit', requirements: 'Formatting requirements' },
+  },
+  literature: {
+    sections: [
+      { title: 'Reference', fields: ['item_type', 'title', 'authors', 'year', 'source', 'volume', 'issue', 'pages', 'publisher', 'doi', 'url'] },
+      { title: 'Review', fields: ['abstract', 'objectives', 'methodology', 'findings', 'limitations', 'relevance', 'citations', 'notes'] },
+      { title: 'Organisation', fields: ['theme', 'tags'] },
+    ],
+    labels: { item_type: 'Type', authors: 'Authors (Family, Given; Family, Given)', source: 'Journal, book or proceedings', doi: 'DOI', url: 'Source link', findings: 'Major findings',
+      limitations: 'Research limitations', relevance: 'Relevance to my research', citations: 'Potential citations (quotes, pages)', notes: 'Personal research notes', theme: 'Theme', tags: 'Tags' },
+  },
+  research_instruments: {
+    sections: [{ title: 'Instrument', fields: ['title', 'origin', 'purpose', 'source'] }, { title: 'Permission', fields: ['permission_status', 'permission_notes'] },
+      { title: 'Results obtained elsewhere', fields: ['external_results', 'notes'] }],
+    labels: { origin: 'Developed, adopted or adapted', source: 'Source (for adopted or adapted instruments)', external_results: 'Externally obtained results (e.g. reliability reported by a statistician)' },
+  },
+  instrument_reviews: {
+    sections: [{ title: 'Expert review', fields: ['instrument_id', 'version_id', 'validator', 'credentials', 'review_date', 'recommendation', 'rating', 'comments', 'addressed'] }],
+    labels: { instrument_id: 'Instrument', version_id: 'Version reviewed', rating: 'Rating or score given', addressed: 'Comments addressed in a revision' },
+  },
+  ethics_reviews: {
+    sections: [{ title: 'Ethics review', fields: ['project_id', 'committee', 'status', 'submission_date', 'approval_date', 'reference_no'] },
+      { title: 'Revisions and conditions', fields: ['required_revisions', 'revisions_due', 'conditions', 'expiry_date', 'notes'] }],
+    labels: { project_id: 'Research project', committee: 'Ethics committee', reference_no: 'Reference or approval number', expiry_date: 'Expires / renew by' },
+  },
+  research_submissions: {
+    sections: [{ title: 'Submission', fields: ['title', 'kind', 'venue', 'status', 'project_id', 'document_id'] },
+      { title: 'Dates', fields: ['submission_date', 'revision_due', 'resubmission_date', 'acceptance_date', 'publication_date'] },
+      { title: 'Details', fields: ['revision_requests', 'conference_details', 'doi', 'url', 'notes'] }],
+    labels: { kind: 'Journal, conference, book…', venue: 'Target journal or conference', project_id: 'Research project', document_id: 'Manuscript', revision_requests: 'Revision requests', conference_details: 'Conference presentation details', doi: 'DOI', url: 'Publication link' },
+  },
+  research_funding: {
+    sections: [{ title: 'Funding', fields: ['project_id', 'opportunity', 'organization', 'deadline', 'submission_status', 'award_status', 'amount', 'currency', 'notes'] }],
+    labels: { project_id: 'Research project', opportunity: 'Funding opportunity', organization: 'Funding organisation', deadline: 'Application deadline', amount: 'Amount (if applicable)' },
+  },
+  research_collaborators: {
+    sections: [{ title: 'Collaborator', fields: ['project_id', 'name', 'affiliation', 'project_role', 'responsibilities', 'status', 'communication_notes'] }],
+    labels: { project_id: 'Research project', affiliation: 'Institutional affiliation', project_role: 'Project role', responsibilities: 'Research responsibilities' },
   },
   courses: {
     sections: [{ title: 'Course', fields: ['code', 'title', 'units', 'program', 'level'] }, { title: 'Description', fields: ['description'] }],

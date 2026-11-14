@@ -21,6 +21,7 @@ export interface FieldSpec {
   min?: number;
   format?: 'time';
   partial?: boolean;
+  hidden?: boolean;
 }
 export interface ResourceSpec {
   label: string; module: string; title: string; subtitle: string[]; date: string | null;
