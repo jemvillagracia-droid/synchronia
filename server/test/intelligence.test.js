@@ -205,6 +205,6 @@ test('custom report needs sections; an empty period says so instead of inventing
   const text = (await (await JSZip.loadAsync(f.buf)).file('word/document.xml').async('string')).replace(/<[^>]+>/g, ' ');
   assert.match(text, /No records fall within the period/);
   const list = (await call('GET', '/intelligence/reports')).body;
-  assert.ok(list.length >= 4);
+  assert.ok(list.length >= (chromium ? 4 : 3), 'every report generated above is listed (the PDF one only when Chromium is available)');
   assert.ok(list.every((x) => x.report_type.startsWith('intelligence_') && x.download));
 });
