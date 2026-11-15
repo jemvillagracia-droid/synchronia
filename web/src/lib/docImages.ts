@@ -60,8 +60,11 @@ export async function storeFromSrc(src: string): Promise<Stored> {
 /** Insert stored pictures at a position (or the selection). */
 export function insertPictures(editor: Editor, pics: Stored[], pos?: number) {
   const nodes = pics.map((p) => ({ type: 'image', attrs: { src: p.src, width: p.width && p.width < 300 ? null : 100 } }));
+  // With a picture (or another whole block) selected, insert after it — never replace it.
+  const sel = editor.state.selection as { node?: unknown; to: number };
+  const at = pos ?? (sel.node ? sel.to : null);
   const chain = editor.chain().focus();
-  (pos != null ? chain.insertContentAt(pos, nodes) : chain.insertContent(nodes)).run();
+  (at != null ? chain.insertContentAt(at, nodes) : chain.insertContent(nodes)).run();
 }
 
 /**

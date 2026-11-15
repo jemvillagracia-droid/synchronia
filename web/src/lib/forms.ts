@@ -128,6 +128,10 @@ export const FORMS: Record<string, FormLayout> = {
       theory: 'Potential theoretical foundations', significance: 'Research significance', ethics_reference: 'Ethics clearance reference',
       target_sample: 'Target respondents / sample', collected_sample: 'Data collected so far', instruments: 'Instrument notes', collaborators: 'Collaborator notes', funding: 'Funding notes' },
   },
+  school_calendar: {
+    sections: [{ title: 'School calendar date', fields: ['title', 'start_date', 'end_date', 'kind', 'no_classes', 'notes'] }],
+    labels: { start_date: 'Date (or first day)', end_date: 'Last day (for a range)', kind: 'Type', no_classes: 'No classes on these days' },
+  },
   research_milestones: {
     sections: [{ title: 'Milestone', fields: ['project_id', 'title', 'due_date', 'status', 'completed_on', 'notes'] }],
     labels: { project_id: 'Research project', completed_on: 'Completed on' },

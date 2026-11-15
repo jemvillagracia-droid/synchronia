@@ -80,6 +80,8 @@ export function deleteOverride(db, userId, id) {
 }
 
 /** Every dated item from the records, each linked back to its record. */
+const SCHOOL_LABEL = { term: 'Classes', exam: 'Examinations', holiday: 'Holiday', break: 'Break', enrollment: 'Enrolment', deadline: 'Deadline', event: 'School event' };
+
 export function events(db, userId, from, to) {
   const out = [];
   const add = (rows, f) => { for (const r of rows) out.push(f(r)); };
@@ -120,6 +122,10 @@ export function events(db, userId, from, to) {
     (r) => ({ date: r.revision_due, kind: 'deadline', title: `Revision due: ${r.title}`, type: 'research_submissions', id: r.id, done: false, detail: r.venue }));
   add(q(`SELECT id, opportunity, organization, deadline, submission_status FROM research_funding WHERE user_id = ? AND deleted_at IS NULL AND deadline BETWEEN ? AND ?`, from, to),
     (r) => ({ date: r.deadline, kind: 'deadline', title: `Funding: ${r.opportunity}`, type: 'research_funding', id: r.id, done: r.submission_status === 'submitted', detail: r.organization }));
+  // School calendar dates; a range that began before this view still shows on the days it covers.
+  add(q(`SELECT id, title, start_date, end_date, kind, no_classes FROM ${T('school_calendar')} WHERE user_id = ? AND deleted_at IS NULL AND start_date <= ? AND COALESCE(end_date, start_date) >= ?`, to, from),
+    (r) => ({ date: r.start_date, end_date: r.end_date && r.end_date !== r.start_date ? r.end_date : null, kind: 'school', school_kind: r.kind, no_classes: !!r.no_classes, title: r.title, type: 'school_calendar', id: r.id,
+      detail: [SCHOOL_LABEL[r.kind] || 'School calendar', r.no_classes ? 'no classes' : null].filter(Boolean).join(' · ') }));
   return out.sort((a, b) => a.date.localeCompare(b.date) || String(a.time || '99').localeCompare(String(b.time || '99')));
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api, onDataChanged } from '../lib/api';
 import { CalData, KIND_LABEL, MONTHS, eventsOn, monthGrid, todayIso, weekdayHeaders } from '../lib/calendar';
@@ -13,7 +13,8 @@ export function useCalendar() {
   const [ws, setWs] = useState(0);
   const grid = useMemo(() => monthGrid(now.getFullYear(), now.getMonth(), ws), [ws]); // eslint-disable-line react-hooks/exhaustive-deps
   const to = addDays(today, 45) > grid[41] ? addDays(today, 45) : grid[41];
-  const load = useCallback(() => { api.get<CalData>(`/calendar?from=${grid[0]}&to=${to}`).then((d) => { setData(d); setWs(d.settings.week_start); }).catch(() => {}); }, [grid, to]);
+  const latest = useRef(0); // only the latest request may fill the calendar
+  const load = useCallback(() => { const n = ++latest.current; api.get<CalData>(`/calendar?from=${grid[0]}&to=${to}`).then((d) => { if (n !== latest.current) return; setData(d); setWs(d.settings.week_start); }).catch(() => {}); }, [grid, to]);
   useEffect(() => { load(); return onDataChanged(load); }, [load]);
   return { data, grid, ws };
 }

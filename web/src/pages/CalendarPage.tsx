@@ -8,6 +8,7 @@ import { Icon } from '../components/Icon';
 import { Field } from '../components/Field';
 import { AutoText } from '../components/AutoText';
 import { t12 } from './admin/AdminWorkspaces';
+import { SchoolCalendarImport } from '../components/SchoolCalendarImport';
 
 const longDay = (iso: string) => fmtLongDate(new Date(`${iso}T00:00:00`));
 
@@ -59,12 +60,24 @@ export function CalendarPage() {
   const [data, setData] = useState<CalData | null>(null);
   const [moving, setMoving] = useState<Holiday | null>(null);
   const [moveTo, setMoveTo] = useState('');
+  const [importing, setImporting] = useState(false);
   const ws = data?.settings.week_start ?? 0;
   const grid = useMemo(() => monthGrid(ym[0], ym[1], ws), [ym, ws]);
-  const load = useCallback(() => { api.get<CalData>(`/calendar?from=${grid[0]}&to=${grid[41]}`).then(setData).catch((e) => toast(e.message, 'error')); }, [grid, toast]);
+  // Only the latest request may fill the grid: an earlier month's answer arriving late must not replace this one.
+  const latest = useRef(0);
+  const load = useCallback(() => {
+    const n = ++latest.current;
+    api.get<CalData>(`/calendar?from=${grid[0]}&to=${grid[41]}`).then((d) => { if (n === latest.current) setData(d); }).catch((e) => { if (n === latest.current) toast(e.message, 'error'); });
+  }, [grid, toast]);
   useEffect(() => { load(); return onDataChanged(load); }, [load]);
   useEffect(() => { setParams({ month: `${ym[0]}-${String(ym[1] + 1).padStart(2, '0')}` }, { replace: true }); }, [ym, setParams]);
-  const go = (d: number) => setYm(([y, m]) => { const t = new Date(y, m + d, 1); return [t.getFullYear(), t.getMonth()]; });
+  // Changing month selects its first day (or today, in the current month), so the day panel matches the grid.
+  const go = (d: number) => {
+    const t = new Date(ym[0], ym[1] + d, 1);
+    setYm([t.getFullYear(), t.getMonth()]);
+    const td = new Date();
+    setSel(t.getFullYear() === td.getFullYear() && t.getMonth() === td.getMonth() ? todayIso() : `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-01`);
+  };
   async function setting(patch: Record<string, any>) { await api.put('/calendar/settings', patch); load(); }
   async function hide(h: Holiday) {
     if (!window.confirm(`Hide “${h.name}” on ${longDay(h.date)}? You can undo this under Proclamations and corrections.`)) return;
@@ -87,8 +100,9 @@ export function CalendarPage() {
         <div>
           <div className="crumb"><span className="bar" /><span className="label">Command Center · Academic Calendar</span></div>
           <h1 className="display">Academic Calendar</h1>
-          <div className="sub">Philippine and Australian public holidays alongside your deadlines, meetings, classes, assessments, trainings and renewals. Every item opens its record.</div>
+          <div className="sub">Your school calendar, Philippine and Australian public holidays, deadlines, meetings, classes, assessments, trainings and renewals. Every item opens its record.</div>
         </div>
+        <button className="btn btn-primary" onClick={() => setImporting(true)}><Icon name="upload" />Import school calendar</button>
       </div>
       {data && (
         <div className="row wrap cal-controls">
@@ -118,11 +132,11 @@ export function CalendarPage() {
               const out = Number(d.slice(5, 7)) - 1 !== month;
               const wd = new Date(`${d}T00:00:00`).getDay();
               return (
-                <button key={d} role="gridcell" aria-selected={sel === d} className={`cal-cell ${out ? 'out' : ''} ${d === today ? 'today' : ''} ${wd === 0 || wd === 6 ? 'wkend' : ''} ${hs.some((h) => h.region === 'PH' && h.type === 'regular') ? 'ph-reg' : ''}`}
+                <button key={d} role="gridcell" aria-selected={sel === d} className={`cal-cell ${out ? 'out' : ''} ${d === today ? 'today' : ''} ${wd === 0 || wd === 6 ? 'wkend' : ''} ${hs.some((h) => h.region === 'PH' && h.type === 'regular') ? 'ph-reg' : ''} ${es.some((e) => e.no_classes) ? 'no-classes' : ''}`}
                   onClick={() => setSel(d)} aria-label={`${longDay(d)}${hs.length ? `, ${hs.map((h) => h.name).join(', ')}` : ''}${es.length ? `, ${es.length} item${es.length > 1 ? 's' : ''}` : ''}`}>
                   <span className="cal-num">{Number(d.slice(8))}</span>
                   {hs.map((h, i) => <span key={i} className={`cal-hol ${h.region.toLowerCase()} ${h.estimated ? 'est' : ''}`}>{h.region} · {h.name}</span>)}
-                  {es.slice(0, 3).map((e, i) => <span key={i} className={`cal-ev k-${e.kind} ${e.done ? 'done' : ''}`}>{e.time ? `${t12(e.time)} ` : ''}{e.title}</span>)}
+                  {es.slice(0, 3).map((e, i) => <span key={i} className={`cal-ev k-${e.kind} ${e.school_kind ? `sk-${e.school_kind}` : ''} ${e.done ? 'done' : ''}`}>{e.time ? `${t12(e.time)} ` : ''}{e.title}</span>)}
                   {es.length > 3 && <span className="cal-more">+{es.length - 3} more</span>}
                 </button>
               );
@@ -131,7 +145,7 @@ export function CalendarPage() {
             ))}
           </div>
           </div>
-          <div className="cal-legend"><span><i className="ph" />Philippine holiday</span><span><i className="au" />Australian holiday</span><span><i className="est" />Estimate — set by proclamation</span><span><i className="k-deadline" />Deadline</span><span><i className="k-meeting" />Meeting</span><span><i className="k-class" />Class / assessment</span><span><i className="k-training" />Training / speaking</span><span><i className="k-research" />Research milestone</span></div>
+          <div className="cal-legend"><span><i className="ph" />Philippine holiday</span><span><i className="au" />Australian holiday</span><span><i className="est" />Estimate — set by proclamation</span><span><i className="k-deadline" />Deadline</span><span><i className="k-meeting" />Meeting</span><span><i className="k-class" />Class / assessment</span><span><i className="k-training" />Training / speaking</span><span><i className="k-research" />Research milestone</span><span><i className="k-school" />School calendar</span><span><i className="no-classes" />No classes</span></div>
         </section>
         <aside className="panel cal-day" aria-label={`Agenda for ${longDay(sel)}`}>
           <header className="panel-head"><span className="code">DAY</span><h2>{longDay(sel)}</h2></header>
@@ -171,6 +185,11 @@ export function CalendarPage() {
         </aside>
       </div>
       <Corrections onChange={load} />
+      {importing && <SchoolCalendarImport onClose={() => setImporting(false)} onSaved={(first) => {
+        setImporting(false);
+        if (first) { setYm([Number(first.slice(0, 4)), Number(first.slice(5, 7)) - 1]); setSel(first); } // show where the school year begins (the new month loads itself)
+        else load();
+      }} />}
     </div>
   );
 }

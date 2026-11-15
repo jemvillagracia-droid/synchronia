@@ -185,6 +185,14 @@ export const RESOURCES = {
       archived_at: text({ max: 40, hidden: true }), ...verification,
     },
   },
+  school_calendar: {
+    table: 'school_calendar', label: 'School Calendar Date', module: 'academic', title: 'title', subtitle: ['kind'], date: 'start_date',
+    fields: {
+      title: text(req), start_date: date(req), end_date: date(),
+      kind: oneOf(['term', 'exam', 'holiday', 'break', 'enrollment', 'deadline', 'event']), no_classes: bool(), notes: long(),
+      import_id: int({ hidden: true }),
+    },
+  },
   research_milestones: {
     table: 'research_milestones', label: 'Research Milestone', module: 'research', title: 'title', subtitle: ['status'], date: 'due_date',
     fields: {

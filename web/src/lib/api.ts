@@ -43,9 +43,10 @@ export const onDataChanged = (fn: Listener) => { dataListeners.add(fn); return (
 export const dataChanged = () => dataListeners.forEach((l) => l());
 
 /** Send a file's raw bytes (e.g. a .docx) to an import endpoint. */
-export async function uploadFile<T>(url: string, file: File): Promise<T> {
-  if (!/\.docx$/i.test(file.name)) throw new ApiError(415, `“${file.name}” is not a Word (.docx) document. Open it in Word and use Save As → .docx.`);
-  if (file.size > 25 * 1048576) throw new ApiError(413, `“${file.name}” is larger than 25 MB.`);
+export async function uploadFile<T>(url: string, file: File, accept: { ext: RegExp; refuse: string; maxMb?: number } = { ext: /\.docx$/i, refuse: 'is not a Word (.docx) document. Open it in Word and use Save As → .docx.' }): Promise<T> {
+  if (!accept.ext.test(file.name)) throw new ApiError(415, `“${file.name}” ${accept.refuse}`);
+  const max = accept.maxMb ?? 25;
+  if (file.size > max * 1048576) throw new ApiError(413, `“${file.name}” is larger than ${max} MB.`);
   const res = await fetch(`/api${url}`, {
     method: 'POST', credentials: 'same-origin',
     headers: { 'Content-Type': 'application/octet-stream', 'X-Synchronia': '1', 'X-Filename': encodeURIComponent(file.name) },

@@ -1,6 +1,6 @@
 // Shared calendar helpers: month grids, ISO dates in local time, and labels for holidays and events.
 export interface Holiday { date: string; name: string; type: string; region: 'PH' | 'AU'; state?: string; estimated?: boolean; observed?: boolean; note?: string | null; source?: 'rule' | 'you'; override_id?: number }
-export interface CalEvent { date: string; end_date?: string | null; time?: string | null; end_time?: string | null; kind: string; title: string; type: string; id: number; done?: boolean; detail?: string }
+export interface CalEvent { date: string; end_date?: string | null; time?: string | null; end_time?: string | null; kind: string; title: string; type: string; id: number; done?: boolean; detail?: string; school_kind?: string; no_classes?: boolean }
 export interface CalData { from: string; to: string; holidays: Holiday[]; events: CalEvent[]; settings: { show_ph: boolean; show_au: boolean; au_state: string; week_start: number; au_states: Record<string, string> } }
 
 export const pad = (n: number) => String(n).padStart(2, '0');
@@ -20,7 +20,7 @@ export const weekdayHeaders = (weekStart = 0) => Array.from({ length: 7 }, (_, i
 
 export const KIND_LABEL: Record<string, string> = {
   deadline: 'Deadline', task: 'Task', meeting: 'Meeting', class: 'Class', assessment: 'Assessment', training: 'Training',
-  speaking: 'Speaking', renewal: 'Licence', goal: 'Goal', extension: 'Extension', research: 'Research milestone',
+  speaking: 'Speaking', renewal: 'Licence', goal: 'Goal', extension: 'Extension', research: 'Research milestone', school: 'School calendar',
 };
 export const holidayLabel = (h: Holiday) =>
   h.region === 'PH' ? (h.type === 'regular' ? 'Regular holiday' : h.type === 'special_working' ? 'Special working day' : 'Special non-working day') : `Public holiday${h.state ? ` · ${h.state}` : ''}`;
