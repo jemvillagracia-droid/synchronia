@@ -238,3 +238,9 @@ test('manuscripts are tracked, not written: a manuscript record links its Word o
   assert.equal(pl.status, 201);
   assert.ok((await call('GET', '/research/overview')).body.manuscripts.some((x) => x.id === m.id));
 });
+
+test('appearance: the theme preference defaults to violet, is saved, and refuses unknown themes', async () => {
+  assert.equal((await call('GET', '/preferences')).body.theme, 'violet');
+  for (const t of ['light', 'sepia', 'crimson-orange', 'violet']) assert.equal((await call('PUT', '/preferences', { theme: t })).body.theme, t);
+  assert.equal((await call('PUT', '/preferences', { theme: 'hacker-green' })).status, 422);
+});

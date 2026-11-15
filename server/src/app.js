@@ -28,6 +28,8 @@ const PROFILE_FIELDS = {
 };
 const MODES = ['administrative', 'instructor', 'researcher', 'faculty_development'];
 
+const THEMES = ['violet', 'violet-green', 'crimson-orange', 'orange-white', 'blue-white', 'black-silver', 'pink-green', 'steel-grey', 'light', 'sepia'];
+
 export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health = {} } = {}) {
   const app = express();
   app.disable('x-powered-by');
@@ -107,6 +109,7 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
       context_panel_open: !!p.context_panel_open,
       sidebar_collapsed: !!p.sidebar_collapsed,
       reduce_motion: !!p.reduce_motion,
+      theme: THEMES.includes(p.theme) ? p.theme : 'violet',
     };
   };
   api.get('/preferences', (req, res) => res.json(readPrefs(req.user.id)));
@@ -127,6 +130,10 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
         const clean = b.dashboard_layout.filter((w) => w && ids.has(w.id)).map((w) => ({ id: w.id, visible: w.visible !== false }));
         sets.push('dashboard_layout = ?'); params.push(JSON.stringify(clean)); changes.dashboard_layout = 'customised';
       }
+    }
+    if ('theme' in b) {
+      if (!THEMES.includes(b.theme)) throw new HttpError(422, 'Unknown theme', { theme: `One of: ${THEMES.join(', ')}` });
+      sets.push('theme = ?'); params.push(b.theme); changes.theme = b.theme;
     }
     for (const k of ['context_panel_open', 'sidebar_collapsed', 'reduce_motion']) {
       if (k in b) { sets.push(`${k} = ?`); params.push(b[k] ? 1 : 0); if (k === 'reduce_motion') changes.reduce_motion = !!b[k]; }

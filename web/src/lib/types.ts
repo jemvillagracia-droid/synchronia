@@ -10,6 +10,7 @@ export interface Preferences {
   context_panel_open: boolean;
   sidebar_collapsed: boolean;
   reduce_motion?: boolean;
+  theme?: string;
 }
 
 export interface FieldSpec {

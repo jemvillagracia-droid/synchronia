@@ -1,0 +1,92 @@
+/* SYNCHRONIA themes (Settings › Appearance). The default is the violet scheme in tokens.css; nothing here applies to it.
+   Dark accent themes recolour the accent and the Central Nexus command deck; Light and Sepia change the surfaces too. */
+html[data-theme='violet-green'] { --accent: #6d2fd6; --accent-hover: #8a4dff; --accent-2: #a6ff5c; --accent-dim: color-mix(in srgb, #6d2fd6 22%, transparent); --accent-line: color-mix(in srgb, #6d2fd6 70%, transparent);
+  --violet: #6d2fd6; --violet-2: #a6ff5c; --violet-dim: color-mix(in srgb, #6d2fd6 22%, transparent); --violet-line: color-mix(in srgb, #6d2fd6 70%, transparent);
+  --nx-second: #7ee03c; --nx-magi: #86d955; --nx-deep-c: #160a26; --nx-base-c: #0a0812; --nx-ink-c: #e3d8ff; --nx-sub-c: #b4e092; --nx-dim-c: #4f5f3a; }
+html[data-theme='crimson-orange'] { --accent: #c4161c; --accent-hover: #e0342b; --accent-2: #ff9a4d; --accent-dim: color-mix(in srgb, #c4161c 22%, transparent); --accent-line: color-mix(in srgb, #c4161c 70%, transparent);
+  --violet: #c4161c; --violet-2: #ff9a4d; --violet-dim: color-mix(in srgb, #c4161c 22%, transparent); --violet-line: color-mix(in srgb, #c4161c 70%, transparent);
+  --nx-second: #ff7a1a; --nx-magi: #ff8a3d; --nx-deep-c: #24070a; --nx-base-c: #0d0606; --nx-ink-c: #ffdccb; --nx-sub-c: #e8a585; --nx-dim-c: #7a3a2a; }
+html[data-theme='orange-white'] { --accent: #c2410c; --accent-hover: #de5a1f; --accent-2: #ffd2b0; --accent-dim: color-mix(in srgb, #c2410c 22%, transparent); --accent-line: color-mix(in srgb, #c2410c 70%, transparent);
+  --violet: #c2410c; --violet-2: #ffd2b0; --violet-dim: color-mix(in srgb, #c2410c 22%, transparent); --violet-line: color-mix(in srgb, #c2410c 70%, transparent);
+  --nx-second: #f6ece4; --nx-magi: #ff9b5c; --nx-deep-c: #24120a; --nx-base-c: #0d0805; --nx-ink-c: #ffeadc; --nx-sub-c: #e6b48f; --nx-dim-c: #7a5030; }
+html[data-theme='blue-white'] { --accent: #2563c9; --accent-hover: #3d7fe6; --accent-2: #a9d4ff; --accent-dim: color-mix(in srgb, #2563c9 22%, transparent); --accent-line: color-mix(in srgb, #2563c9 70%, transparent);
+  --violet: #2563c9; --violet-2: #a9d4ff; --violet-dim: color-mix(in srgb, #2563c9 22%, transparent); --violet-line: color-mix(in srgb, #2563c9 70%, transparent);
+  --nx-second: #e8f2ff; --nx-magi: #9cc8f2; --nx-deep-c: #0a1428; --nx-base-c: #070b12; --nx-ink-c: #dceaff; --nx-sub-c: #97b8de; --nx-dim-c: #3c5578; }
+html[data-theme='black-silver'] { --accent: #4b5563; --accent-hover: #6b7280; --accent-2: #d4d8de; --accent-dim: color-mix(in srgb, #4b5563 22%, transparent); --accent-line: color-mix(in srgb, #4b5563 70%, transparent);
+  --violet: #4b5563; --violet-2: #d4d8de; --violet-dim: color-mix(in srgb, #4b5563 22%, transparent); --violet-line: color-mix(in srgb, #4b5563 70%, transparent);
+  --nx-second: #9ca3af; --nx-magi: #a7adb5; --nx-deep-c: #111214; --nx-base-c: #050506; --nx-ink-c: #e8eaee; --nx-sub-c: #a6acb6; --nx-dim-c: #4a4f57; }
+html[data-theme='pink-green'] { --accent: #c2337a; --accent-hover: #db4d94; --accent-2: #ff9ccc; --accent-dim: color-mix(in srgb, #c2337a 22%, transparent); --accent-line: color-mix(in srgb, #c2337a 70%, transparent);
+  --violet: #c2337a; --violet-2: #ff9ccc; --violet-dim: color-mix(in srgb, #c2337a 22%, transparent); --violet-line: color-mix(in srgb, #c2337a 70%, transparent);
+  --nx-second: #6fe06f; --nx-magi: #ff86bd; --nx-deep-c: #26091a; --nx-base-c: #0e0609; --nx-ink-c: #ffd9ec; --nx-sub-c: #e5a0c2; --nx-dim-c: #7a3a5a; }
+html[data-theme='steel-grey'] { --accent: #4f6d8a; --accent-hover: #6a89a8; --accent-2: #c7d6e6; --accent-dim: color-mix(in srgb, #4f6d8a 22%, transparent); --accent-line: color-mix(in srgb, #4f6d8a 70%, transparent);
+  --violet: #4f6d8a; --violet-2: #c7d6e6; --violet-dim: color-mix(in srgb, #4f6d8a 22%, transparent); --violet-line: color-mix(in srgb, #4f6d8a 70%, transparent);
+  --nx-second: #e0e6ee; --nx-magi: #9fb4c9; --nx-deep-c: #0e141b; --nx-base-c: #07090c; --nx-ink-c: #e2eaf2; --nx-sub-c: #a3b4c6; --nx-dim-c: #43505e; }
+html[data-theme='black-silver'], html[data-theme='black-silver'] body { --bg: #040404; --bg-1: #0b0b0c; --bg-2: #111113; }
+
+/* ---------- Light surfaces (Light and Sepia) ---------- */
+html[data-theme='light'] { color-scheme: light;
+  --bg: #f5f4f9; --bg-1: #ffffff; --bg-2: #efedf6; --bg-3: #e5e1f1; --scrim: rgba(24, 18, 40, .45);
+  --line: #e2deec; --line-2: #d2cce2; --line-3: #b4abcb;
+  --text: #1b1726; --text-2: #463f56; --text-3: #635c75; --text-inverse: #ffffff;
+  --accent: #6d28d9; --accent-hover: #7c3aed; --accent-2: #5b21b6; --accent-dim: rgba(109, 40, 217, .12); --accent-line: rgba(109, 40, 217, .55);
+  --violet: #6d28d9; --violet-2: #5b21b6; --violet-dim: rgba(109, 40, 217, .12); --violet-line: rgba(109, 40, 217, .55);
+  --orange: #c2410c; --orange-dim: rgba(194, 65, 12, .1); --orange-line: rgba(194, 65, 12, .5); --red: #b42318; --ok: #1d7a3a; --warn: #8a5a00; --cyan: #0e7490;
+  --nx-second: #b0368c; --nx-magi: #c9b8f2; --nx-deep-c: #efe9fb; --nx-base-c: #ffffff; --nx-ink-c: #2a1f45; --nx-sub-c: #5b4f7a; --nx-dim-c: #a99bcf; }
+html[data-theme='sepia'] { color-scheme: light;
+  --bg: #f3ead6; --bg-1: #fbf6ea; --bg-2: #efe5cf; --bg-3: #e6d8ba; --scrim: rgba(45, 32, 15, .42);
+  --line: #e2d5b8; --line-2: #d3c3a2; --line-3: #b3a07c;
+  --text: #352a1e; --text-2: #574533; --text-3: #6e5b45; --text-inverse: #fbf6ea;
+  --accent: #6b3fa0; --accent-hover: #7b4cb5; --accent-2: #573087; --accent-dim: rgba(107, 63, 160, .12); --accent-line: rgba(107, 63, 160, .5);
+  --violet: #6b3fa0; --violet-2: #573087; --violet-dim: rgba(107, 63, 160, .12); --violet-line: rgba(107, 63, 160, .5);
+  --orange: #9a3f12; --orange-dim: rgba(154, 63, 18, .1); --orange-line: rgba(154, 63, 18, .5); --red: #9f2a1c; --ok: #2f6b2f; --warn: #7a5200; --cyan: #1d6a74;
+  --nx-second: #a0522d; --nx-magi: #cdb6e3; --nx-deep-c: #efe3c9; --nx-base-c: #fbf6ea; --nx-ink-c: #352a1e; --nx-sub-c: #66543f; --nx-dim-c: #bba98a; }
+:is(html[data-theme='light'], html[data-theme='sepia']) body { background: var(--bg); color: var(--text); }
+/* Surfaces drawn dark for the command deck and calendar */
+:is(html[data-theme='light'], html[data-theme='sepia']) :is(.eva-tile, .eva-clock-inner, .eva-count, .cal-month-grid, .eva-status, .nexus-page .panel.eva-widget, .nexus-page .panel.eva-widget .stat) { background: var(--bg-1); border-color: var(--line-2); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .nexus-page .panel.eva-widget .stat-row { background: var(--line); border-color: var(--line-2); }
+:is(html[data-theme='light'], html[data-theme='sepia']) :is(.eva-status, .eva-status b, .eva-cap, .eva-date, .eva-readouts div, .eva-lamp-note) { color: var(--text-2); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-lcd .live { text-shadow: none; }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-lcd .ghost { color: color-mix(in srgb, var(--accent) 8%, transparent); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .lamp:not(.on) { color: var(--text-3); border-color: var(--line-3); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-readouts .eva-num { text-shadow: none; }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-cal-grid .c { background: var(--bg-2); color: var(--text); border-color: var(--line); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-cal-grid .c.out { color: var(--text-3); background: transparent; }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-cal-grid .c.today { color: #fff; }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-cal-grid .h, :is(html[data-theme='light'], html[data-theme='sepia']) .cal-head div { color: var(--text-2); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .cal-cell { background: var(--bg-1); border-color: var(--line); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .cal-cell.wkend { background: var(--bg-2); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .cal-cell.ph-reg { background: color-mix(in srgb, var(--red) 8%, var(--bg-1)); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .cal-cell.out { background: repeating-linear-gradient(135deg, var(--bg-2) 0 6px, var(--bg) 6px 12px); }
+:is(html[data-theme='light'], html[data-theme='sepia']) :is(.cal-num, .cal-cell.out .cal-num) { color: var(--accent-2); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .cal-hol.ph, :is(html[data-theme='light'], html[data-theme='sepia']) .cal-cell.out .cal-hol.ph { color: #8f1d14; background: rgba(220, 38, 38, .1); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .cal-hol.au, :is(html[data-theme='light'], html[data-theme='sepia']) .cal-cell.out .cal-hol.au { color: #0b5e57; background: rgba(13, 148, 136, .1); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .cal-ev { color: var(--text); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .cal-ev.done, :is(html[data-theme='light'], html[data-theme='sepia']) .cal-cell.out .cal-ev { color: var(--text-2); }
+:is(html[data-theme='light'], html[data-theme='sepia']) :is(.eva-cal-next .d, .eva-link, .eva-cal-next .k) { color: var(--accent-2); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-cal-next .k.ph { color: #8f1d14; } :is(html[data-theme='light'], html[data-theme='sepia']) .eva-cal-next .k.au { color: #0b5e57; }
+:is(html[data-theme='light'], html[data-theme='sepia']) :is(.imp-src, .work-bar span) { background: var(--bg-2); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .cv-preview { background: var(--bg-3); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .doc-shell { background: var(--bg-3); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .res-next.urgent { color: #9a3412; }
+:is(html[data-theme='light'], html[data-theme='sepia']) .res-overdue { color: #b42318; }
+:is(html[data-theme='light'], html[data-theme='sepia']) .rdoc-check li.ok { color: var(--ok); }
+
+/* ---------- Contrast fixes found by the accessibility sweep (all themes) ---------- */
+/* Filled highlights on the command deck: white on the theme's main accent (≥ 4.5:1 in every theme). */
+.nexus-page .eva-status-id, .nexus-page .eva-ampm span.on, .nexus-page .eva-cal-grid .c.today,
+.nexus-page .panel.eva-widget > .panel-head .code { background: var(--accent); border-color: var(--accent); color: var(--on-accent) !important; }
+.nexus-page .eva-status-id i { background: var(--on-accent); }
+/* Links inside sentences are underlined, not told apart by colour alone. */
+.faint a:not(.btn), p a:not(.btn), .sub a:not(.btn) { text-decoration: underline; text-underline-offset: 2px; }
+/* Light surfaces: colours that were drawn for black backgrounds. */
+html[data-theme='light'] { --orange: #a8380b; --ok: #176631; }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-ampm span:not(.on), :is(html[data-theme='light'], html[data-theme='sepia']) .eva-readouts .eva-num.dim,
+:is(html[data-theme='light'], html[data-theme='sepia']) .nexus-page .dim { color: var(--text-3); border-color: var(--line-3); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-count-cap, :is(html[data-theme='light'], html[data-theme='sepia']) .eva-count .u { color: var(--orange); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-count-row .eva-num { color: #a31b12; text-shadow: none; }
+:is(html[data-theme='light'], html[data-theme='sepia']) .eva-count-t b { color: var(--text-2); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .work-subj b, :is(html[data-theme='light'], html[data-theme='sepia']) .work-subj span { color: #a31b12; }
+:is(html[data-theme='light'], html[data-theme='sepia']) .magi-core { background: var(--bg-1); color: var(--accent-2); border-color: var(--accent); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .cal-cell.today .cal-num { color: #fff; }
+:is(html[data-theme='light'], html[data-theme='sepia']) .st-system { color: var(--text-2); border-color: var(--line-3); }
+:is(html[data-theme='light'], html[data-theme='sepia']) .st-self { color: #9a3412; border-color: #c2410c; background: rgba(194, 65, 12, .08); }

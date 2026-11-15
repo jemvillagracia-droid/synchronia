@@ -8,6 +8,7 @@ import { useApp } from '../components/AppContext';
 import { Icon } from '../components/Icon';
 import { download } from '../lib/download';
 import { InstitutionSettings } from './InstitutionSettings';
+import { THEMES, applyTheme } from '../lib/themes';
 
 type Tab = 'workspace' | 'appearance' | 'documents' | 'data' | 'application';
 const TABS: [Tab, string][] = [['workspace', 'Workspace and navigation'], ['appearance', 'Appearance'], ['documents', 'Document export'], ['data', 'Backup and recovery'], ['application', 'Security and privacy']];
@@ -224,6 +225,24 @@ function Appearance() {
   if (!prefs) return <div className="skeleton" />;
   return (
     <div className="stack">
+      <section className="panel">
+        <header className="panel-head"><span className="code">THM</span><h2>Theme</h2></header>
+        <div className="panel-body stack">
+          <div className="theme-grid" role="radiogroup" aria-label="Colour theme">
+            {THEMES.map((t) => {
+              const on = (prefs.theme || 'violet') === t.key;
+              return (
+                <button key={t.key} type="button" role="radio" aria-checked={on} className={`theme-card ${on ? 'on' : ''}`}
+                  onClick={async () => { applyTheme(t.key); await updatePrefs({ theme: t.key }); }}>
+                  <span className="theme-sw" aria-hidden>{t.swatch.map((c) => <i key={c} style={{ background: c }} />)}</span>
+                  <span className="theme-l"><span className="t">{t.label}</span><span className="s">{t.note}</span></span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="faint" style={{ margin: 0, fontSize: 13 }}>Applies at once and is remembered. Documents you export are not affected; they always print in black on white.</p>
+        </div>
+      </section>
       <section className="panel">
         <header className="panel-head"><span className="code">MOT</span><h2>Motion</h2></header>
         <div className="panel-body stack">

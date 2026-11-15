@@ -8,6 +8,10 @@ import '@fontsource/ibm-plex-sans-condensed/600.css';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource-variable/noto-serif-display/wdth.css';
 import './styles/app.css';
+import './styles/themes.css';
+import { applyRememberedTheme } from './lib/themes';
+
+applyRememberedTheme();
 import { App } from './App';
 
 createRoot(document.getElementById('root')!).render(

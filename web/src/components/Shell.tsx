@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { BrandMark, Icon } from './Icon';
 import { useApp } from './AppContext';
 import { NAV, isActive, navCode } from '../lib/nav';
+import { applyTheme } from '../lib/themes';
 import { api, onDataChanged, dataChanged } from '../lib/api';
 import { MODE_LABEL, MODE_DESC, initials, relTime, dueLabel } from '../lib/format';
 import type { Mode, Notification, RecordRow } from '../lib/types';
@@ -259,6 +260,7 @@ export function Shell({ children }: { children: ReactNode }) {
   useEffect(() => { setMobileNav(false); }, [location.pathname]);
   // Settings › Appearance: turn off non-essential motion.
   useEffect(() => { document.documentElement.dataset.motion = prefs?.reduce_motion ? 'reduced' : 'normal'; }, [prefs?.reduce_motion]);
+  useEffect(() => { if (prefs) applyTheme(prefs.theme); }, [prefs?.theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
