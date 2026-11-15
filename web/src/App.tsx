@@ -26,7 +26,6 @@ import { AskTextHost } from './components/AskText';
 import { SyllabusPage } from './pages/academic/SyllabusPage';
 import { ResearchPage } from './pages/research/ResearchPage';
 import { ProjectPage } from './pages/research/ProjectPage';
-import { DocumentPage } from './pages/research/DocumentPage';
 import { InstrumentPage } from './pages/research/InstrumentPage';
 import { CoursePage } from './pages/academic/CoursePage';
 import { desktop } from './lib/desktop';
@@ -97,7 +96,6 @@ export function App() {
                 <Route path="/academic/syllabi/:id" element={<SyllabusPage />} />
                 <Route path="/research" element={<ResearchPage />} />
                 <Route path="/research/projects/:id" element={<ProjectPage />} />
-                <Route path="/research/documents/:id" element={<DocumentPage />} />
                 <Route path="/research/instruments/:id" element={<InstrumentPage />} />
                 <Route path="/cv" element={<CvStudio />} />
                 <Route path="/cv/:id" element={<CvEditor />} />

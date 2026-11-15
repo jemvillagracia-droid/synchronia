@@ -5,11 +5,11 @@ import { fmtDate, humanize, relTime } from '../../lib/format';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
 import { askText } from '../../components/AskText';
-import { KIND, exportFile, type Overview, type ProjectCard, type Stage } from '../../lib/research';
+import { exportFile, type Overview, type ProjectCard, type Stage } from '../../lib/research';
 
-type Tab = 'overview' | 'projects' | 'literature' | 'instruments' | 'writing' | 'dissemination' | 'stages';
+type Tab = 'overview' | 'projects' | 'literature' | 'instruments' | 'dissemination' | 'stages';
 const TABS: [Tab, string][] = [['overview', 'Dashboard'], ['projects', 'Projects'], ['literature', 'Literature review'], ['instruments', 'Instruments'],
-  ['writing', 'Writing'], ['dissemination', 'Dissemination'], ['stages', 'Stages']];
+  ['dissemination', 'Dissemination'], ['stages', 'Stages']];
 
 /** Research Development: develop, organise and monitor research with as little administration as possible. */
 export function ResearchPage() {
@@ -36,7 +36,6 @@ export function ResearchPage() {
           {tab === 'projects' && <Projects o={o} archived={archived} setArchived={(a) => setParams(a ? { tab: 'projects', archived: '1' } : { tab: 'projects' })} />}
           {tab === 'literature' && <Literature />}
           {tab === 'instruments' && <Instruments />}
-          {tab === 'writing' && <Writing o={o} />}
           {tab === 'dissemination' && <Dissemination o={o} />}
           {tab === 'stages' && <Stages />}
         </>
@@ -93,7 +92,6 @@ function Dashboard({ o }: { o: Overview }) {
   const navigate = useNavigate();
   const inDev = o.projects.filter((p) => ['idea', 'question'].includes(p.stage));
   const active = o.projects.filter((p) => !['idea', 'question', 'completed', 'discontinued'].includes(p.stage));
-  const manuscripts = o.manuscripts.filter((m) => m.kind === 'manuscript' && m.status !== 'final');
   async function develop(id: number) {
     try { const p = await api.post<{ id: number }>(`/research/ideas/${id}/develop`); dataChanged(); navigate(`/research/projects/${p.id}`); } catch (e) { toast((e as Error).message, 'error'); }
   }
@@ -102,7 +100,6 @@ function Dashboard({ o }: { o: Overview }) {
       <div className="stat-row">
         <div className="stat"><div className={`v ${active.length ? '' : 'zero'}`}>{active.length}</div><div className="k">Active projects</div></div>
         <div className="stat"><div className={`v ${inDev.length ? '' : 'zero'}`}>{inDev.length}</div><div className="k">In development</div></div>
-        <div className="stat"><div className={`v ${manuscripts.length ? '' : 'zero'}`}>{manuscripts.length}</div><div className="k">Ongoing manuscripts</div></div>
         <div className="stat"><div className={`v ${o.counts.publications ? '' : 'zero'}`}>{o.counts.publications}</div><div className="k">Publications</div></div>
         <div className="stat"><div className={`v ${o.counts.presentations ? '' : 'zero'}`}>{o.counts.presentations}</div><div className="k">Presentations</div></div>
       </div>
@@ -236,32 +233,6 @@ function Instruments() {
         <ul className="list">{rows.map((i) => (
           <li key={i.id}><span className={`tag ${i.stage === 'final' ? 'ok' : ''}`}>{humanize(i.stage)}</span>
             <Link className="rowlink grow" to={`/research/instruments/${i.id}`}><span className="t">{i.title}</span><span className="s">{humanize(i.origin)}{i.source ? ` · ${i.source.slice(0, 80)}` : ''}</span></Link></li>
-        ))}</ul>
-      )}
-    </div>
-  );
-}
-
-export async function newDocument(body: Record<string, unknown>, navigate: (to: string) => void, toast: (t: string, k?: 'ok' | 'error') => void) {
-  try { const d = await api.post<{ document: { id: number } }>('/research/documents', body); dataChanged(); navigate(`/research/documents/${d.document.id}`); } catch (e) { toast((e as Error).message, 'error'); }
-}
-
-function Writing({ o }: { o: Overview }) {
-  const { toast } = useApp();
-  const navigate = useNavigate();
-  const [kind, setKind] = useState('proposal');
-  return (
-    <div className="stack">
-      <div className="row wrap">
-        <select className="select" style={{ width: 'auto' }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Document type">{Object.entries(KIND).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
-        <button className="btn btn-primary" onClick={() => newDocument({ kind }, navigate, toast)}><Icon name="plus" />New document</button>
-        <span className="faint" style={{ fontSize: 13 }}>Write section by section, in any order; sections that do not apply can be marked so. To link it to a project, start it from the project.</span>
-      </div>
-      {o.manuscripts.length === 0 ? <div className="empty">No proposals or manuscripts yet.</div> : (
-        <ul className="list">{o.manuscripts.map((m) => (
-          <li key={m.id}><span className={`tag ${m.status === 'final' ? 'ok' : ''}`}>{humanize(m.status)}</span>
-            <Link className="rowlink grow" to={`/research/documents/${m.id}`}><span className="t">{m.title}</span>
-              <span className="s">{[KIND[m.kind], m.project_title, m.target, `${m.sections_done} of ${m.sections} sections done`, `edited ${relTime(m.updated_at)}`].filter(Boolean).join(' · ')}</span></Link></li>
         ))}</ul>
       )}
     </div>

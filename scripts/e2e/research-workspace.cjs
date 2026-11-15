@@ -1,8 +1,7 @@
 // Research Development Workspace walkthrough in the real app:
 //   npm run build && xvfb-run -a node scripts/e2e/research-workspace.cjs   (Linux; on Windows omit xvfb-run)
 // Covers quick idea capture, inline stage changes, usual milestones and milestone-based progress, one-click suggested
-// tasks, literature quick-add with duplicate linking, a proposal written section by section with autosave and the
-// checklist, verified Word and PDF export, and an instrument from initial to final (final version locked).
+// tasks, literature quick-add with duplicate linking, and an instrument from initial to final (final version locked).
 const { _electron } = require('playwright');
 const S = require('fs').mkdtempSync(require('path').join(require('os').tmpdir(), 'synchronia-res-')); require('fs').mkdirSync(S + '/shots'); const R = [];
 const ok = (n, c, x = '') => { R.push(!!c); console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${x ? '  ' + x : ''}`); };
@@ -44,22 +43,6 @@ const ok = (n, c, x = '') => { R.push(!!c); console.log(`${c ? 'PASS' : 'FAIL'} 
   }
   const toasts = (await w.locator('.toast').allInnerTexts()).join(' | ');
   ok('Second identical reference is linked, not duplicated', /already in your literature/.test(toasts) && (await api('GET', '/research/literature')).body.items.length === 1, toasts.slice(0, 160));
-  // Writing
-  await w.getByRole('tab', { name: 'Writing' }).click();
-  await w.getByRole('button', { name: 'New document' }).click(); await w.waitForSelector('.rdoc-sec', { timeout: 10000 });
-  ok('A proposal starts from its usual sections', (await w.locator('.rdoc-sec').count()) === 17);
-  await w.locator('.doc-content').click(); await w.keyboard.type('Rural schools face connectivity gaps that shape readiness. ');
-  await w.waitForFunction(() => /Saved/.test(document.querySelector('.doc-status')?.textContent || ''), null, { timeout: 10000 }).catch(() => {});
-  ok('Section text autosaves', /Saved/.test(await w.locator('.doc-status').innerText()));
-  await w.selectOption('#sec-status', 'complete'); await w.waitForTimeout(600);
-  await w.locator('.rdoc-sec').nth(3).click(); await w.waitForTimeout(500);
-  ok('Sections show status and words; checklist counts open ones', /Complete · 8 words/.test(await w.locator('.rdoc-sec').first().innerText()) && /16 sections not marked complete/.test(await w.locator('.rdoc-check').innerText()));
-  await w.screenshot({ path: S + '/shots/writing.png' });
-  const docId = Number(w.url().match(/documents\/(\d+)/)[1]);
-  const x = await api('POST', `/research/documents/${docId}/export`, { format: 'docx' });
-  ok('Proposal exports to Word, verified', x.status === 201 && /Verified/.test(x.body.validation?.summary || ''), x.body.validation?.summary || JSON.stringify(x.body));
-  const pdf = await api('POST', `/research/documents/${docId}/export`, { format: 'pdf' });
-  ok('…and to PDF, verified', pdf.status === 201 && /Verified/.test(pdf.body.validation?.summary || ''), pdf.body.validation?.summary || JSON.stringify(pdf.body));
   // Instrument
   await go(`/research/projects/${pid}?tab=methods`); await w.waitForSelector('text=Instruments');
   await w.getByRole('button', { name: 'Instrument', exact: true }).click();

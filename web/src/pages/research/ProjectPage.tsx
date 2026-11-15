@@ -4,9 +4,8 @@ import { api, dataChanged, onDataChanged } from '../../lib/api';
 import { fmtDate, humanize, relTime } from '../../lib/format';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
-import { KIND, exportFile, type NextAction, type Progress, type Stage } from '../../lib/research';
+import { exportFile, type NextAction, type Progress, type Stage } from '../../lib/research';
 import { askText } from '../../components/AskText';
-import { newDocument } from './ResearchPage';
 
 interface Workspace {
   project: any; stage_label: string; stages: Stage[]; milestones: any[]; progress: Progress; next_action: NextAction | null;
@@ -14,8 +13,8 @@ interface Workspace {
   documents: any[]; literature: any[]; instruments: any[]; ethics: any[]; submissions: any[]; tasks: any[]; funding: any[]; collaborators: any[];
   publications: any[]; presentations: any[]; recent: { summary: string; at: string }[]; milestone_templates: string[];
 }
-type Tab = 'overview' | 'writing' | 'literature' | 'methods' | 'ethics' | 'dissemination' | 'team';
-const TABS: [Tab, string][] = [['overview', 'Overview'], ['writing', 'Writing'], ['literature', 'Literature'], ['methods', 'Methods and instruments'], ['ethics', 'Ethics'], ['dissemination', 'Dissemination'], ['team', 'Funding and team']];
+type Tab = 'overview' | 'literature' | 'methods' | 'ethics' | 'dissemination' | 'team';
+const TABS: [Tab, string][] = [['overview', 'Overview'], ['literature', 'Literature'], ['methods', 'Methods and instruments'], ['ethics', 'Ethics'], ['dissemination', 'Dissemination'], ['team', 'Funding and team']];
 
 /** One research project: its stage, milestones and next action, and everything linked to it. */
 export function ProjectPage() {
@@ -53,7 +52,6 @@ export function ProjectPage() {
       </div>
       <div className="tabs" role="tablist">{TABS.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setParams({ tab: k })}>{l}</button>)}</div>
       {tab === 'overview' && <Overview w={w} />}
-      {tab === 'writing' && <Writing w={w} />}
       {tab === 'literature' && <Literature w={w} />}
       {tab === 'methods' && <Methods w={w} />}
       {tab === 'ethics' && <Ethics w={w} />}
@@ -142,28 +140,6 @@ function Overview({ w }: { w: Workspace }) {
   );
 }
 
-function Writing({ w }: { w: Workspace }) {
-  const { toast } = useApp();
-  const navigate = useNavigate();
-  const [kind, setKind] = useState('proposal');
-  const proposal = w.documents.find((d) => d.kind === 'proposal');
-  return (
-    <div className="stack">
-      <div className="row wrap">
-        <select className="select" style={{ width: 'auto' }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Document type">{Object.entries(KIND).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
-        <button className="btn btn-primary" onClick={() => newDocument({ kind, project_id: w.project.id }, navigate, toast)}><Icon name="plus" />New document</button>
-        {kind === 'manuscript' && proposal && <button className="btn" onClick={() => newDocument({ kind, project_id: w.project.id, copy_from: proposal.id }, navigate, toast)}>New manuscript reusing the proposal's sections</button>}
-      </div>
-      {w.documents.length === 0 ? <div className="empty">No proposal or manuscript yet. Each starts from its usual sections; write them in any order.</div> : (
-        <ul className="list">{w.documents.map((d) => (
-          <li key={d.id}><span className={`tag ${d.status === 'final' ? 'ok' : ''}`}>{humanize(d.status)}</span>
-            <Link className="rowlink grow" to={`/research/documents/${d.id}`}><span className="t">{d.title}</span><span className="s">{KIND[d.kind]} · {d.sections_done} of {d.sections} sections done{d.target ? ` · ${d.target}` : ''}</span></Link></li>
-        ))}</ul>
-      )}
-    </div>
-  );
-}
-
 function Literature({ w }: { w: Workspace }) {
   const { openRecord, toast } = useApp();
   const p = w.project;
@@ -219,7 +195,6 @@ function Methods({ w }: { w: Workspace }) {
   const { openRecord, toast } = useApp();
   const navigate = useNavigate();
   const p = w.project;
-  const methodology = w.documents.find((d) => d.kind === 'methodology') || w.documents.find((d) => d.kind === 'proposal');
   async function newInstrument() {
     const title = await askText('Name of the instrument');
     if (!title?.trim()) return;
@@ -229,15 +204,13 @@ function Methods({ w }: { w: Workspace }) {
     <div className="stack" style={{ gap: 'var(--s-5)' }}>
       <section className="panel">
         <header className="panel-head"><span className="code">MTH</span><h2>Methodology</h2><span style={{ flex: 1 }} />
-          {methodology ? <Link className="btn btn-sm" to={`/research/documents/${methodology.id}`}>Open the {KIND[methodology.kind].toLowerCase()}</Link>
-            : <button className="btn btn-sm" onClick={() => newDocument({ kind: 'methodology', project_id: p.id }, navigate, toast)}><Icon name="plus" />Methodology document</button>}
           <button className="btn btn-sm" onClick={() => openRecord('research_projects', p.id)}><Icon name="edit" />Project details</button></header>
         <div className="panel-body">
           <dl className="dl">
             <dt>Design and approach</dt><dd>{p.methodology || '—'}</dd><dt>Population</dt><dd>{p.population || '—'}</dd><dt>Variables or concepts</dt><dd>{p.variables || '—'}</dd>
             <dt>Sample</dt><dd>{p.target_sample != null ? `${p.collected_sample ?? 0} of ${p.target_sample} collected` : '—'}</dd>
           </dl>
-          <p className="faint" style={{ fontSize: 12.5, margin: 'var(--s-2) 0 0' }}>Design, setting, sampling, instruments, procedures and ethics are written as sections of the methodology or proposal document. SYNCHRONIA documents methodology; it does not compute statistics.</p>
+          <p className="faint" style={{ fontSize: 12.5, margin: 'var(--s-2) 0 0' }}>Record the design, setting, sampling and procedures in the project details. SYNCHRONIA documents methodology; it does not compute statistics.</p>
         </div>
       </section>
       <section className="panel">
