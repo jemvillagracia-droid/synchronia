@@ -35,12 +35,13 @@ export function EvaCalendar({ cal }: { cal: ReturnType<typeof useCalendar> }) {
   return (
     <section className="eva-tile eva-cal" aria-label="Calendar">
       <div className="eva-cap"><span>CALENDAR</span><span className="eva-cap-sub">{MONTHS[now.getMonth()].toUpperCase()} {now.getFullYear()} · {regions}</span></div>
-      <div className="eva-cal-grid" aria-hidden>
+      <div className="eva-cal-grid" role="group" aria-label="Choose a day to open it in the calendar and add an entry">
         {weekdayHeaders(ws).map((d) => <span key={d} className="h">{d.slice(0, 2).toUpperCase()}</span>)}
         {grid.map((d) => {
           const hs = data?.holidays.filter((h) => h.date === d) || [];
           const ev = data ? eventsOn(data.events, d).filter((e) => !e.done) : [];
-          return <span key={d} className={`c ${Number(d.slice(5, 7)) - 1 !== now.getMonth() ? 'out' : ''} ${d === today ? 'today' : ''} ${hs.some((h) => h.region === 'PH') ? 'ph' : ''} ${hs.some((h) => h.region === 'AU') ? 'au' : ''} ${ev.length ? 'ev' : ''}`}>{Number(d.slice(8))}</span>;
+          return <Link key={d} to={`/calendar?date=${d}&add=1`} aria-label={`${d}${hs.length ? `, ${hs.map((h) => h.name).join(', ')}` : ''}${ev.length ? `, ${ev.length} item${ev.length > 1 ? 's' : ''}` : ''} — add an entry`}
+            className={`c ${Number(d.slice(5, 7)) - 1 !== now.getMonth() ? 'out' : ''} ${d === today ? 'today' : ''} ${hs.some((h) => h.region === 'PH') ? 'ph' : ''} ${hs.some((h) => h.region === 'AU') ? 'au' : ''} ${ev.length ? 'ev' : ''}`}>{Number(d.slice(8))}</Link>;
         })}
       </div>
       <ul className="eva-cal-next">

@@ -55,6 +55,9 @@ export const PAGE_SIZES = {
   letter: { css: 'letter', width: 8.5, height: 11, label: 'Letter (8.5 × 11 in)' },
   a4: { css: 'A4', width: 8.27, height: 11.69, label: 'A4 (210 × 297 mm)' },
   folio: { css: '8.5in 13in', width: 8.5, height: 13, label: 'Folio / long bond (8.5 × 13 in)' },
+  legal: { css: '8.5in 14in', width: 8.5, height: 14, label: 'Legal (8.5 × 14 in)' },
+  a5: { css: '148mm 210mm', width: 5.83, height: 8.27, label: 'A5 (148 × 210 mm)' },
+  b5: { css: '182mm 257mm', width: 7.17, height: 10.12, label: 'B5 (182 × 257 mm)' },
 };
 
 export const SPACING = { compact: 0.7, normal: 1, relaxed: 1.35 };

@@ -276,7 +276,7 @@ export function SettingsPage() {
       </div>
       {tab === 'workspace' && <Workspace />}
       {tab === 'appearance' && <Appearance />}
-      {tab === 'documents' && <InstitutionSettings />}
+      {tab === 'documents' && <><PaperSetting /><InstitutionSettings /></>}
       {tab === 'application' && <Application />}
       {tab === 'data' && <Data />}
     </div>
@@ -296,6 +296,24 @@ function ArchiveExport() {
         </p>
         <label className="checkline"><input type="checkbox" className="check" checked={secrets} onChange={(e) => setSecrets(e.target.checked)} />Include protected fields (licence registration numbers) in plain text</label>
         <div><button className="btn btn-primary" onClick={() => download(`/api/knowledge/archive${secrets ? '?include_secrets=1' : ''}`, `SYNCHRONIA_Archive.zip`)}><Icon name="download" />Download archive (.zip)</button></div>
+      </div>
+    </section>
+  );
+}
+
+/** Paper size for every exported document (a syllabus or CV can still set its own). */
+function PaperSetting() {
+  const { prefs, updatePrefs, toast } = useApp();
+  if (!prefs?.paper_sizes) return null;
+  return (
+    <section className="panel" style={{ marginBottom: 'var(--s-4)' }}>
+      <header className="panel-head"><span className="code">PPR</span><h2>Paper size</h2></header>
+      <div className="panel-body stack">
+        <label className="field" style={{ maxWidth: 360 }}><span className="label">Paper for exported documents</span>
+          <select className="select" value={prefs.paper_size || 'letter'} onChange={async (e) => { await updatePrefs({ paper_size: e.target.value }); toast(`Documents will be exported on ${prefs.paper_sizes![e.target.value]}`, 'ok'); }}>
+            {Object.entries(prefs.paper_sizes).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select></label>
+        <p className="faint" style={{ margin: 0, fontSize: 13 }}>Used by reports, minutes, turnover documents, research exports and Intelligence reports, in Word and PDF. Margins and tables adjust to the paper. A syllabus keeps its own page setup, and each CV its own paper size.</p>
       </div>
     </section>
   );

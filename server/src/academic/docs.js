@@ -1,5 +1,6 @@
 // Small builder for formal academic Word documents (syllabi, tables of specifications, rubrics, reports).
 // Unlike CVs, these documents are expected to contain tables.
+import { PAPERS, defaultPaper, sideMargin } from '../paper.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -22,7 +23,8 @@ export const bullet = (text) => new Paragraph({ numbering: { reference: 'doc-bul
 export const field = (label, value) => new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `${label}: `, bold: true }), new TextRun(value == null || value === '' ? '—' : String(value))] });
 
 /** rows: array of arrays of strings; first row is the header. widths: optional percentages. */
-export function table(rows, { widths = null, header = true, center = [], contentWidth = 9360, size = 20, boldFirstCol = false, boldCols = [], noBorders = false, boldRow = -1, keepTogether = false } = {}) {
+export function table(rows, { widths = null, header = true, center = [], contentWidth = null, size = 20, boldFirstCol = false, boldCols = [], noBorders = false, boldRow = -1, keepTogether = false } = {}) {
+  contentWidth ||= pageGeometry().contentWidth; // the current paper's usable width
   const cols = rows[0]?.length || 1;
   const pct = widths || Array(cols).fill(100 / cols);
   // Explicit twip column widths with a fixed layout: honoured by Word and LibreOffice alike.
@@ -49,14 +51,16 @@ export function table(rows, { widths = null, header = true, center = [], content
   });
 }
 
-const PAGES = { letter: [12240, 15840], a4: [11906, 16838], folio: [12240, 18720], legal: [12240, 20160] };
-const SIDE = 1440; // 1-inch side margins, as in the official templates
+// Paper sizes come from paper.js (the owner's default unless a document sets its own).
+const PAGES = Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.twips]));
 
 /** Page width/height and usable content width (twips) for a paper size and orientation. */
-export function pageGeometry(pageSize = 'letter', landscape = false) {
-  const [w, h] = PAGES[pageSize] || PAGES.letter;
+export function pageGeometry(pageSize = null, landscape = false) {
+  const size = PAGES[pageSize] ? pageSize : defaultPaper();
+  const [w, h] = PAGES[size];
   const [W, H] = landscape ? [h, w] : [w, h];
-  return { width: W, height: H, contentWidth: W - SIDE * 2 };
+  const side = sideMargin(size);
+  return { size, width: W, height: H, side, contentWidth: W - side * 2 };
 }
 
 const EMU_PER_PX = 9525;
@@ -81,10 +85,10 @@ function banner(part, pageHeightTwips, atBottom) {
   };
 }
 
-export async function buildDocument({ title, subtitle, children, landscape = false, pageSize = 'letter', letterhead = null, showTitle = true, font = FONT }) {
+export async function buildDocument({ title, subtitle, children, landscape = false, pageSize = null, letterhead = null, showTitle = true, font = FONT }) {
   const g = pageGeometry(pageSize, landscape);
   const pageNum = new TextRun({ children: [`${title} · Page `, PageNumber.CURRENT, ' of ', PageNumber.TOTAL_PAGES], size: 16, font: 'Arial' });
-  let margin = { top: 1440, right: SIDE, bottom: 1440, left: SIDE, header: 432, footer: 432 };
+  let margin = { top: 1440, right: g.side, bottom: 1440, left: g.side, header: 432, footer: 432 };
   let headers;
   let footers = { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [pageNum] })] }) };
   if (letterhead?.header) {

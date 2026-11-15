@@ -5,6 +5,7 @@ import { fmtDate, fmtNum, humanize, relTime } from '../../lib/format';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
 import { exportAndSave } from './AcademicPage';
+import { openBoard } from '../../lib/moodboard';
 
 interface Workspace { course: any; offerings: any[]; syllabi: any[]; activities: any[] }
 const TERM: Record<string, string> = { first: '1st Sem', second: '2nd Sem', summer: 'Summer', other: 'Term' };
@@ -56,7 +57,8 @@ export function CoursePage() {
           <h1 className="display">{c.code} · {c.title}</h1>
           <div className="sub">{[c.program, c.units != null && `${fmtNum(c.units)} units`, c.level].filter(Boolean).join(' · ') || 'Course'}</div>
         </div>
-        <div className="actions"><button className="btn" onClick={() => openRecord('courses', c.id)}><Icon name="edit" />Course details</button></div>
+        <div className="actions"><button className="btn" onClick={() => openRecord('courses', c.id)}><Icon name="edit" />Course details</button>
+          <button className="btn" onClick={() => openBoard(navigate, 'courses', c.id).catch((e) => toast(e.message, 'error'))}><Icon name="panel" />Moodboard</button></div>
       </div>
       <div className="tabs" role="tablist">{tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setParams({ tab: k })}>{l}</button>)}</div>
 

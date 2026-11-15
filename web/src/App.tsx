@@ -23,6 +23,8 @@ import { CvStudio } from './pages/cv/CvStudio';
 import { CvEditor } from './pages/cv/CvEditor';
 import { AcademicPage } from './pages/academic/AcademicPage';
 import { AskTextHost } from './components/AskText';
+import { TimerPage } from './pages/TimerPage';
+import { MoodboardList, MoodboardPage } from './pages/MoodboardPage';
 import { SyllabusPage } from './pages/academic/SyllabusPage';
 import { ResearchPage } from './pages/research/ResearchPage';
 import { ProjectPage } from './pages/research/ProjectPage';
@@ -103,6 +105,9 @@ export function App() {
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/knowledge" element={<KnowledgePage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/timer" element={<TimerPage />} />
+                <Route path="/moodboard" element={<MoodboardList />} />
+                <Route path="/moodboard/:id" element={<MoodboardPage />} />
                 {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence', 'admin', 'knowledge', 'research'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFound />} />

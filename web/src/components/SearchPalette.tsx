@@ -50,6 +50,7 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
     onClose();
     if (it.kind === 'nav') navigate(it.path);
     else if (it.r.type === 'profile') navigate('/portfolio/profile');
+    else if (it.r.type === 'moodboards') navigate(`/moodboard/${it.r.id}`);
     else openRecord(it.r.type, it.r.id);
   }
 

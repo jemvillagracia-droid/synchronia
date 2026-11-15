@@ -5,6 +5,7 @@ import { openReference } from '../../lib/desktop';
 import { fmtDate, humanize, relTime } from '../../lib/format';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
+import { openBoard } from '../../lib/moodboard';
 import { exportFile, type NextAction, type Progress, type Stage } from '../../lib/research';
 import { askText } from '../../components/AskText';
 
@@ -23,6 +24,7 @@ export function ProjectPage() {
   const [params, setParams] = useSearchParams();
   const tab = (TABS.some(([k]) => k === params.get('tab')) ? params.get('tab') : 'overview') as Tab;
   const { openRecord, toast } = useApp();
+  const navigate = useNavigate();
   const [w, setW] = useState<Workspace | null>(null);
   const [error, setError] = useState('');
   const load = useCallback(() => { api.get<Workspace>(`/research/projects/${id}`).then((d) => { setW(d); setError(''); }).catch((e) => setError(e.message)); }, [id]);
@@ -47,6 +49,7 @@ export function ProjectPage() {
             {[...w.stages, { key: 'discontinued', label: 'Discontinued' }].map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
           <button className="btn" onClick={() => openRecord('research_projects', p.id)}><Icon name="edit" />Details</button>
+          <button className="btn" onClick={() => openBoard(navigate, 'research_projects', p.id).catch((e) => toast(e.message, 'error'))}><Icon name="panel" />Moodboard</button>
           <button className="btn" onClick={() => exportFile(`/research/projects/${p.id}/report`, { format: 'docx' }, toast)}><Icon name="download" />Progress report</button>
           <button className="btn btn-ghost" onClick={() => patch({ archived_at: p.archived_at ? null : new Date().toISOString() }, p.archived_at ? 'Back on the dashboard' : 'Archived. Nothing was deleted; find it under Projects › Archived.')}>{p.archived_at ? 'Unarchive' : 'Archive'}</button>
         </div>

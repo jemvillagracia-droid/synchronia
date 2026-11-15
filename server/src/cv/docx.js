@@ -1,5 +1,6 @@
 // Builds a genuine, editable Word document from the CV model: native Heading 1 / Title styles, real bullet lists,
 // tab-stop aligned dates (no layout tables or text boxes), page numbers in the footer only.
+import { PAPERS } from '../paper.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -9,7 +10,7 @@ import { DATA_DIR } from '../config.js';
 import { styleFor } from './templates.js';
 
 const TWIP = 1440;
-const PAGE_TWIPS = { letter: [12240, 15840], a4: [11906, 16838], folio: [12240, 18720] };
+const PAGE_TWIPS = Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.twips]));
 const hex = (c) => (c || '#000000').replace('#', '').toUpperCase();
 
 export async function buildDocx(model) {

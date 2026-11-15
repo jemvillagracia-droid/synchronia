@@ -1,6 +1,7 @@
 // Report generation for Intelligence. A report is built once as a model (summary, detail tables, numbered source
 // list) from the analytics engine, then rendered to Word, PDF or a spreadsheet. Every line in a report refers to a
 // numbered source record; nothing appears that is not in the database.
+import { paperCss } from '../paper.js';
 import ExcelJS from 'exceljs';
 import { Paragraph, TextRun, AlignmentType } from 'docx';
 import { HttpError } from '../repo.js';
@@ -214,7 +215,7 @@ function toHtml(model, letterhead) {
     : '<p>No records in this period.</p>'}`).join('')}`).join('');
   const sources = model.sources.length ? `<table class="src"><thead><tr><th class="ref">Ref</th><th>Record type</th><th>Title</th><th class="d">Date</th><th class="s">Support</th><th>Record ID</th></tr></thead><tbody>${model.sources.map((s) => `<tr><td>S${s.ref}</td><td>${esc(s.resource_label)}</td><td>${esc(s.title)}</td><td>${esc(dateText(s))}</td><td>${esc(SUPPORT[s.support])}</td><td class="mono">${esc(`${s.type}#${s.id}`)}</td></tr>`).join('')}</tbody></table>` : '<p>None.</p>';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(model.title)}</title><style>
-@page { size: Letter; margin: 0.8in 0.9in ${letterhead?.footer ? '1.45in' : '0.9in'}; }
+@page { size: ${paperCss()}; margin: 0.8in 0.9in ${letterhead?.footer ? '1.45in' : '0.9in'}; }
 body { font-family: "Times New Roman", Times, serif; font-size: 10.5pt; color: #111; }
 .lh { width: 100%; display: block; } .office { text-align: center; color: #0070C0; font: italic bold 11pt Arial, sans-serif; margin-top: 4pt; } .contact { text-align: center; color: #0070C0; font: bold 8.5pt Arial, sans-serif; }
 h1 { text-align: center; font-size: 15pt; margin: 14pt 0 2pt; } .sub { text-align: center; font-style: italic; margin: 0 0 12pt; }

@@ -321,8 +321,8 @@ export function search(db, userId, q, limit = 30, module = null) {
       title: r.title,
       title_highlighted: r.title_hl || r.title,
       snippet: r.snippet || '',
-      label: r.entity_type === 'profile' ? 'Professional Profile' : r.entity_type === 'reports' ? 'Generated Document' : RESOURCES[r.entity_type]?.label || r.entity_type,
-      module: r.entity_type === 'profile' ? 'portfolio' : r.entity_type === 'reports' ? 'intelligence' : RESOURCES[r.entity_type]?.module || 'nexus',
+      label: r.entity_type === 'profile' ? 'Professional Profile' : r.entity_type === 'reports' ? 'Generated Document' : r.entity_type === 'moodboards' ? 'Moodboard' : RESOURCES[r.entity_type]?.label || r.entity_type,
+      module: r.entity_type === 'profile' ? 'portfolio' : r.entity_type === 'reports' ? 'intelligence' : r.entity_type === 'moodboards' ? 'moodboard' : RESOURCES[r.entity_type]?.module || 'nexus',
     })).filter((x) => !module || x.module === module).slice(0, Math.min(Number(limit) || 30, 100)),
   };
 }

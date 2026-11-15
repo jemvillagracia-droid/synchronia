@@ -42,7 +42,10 @@ export async function verifyExport(buffer, format, { expect = [] } = {}) {
   add(words(text) > 0, 'Contains text');
   const artefact = ARTEFACT.exec(text);
   add(!artefact, artefact ? `Contains a rendering artefact: “${artefact[0]}”` : 'No rendering artefacts');
-  for (const e of expect.filter(Boolean)) add(text.toLowerCase().includes(String(e).toLowerCase().slice(0, 60)), `Includes “${String(e).slice(0, 40)}”`);
+  // Compare with spacing collapsed: PDF text extraction and Word runs do not keep runs of spaces or line breaks.
+  const flat = (x) => String(x).toLowerCase().replace(/\s+/g, ' ').trim();
+  const hay = flat(text);
+  for (const e of expect.filter(Boolean)) add(hay.includes(flat(e).slice(0, 60)), `Includes “${String(e).slice(0, 40)}”`);
   const ok = checks.every((c) => c.ok);
   return { ok, format, pages, words: words(text), bytes: buffer.length, checks, summary: summary({ ok, format, pages, words: words(text) }) };
 }

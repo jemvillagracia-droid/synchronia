@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Overlay } from './Overlay';
 import { Field } from './Field';
 import { Icon } from './Icon';
@@ -13,6 +14,7 @@ const KINDS = [
   { id: 'idea', label: 'Idea' },
   { id: 'research_note', label: 'Research Note' },
   { id: 'accomplishment', label: 'Accomplishment' },
+  { id: 'moodboard', label: 'Moodboard' },
 ] as const;
 type Kind = (typeof KINDS)[number]['id'];
 
@@ -23,8 +25,18 @@ const MODULE_LABEL: Record<string, string> = {
   portfolio: 'Portfolio', cv: 'CV', admin: 'Administrative',
 };
 
+/** The moodboard of the place being worked on (a research project, course or syllabus), else the general board. */
+export function moodboardContext(pathname: string): { type: string; id: number | null } {
+  const m = /^\/(research\/projects|academic\/courses|academic\/syllabi)\/(\d+)/.exec(pathname);
+  if (!m) return { type: 'general', id: null };
+  return { type: { 'research/projects': 'research_projects', 'academic/courses': 'courses', 'academic/syllabi': 'syllabi' }[m[1]]!, id: Number(m[2]) };
+}
+
 export function QuickCapture({ onClose }: { onClose: () => void }) {
   const { toast } = useApp();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const ctx = moodboardContext(location.pathname);
   const [kind, setKind] = useState<Kind>('task');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -45,6 +57,16 @@ export function QuickCapture({ onClose }: { onClose: () => void }) {
     if (busy) return;
     setBusy(true); setErrors({}); setFormError('');
     try {
+      if (kind === 'moodboard') {
+        if (!title.trim() && !body.trim()) { setErrors({ title: 'Write the idea' }); return; }
+        const b = await api.get<{ board: { id: number; title: string }; items: { x: number; y: number; h: number }[] }>(`/moodboards/for?type=${ctx.type}${ctx.id ? `&id=${ctx.id}` : ''}`);
+        const n = b.items.length;
+        await api.post(`/moodboards/${b.board.id}/items`, { kind: 'note', text: [title.trim(), body.trim()].filter(Boolean).join('\n\n'), x: (n % 5) * 270, y: Math.floor(n / 5) * 200, w: 240, h: 170, color: 'violet' });
+        dataChanged();
+        toast(`Pinned to the moodboard “${b.board.title}”`, 'ok', [{ label: 'Open', run: () => navigate(`/moodboard/${b.board.id}`) }]);
+        if (keepOpen) { setTitle(''); setBody(''); } else onClose();
+        return;
+      }
       await api.post('/capture', isTask
         ? { kind, title, body, due_date: due || null, priority, module, is_deadline: isDeadline }
         : { kind, title, body, event_date: eventDate || null, module: module === 'cv' ? 'general' : module });
@@ -81,6 +103,7 @@ export function QuickCapture({ onClose }: { onClose: () => void }) {
           <Field label={isTask ? 'Notes' : 'Details'} error={errors.notes || errors.body}>
             <textarea className="textarea" value={body} onChange={(e) => setBody(e.target.value)} rows={3} />
           </Field>
+          {kind === 'moodboard' ? <div className="alert info">Pinned as a card on the moodboard of {ctx.type === 'general' ? 'general ideas' : 'the page you are working on'}. Arrange, colour and add pictures on the board itself.</div> : (
           <div className="form-grid">
             {isTask ? (
               <>
@@ -109,7 +132,7 @@ export function QuickCapture({ onClose }: { onClose: () => void }) {
                 Hard deadline
               </label>
             )}
-          </div>
+          </div>)}
           {kind === 'accomplishment' && (
             <div className="alert info">Recorded as <strong>self-reported</strong>. It will not be treated as verified until you confirm it or link supporting evidence.</div>
           )}

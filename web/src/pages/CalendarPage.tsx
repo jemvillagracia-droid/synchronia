@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, dataChanged, onDataChanged } from '../lib/api';
 import { fmtDate, fmtLongDate } from '../lib/format';
@@ -52,8 +52,10 @@ export function CalendarPage() {
   const { openRecord, openNew, toast } = useApp();
   const [params, setParams] = useSearchParams();
   const now = new Date();
-  const [ym, setYm] = useState<[number, number]>(() => { const m = /^(\d{4})-(\d{2})$/.exec(params.get('month') || ''); return m ? [Number(m[1]), Number(m[2]) - 1] : [now.getFullYear(), now.getMonth()]; });
-  const [sel, setSel] = useState(todayIso());
+  const [ym, setYm] = useState<[number, number]>(() => { const m = /^(\d{4})-(\d{2})/.exec(params.get('month') || params.get('date') || ''); return m ? [Number(m[1]), Number(m[2]) - 1] : [now.getFullYear(), now.getMonth()]; });
+  const asked = /^\d{4}-\d{2}-\d{2}$/.test(params.get('date') || '') ? params.get('date')! : null;
+  const [sel, setSel] = useState(asked || todayIso());
+  const [focusEntry] = useState(() => params.get('add') === '1'); // read once: the month sync below rewrites the URL
   const [data, setData] = useState<CalData | null>(null);
   const [moving, setMoving] = useState<Holiday | null>(null);
   const [moveTo, setMoveTo] = useState('');
@@ -158,7 +160,9 @@ export function CalendarPage() {
                     <span className="s">{[e.time && `${t12(e.time)}${e.end_time ? `–${t12(e.end_time)}` : ''}`, e.end_date && `until ${fmtDate(e.end_date)}`, e.detail].filter(Boolean).join(' · ')}</span></button></li>
               ))}</ul>
             ) : !dayHol.length && <div className="empty">Nothing on this day.</div>}
+            <QuickEntry date={sel} focus={focusEntry} onAdded={load} />
             <div className="row wrap">
+              <span className="faint" style={{ fontSize: 12.5 }}>More detail:</span>
               <button className="btn btn-sm" onClick={() => openNew('tasks', { due_date: sel, is_deadline: true })}><Icon name="plus" />Deadline</button>
               <button className="btn btn-sm" onClick={() => openNew('meetings', { meeting_date: sel, status: 'scheduled' })}><Icon name="plus" />Meeting</button>
               <button className="btn btn-sm" onClick={() => openNew('trainings', { start_date: sel })}><Icon name="plus" />Training</button>
@@ -172,3 +176,40 @@ export function CalendarPage() {
 }
 
 
+
+/** Add an entry to the selected day in one line: title, kind and (optionally) a time. */
+function QuickEntry({ date, focus, onAdded }: { date: string; focus: boolean; onAdded: () => void }) {
+  const { toast } = useApp();
+  const [title, setTitle] = useState('');
+  const [kind, setKind] = useState<'task' | 'deadline' | 'meeting' | 'training'>('task');
+  const [time, setTime] = useState('');
+  const [busy, setBusy] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  // Opened from a day on the Central Nexus: put the cursor in the entry box (after the page settles its own focus).
+  useEffect(() => { if (!focus) return; const t = window.setTimeout(() => input.current?.focus(), 120); return () => window.clearTimeout(t); }, [focus, date]);
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    const t = title.trim();
+    if (!t) return;
+    setBusy(true);
+    try {
+      if (kind === 'meeting') await api.post('/records/meetings', { title: t, meeting_date: date, start_time: time || null, status: 'scheduled' });
+      else if (kind === 'training') await api.post('/records/trainings', { title: t, start_date: date, end_date: date });
+      else await api.post('/records/tasks', { title: t, due_date: date, is_deadline: kind === 'deadline', status: 'open', priority: 'normal', module: 'general', notes: time ? `Time: ${time}` : null });
+      setTitle(''); setTime(''); dataChanged(); onAdded();
+      toast(`Added to ${date}`, 'ok');
+    } catch (err) { toast((err as Error).message, 'error'); } finally { setBusy(false); }
+  }
+  return (
+    <form className="cal-quick" onSubmit={add} aria-label={`Add an entry on ${date}`}>
+      <input ref={input} className="input" value={title} maxLength={500} onChange={(e) => setTitle(e.target.value)} placeholder="Add an entry on this day…" aria-label="Entry title" />
+      <div className="row" style={{ gap: 6 }}>
+        <select className="select select-sm" value={kind} onChange={(e) => setKind(e.target.value as any)} aria-label="Kind of entry">
+          <option value="task">Task</option><option value="deadline">Deadline</option><option value="meeting">Meeting</option><option value="training">Training / event</option>
+        </select>
+        <input className="input select-sm" type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Time (optional)" style={{ width: 120 }} />
+        <button className="btn btn-sm btn-primary" disabled={busy || !title.trim()}><Icon name="plus" />Add</button>
+      </div>
+    </form>
+  );
+}

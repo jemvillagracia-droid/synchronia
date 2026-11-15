@@ -1,6 +1,6 @@
 // SYNCHRONIA desktop shell (Electron).
 // Starts the local data service on the loopback interface with a fresh access key, then opens the app window.
-import { app, BrowserWindow, Menu, dialog, ipcMain, session, shell } from 'electron';
+import { app, BrowserWindow, Menu, Notification, dialog, ipcMain, session, shell } from 'electron';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -76,6 +76,14 @@ if (!app.requestSingleInstanceLock()) {
   // Editing commands for toolbar buttons (Cut, Copy, Paste, Paste as plain text, Select all): the same native
   // actions as the keyboard shortcuts, so pictures and formatted text from the clipboard paste exactly as with Ctrl+V.
   const EDIT = new Set(['cut', 'copy', 'paste', 'pasteAndMatchStyle', 'selectAll', 'undo', 'redo', 'delete']);
+  // System Timer alerts as Windows notifications (shown even when SYNCHRONIA is behind other windows).
+  ipcMain.handle('synchronia:notify', (_e, title, body) => {
+    if (!Notification.isSupported()) return false;
+    const n = new Notification({ title: String(title).slice(0, 120), body: String(body).slice(0, 300), silent: false });
+    n.on('click', () => { if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.focus(); } });
+    n.show();
+    return true;
+  });
   ipcMain.handle('synchronia:edit', (e, action) => { if (EDIT.has(action)) e.sender[action](); });
   ipcMain.handle('synchronia:relaunch', () => { app.relaunch(); app.quit(); });
   ipcMain.handle('synchronia:show-item', (_e, p) => {
@@ -156,6 +164,15 @@ if (!app.requestSingleInstanceLock()) {
       if (!sameOrigin(url)) { e.preventDefault(); if (/^https?:\/\//i.test(url)) shell.openExternal(url); }
     });
 
+    // Window shortcuts. There is no menu bar, so these are handled here; editing keys (Ctrl+C/X/V/A/Z/Y) are Chromium's own.
+    win.webContents.on('before-input-event', (e, input) => {
+      if (input.type !== 'keyDown') return;
+      const ctrl = input.control || input.meta; const wc = win.webContents; const k = input.key;
+      if (ctrl && !input.alt && (k === '=' || k === '+' || input.code === 'NumpadAdd')) { e.preventDefault(); wc.setZoomLevel(Math.min(wc.getZoomLevel() + 0.5, 4)); }
+      else if (ctrl && !input.alt && (k === '-' || k === '_' || input.code === 'NumpadSubtract')) { e.preventDefault(); wc.setZoomLevel(Math.max(wc.getZoomLevel() - 0.5, -3)); }
+      else if (ctrl && !input.alt && (k === '0' || input.code === 'Numpad0')) { e.preventDefault(); wc.setZoomLevel(0); }
+      else if (k === 'F11' && !ctrl) { e.preventDefault(); win.setFullScreen(!win.isFullScreen()); }
+    });
     win.once('ready-to-show', () => win.show());
     // An editor with unsaved changes blocks closing; ask what to do instead of discarding silently.
     win.webContents.on('will-prevent-unload', (e) => {
@@ -175,11 +192,12 @@ if (!app.requestSingleInstanceLock()) {
   // Deny every permission (camera, microphone, location, notifications, clipboard read, …) in every session,
   // including the hidden PDF window. SYNCHRONIA needs none of them.
   app.on('session-created', (ses) => {
-    ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
-    ses.setPermissionCheckHandler(() => false);
+    // Only full screen (for the System Timer) is allowed; every other permission stays denied.
+    ses.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'fullscreen'));
+    ses.setPermissionCheckHandler((_wc, permission) => permission === 'fullscreen');
   });
   app.whenReady().then(async () => {
-    for (const ses of [session.defaultSession]) { ses.setPermissionRequestHandler((_wc, _p, cb) => cb(false)); ses.setPermissionCheckHandler(() => false); }
+    for (const ses of [session.defaultSession]) { ses.setPermissionRequestHandler((_wc, p, cb) => cb(p === 'fullscreen')); ses.setPermissionCheckHandler((_wc, p) => p === 'fullscreen'); }
     if (!isDev) Menu.setApplicationMenu(null);
     handleDownloads();
     try {

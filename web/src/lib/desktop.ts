@@ -10,6 +10,8 @@ export interface DesktopBridge {
   showDataFolder: () => Promise<void>;
   showItemInFolder: (p: string) => Promise<void>;
   relaunch: () => Promise<void>;
+  /** A desktop notification (System Timer alerts). */
+  notify?: (title: string, body: string) => Promise<boolean>;
   /** Native editing command (same as the keyboard shortcut). */
   edit?: (action: 'cut' | 'copy' | 'paste' | 'pasteAndMatchStyle' | 'selectAll' | 'undo' | 'redo' | 'delete') => Promise<void>;
   onDownload: (cb: (info: { state: 'completed' | 'cancelled' | 'interrupted'; name: string; path?: string }) => void) => () => void;

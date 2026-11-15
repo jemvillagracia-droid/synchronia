@@ -244,3 +244,41 @@ test('appearance: the theme preference defaults to violet, is saved, and refuses
   for (const t of ['light', 'sepia', 'crimson-orange', 'violet']) assert.equal((await call('PUT', '/preferences', { theme: t })).body.theme, t);
   assert.equal((await call('PUT', '/preferences', { theme: 'hacker-green' })).status, 422);
 });
+
+test('exports follow the chosen paper size; tables stay within the usable width (all six sizes)', async () => {
+  const { PAPERS } = await import('../src/paper.js');
+  for (const [paper, def] of Object.entries(PAPERS)) {
+    assert.equal((await call('PUT', '/preferences', { paper_size: paper })).body.paper_size, paper);
+    for (const req of [[`/research/projects/${P}/report`, { format: 'docx' }, false], ['/research/literature/matrix/export', { project_id: P, format: 'docx' }, true]]) {
+      const x = await call('POST', req[0], req[1]);
+      assert.equal(x.status, 201, `${paper} ${req[0]} ${JSON.stringify(x.body)}`);
+      const xml = await (await JSZip.loadAsync((await call('GET', x.body.download.replace('/api', ''), undefined, true)).buf)).file('word/document.xml').async('string');
+      const [, w, h] = /<w:pgSz w:w="(\d+)" w:h="(\d+)"/.exec(xml).map(Number);
+      const [ew, eh] = def.twips;
+      assert.deepEqual([w, h], req[2] ? [eh, ew] : [ew, eh], `${paper} page size`);
+      const [, right, left] = /<w:pgMar[^>]*w:right="(\d+)"[^>]*w:left="(\d+)"/.exec(xml).map(Number);
+      const widest = Math.max(0, ...[...xml.matchAll(/<w:tblGrid>([\s\S]*?)<\/w:tblGrid>/g)].map((g) => [...g[1].matchAll(/w:w="(\d+)"/g)].reduce((a, m) => a + Number(m[1]), 0)));
+      assert.ok(widest <= w - left - right + 20, `${paper}: table ${widest} wider than ${w - left - right}`);
+    }
+  }
+  assert.equal((await call('PUT', '/preferences', { paper_size: 'tabloid' })).status, 422);
+  await call('PUT', '/preferences', { paper_size: 'letter' });
+});
+
+test('moodboards: one per place of work; notes, stored pictures and links; searchable; outside pictures refused', async () => {
+  const g = (await call('GET', '/moodboards/for?type=general')).body;
+  assert.equal(g.board.title, 'General ideas');
+  assert.equal((await call('GET', '/moodboards/for?type=general')).body.board.id, g.board.id, 'one general board');
+  const pb = (await call('GET', `/moodboards/for?type=research_projects&id=${P}`)).body;
+  assert.match(pb.board.title, /Blended learning/);
+  const n = await call('POST', `/moodboards/${pb.board.id}/items`, { kind: 'note', text: 'Interview teachers about bandwidth constraints', x: 10, y: 20, color: 'yellow' });
+  assert.equal(n.status, 201);
+  assert.equal((await call('PATCH', `/moodboards/items/${n.body.id}`, { x: 300, y: -40, w: 320 })).body.x, 300);
+  assert.equal((await call('POST', `/moodboards/${pb.board.id}/items`, { kind: 'image', image_src: 'https://tracker.example/a.png' })).status, 422);
+  assert.equal((await call('POST', `/moodboards/${pb.board.id}/items`, { kind: 'link', url: 'javascript:alert(1)' })).status, 422);
+  assert.equal((await call('POST', `/moodboards/${pb.board.id}/items`, { kind: 'link', url: 'https://example.org/readiness' })).status, 201);
+  assert.ok(JSON.stringify((await call('GET', '/search?q=bandwidth')).body).includes('Moodboard'));
+  assert.equal((await call('DELETE', `/moodboards/items/${n.body.id}`)).status, 200);
+  assert.equal((await call('GET', `/moodboards/${pb.board.id}`)).body.items.length, 1);
+  assert.equal((await call('GET', '/moodboards/for?type=courses&id=99999')).status, 404);
+});

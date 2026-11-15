@@ -14,6 +14,8 @@ import { knowledgeRouter } from './knowledge/routes.js';
 import { calendarRouter } from './calendar/routes.js';
 import { portfolioImportRouter } from './portfolio/routes.js';
 import { googleCallbackRouter, integrationsRouter } from './integrations/routes.js';
+import { moodboardRouter } from './moodboards.js';
+import { PAPERS, setDefaultPaper } from './paper.js';
 import { researchRouter } from './research/routes.js';
 import { docImagesRouter } from './docimages.js';
 import { academicRouter } from './academic/routes.js';
@@ -31,6 +33,7 @@ const MODES = ['administrative', 'instructor', 'researcher', 'faculty_developmen
 const THEMES = ['violet', 'violet-green', 'crimson-orange', 'orange-white', 'blue-white', 'black-silver', 'pink-green', 'steel-grey', 'light', 'sepia'];
 
 export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health = {} } = {}) {
+  try { const pp = db.prepare('SELECT paper_size FROM user_profiles ORDER BY user_id LIMIT 1').get(); if (pp) setDefaultPaper(pp.paper_size); } catch { /* before the first profile exists */ }
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
@@ -110,6 +113,8 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
       sidebar_collapsed: !!p.sidebar_collapsed,
       reduce_motion: !!p.reduce_motion,
       theme: THEMES.includes(p.theme) ? p.theme : 'violet',
+      paper_size: PAPERS[p.paper_size] ? p.paper_size : 'letter',
+      paper_sizes: Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.label])),
     };
   };
   api.get('/preferences', (req, res) => res.json(readPrefs(req.user.id)));
@@ -130,6 +135,10 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
         const clean = b.dashboard_layout.filter((w) => w && ids.has(w.id)).map((w) => ({ id: w.id, visible: w.visible !== false }));
         sets.push('dashboard_layout = ?'); params.push(JSON.stringify(clean)); changes.dashboard_layout = 'customised';
       }
+    }
+    if ('paper_size' in b) {
+      if (!PAPERS[b.paper_size]) throw new HttpError(422, 'Unknown paper size', { paper_size: `One of: ${Object.keys(PAPERS).join(', ')}` });
+      sets.push('paper_size = ?'); params.push(b.paper_size); changes.paper_size = b.paper_size; setDefaultPaper(b.paper_size);
     }
     if ('theme' in b) {
       if (!THEMES.includes(b.theme)) throw new HttpError(422, 'Unknown theme', { theme: `One of: ${THEMES.join(', ')}` });
@@ -258,6 +267,7 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
   api.use('/calendar', calendarRouter(db));
   api.use('/doc-images', docImagesRouter(db));
   api.use('/research', researchRouter(db, { pdfRenderer }));
+  api.use('/moodboards', moodboardRouter(db));
   api.use('/portfolio', portfolioImportRouter(db));
   api.use('/integrations', integrationsRouter(db));
   api.use('/images', imageRouter(db));

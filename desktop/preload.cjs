@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('synchronia', {
   showDataFolder: () => ipcRenderer.invoke('synchronia:show-data-folder'),
   showItemInFolder: (p) => ipcRenderer.invoke('synchronia:show-item', String(p)),
   relaunch: () => ipcRenderer.invoke('synchronia:relaunch'),
+  notify: (title, body) => ipcRenderer.invoke('synchronia:notify', String(title), String(body)),
   edit: (action) => ipcRenderer.invoke('synchronia:edit', String(action)),
   onDownload: (cb) => {
     const listener = (_e, info) => cb(info);

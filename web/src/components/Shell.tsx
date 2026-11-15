@@ -4,6 +4,8 @@ import { BrandMark, Icon } from './Icon';
 import { useApp } from './AppContext';
 import { NAV, isActive, navCode } from '../lib/nav';
 import { applyTheme } from '../lib/themes';
+import { TimerChip } from '../pages/TimerPage';
+import { TimerAlerts } from './TimerAlerts';
 import { api, onDataChanged, dataChanged } from '../lib/api';
 import { MODE_LABEL, MODE_DESC, initials, relTime, dueLabel } from '../lib/format';
 import type { Mode, Notification, RecordRow } from '../lib/types';
@@ -239,10 +241,21 @@ function ContextPanel({ onClose }: { onClose: () => void }) {
       </section>
       <section>
         <h3 className="label">Shortcuts</h3>
-        <dl className="dl" style={{ gridTemplateColumns: '90px 1fr', fontSize: 13 }}>
+        <dl className="dl" style={{ gridTemplateColumns: '112px 1fr', fontSize: 13 }}>
           <dt><span className="kbd">/</span> <span className="kbd">Ctrl K</span></dt><dd>Global search</dd>
           <dt><span className="kbd">C</span></dt><dd>Quick Capture</dd>
+          <dt><span className="kbd">?</span></dt><dd>This panel</dd>
           <dt><span className="kbd">Esc</span></dt><dd>Close dialog</dd>
+          <dt><span className="kbd">Ctrl Enter</span></dt><dd>Save the open dialog</dd>
+          <dt><span className="kbd">Ctrl S</span></dt><dd>Save the syllabus now</dd>
+          <dt><span className="kbd">Ctrl C X V</span></dt><dd>Copy, cut, paste (text and pictures)</dd>
+          <dt><span className="kbd">Ctrl A</span></dt><dd>Select all</dd>
+          <dt><span className="kbd">Ctrl Z Y</span></dt><dd>Undo, redo</dd>
+          <dt><span className="kbd">Ctrl B I U</span></dt><dd>Bold, italic, underline</dd>
+          <dt><span className="kbd">Ctrl + − 0</span></dt><dd>Zoom in, out, reset</dd>
+          <dt><span className="kbd">F11</span></dt><dd>Full screen window</dd>
+          <dt><span className="kbd">Space F R</span></dt><dd>System Timer: start/pause, full screen, reset</dd>
+          <dt><span className="kbd">Arrows Del</span></dt><dd>Moodboard: move, remove a card</dd>
         </dl>
       </section>
     </aside>
@@ -270,6 +283,7 @@ export function Shell({ children }: { children: ReactNode }) {
       if (typing || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.overlay')) return;
       if (e.key === '/') { e.preventDefault(); openSearch(); }
       if (e.key === 'c' || e.key === 'C') { e.preventDefault(); openCapture(); }
+      if (e.key === '?') { e.preventDefault(); setContextOpen(true); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -290,6 +304,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <span className="spacer" />
         <button className="btn btn-accent btn-sm hide-mobile" onClick={openCapture}><Icon name="plus" />Capture</button>
         <button className="icon-btn show-mobile" onClick={openCapture} aria-label="Quick Capture" style={{ color: 'var(--orange)' }}><Icon name="plus" /></button>
+        <TimerChip />
         <ModeSwitch />
         <Notifications />
         <button className="icon-btn hide-mobile" onClick={toggleContext} aria-label={contextOpen ? 'Hide context' : 'Show context: pending tasks and recent changes'} aria-pressed={contextOpen}>
@@ -299,6 +314,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </header>
       <main className="main" id="main" tabIndex={-1}>{children}</main>
       <StatusBar />
+      <TimerAlerts />
       {contextOpen && (
         <Overlay onClose={() => setContextOpen(false)} label="Context">
           <div className="context-pop"><ContextPanel onClose={() => setContextOpen(false)} /></div>

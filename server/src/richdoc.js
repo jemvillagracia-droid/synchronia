@@ -1,6 +1,7 @@
 // Rich documents edited like a word processor (the editor's ProseMirror/TipTap JSON), shared by syllabi and research
 // writing. This module cleans what the editor sends, counts words, and renders the document through the existing
 // document engine: Word (docx) paragraphs and tables for buildDocument, and HTML for the PDF renderer.
+import { pageSizeCss } from './paper.js';
 import { AlignmentType, ImageRun, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, BorderStyle, ShadingType, VerticalAlign } from 'docx';
 import { HttpError } from './repo.js';
 
@@ -250,10 +251,10 @@ function blockHtml(n, image) {
 export const toHtmlBody = (doc, image = null) => (doc.content || []).map((n) => blockHtml(n, image)).join('\n');
 
 /** A complete printable page for the PDF renderer. */
-export function toHtmlPage(doc, { title = '', page = 'Letter', landscape = false, letterhead = null, font = 'Arial', image = null } = {}) {
+export function toHtmlPage(doc, { title = '', page = '8.5in 11in', landscape = false, letterhead = null, font = 'Arial', image = null } = {}) {
   const img = (part) => (part ? `<img class="lh" src="data:${part.mime};base64,${part.data.toString('base64')}" alt="">` : '');
   return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>
-@page { size: ${page} ${landscape ? 'landscape' : 'portrait'}; margin: 0.75in 0.8in 0.9in; }
+@page { size: ${pageSizeCss(page, landscape)}; margin: 0.75in 0.8in 0.9in; }
 body { font: 11pt ${font}, Arial, sans-serif; color: #000; margin: 0; }
 .lh { display: block; width: 100%; margin-bottom: 10pt; }
 h1 { font-size: 14pt; margin: 14pt 0 6pt; } h2 { font-size: 12pt; margin: 12pt 0 5pt; } h3 { font-size: 11pt; margin: 10pt 0 4pt; }

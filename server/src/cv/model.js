@@ -9,7 +9,7 @@ const now = () => new Date().toISOString();
 const CV_TYPES = ['academic', 'faculty', 'research', 'administrative', 'professional', 'application', 'short_bio', 'portfolio'];
 
 export const DEFAULT_SETTINGS = {
-  page_size: 'letter',            // letter | a4 | folio (8.5 × 13 in)
+  page_size: 'letter',            // letter | a4 | folio (8.5 × 13 in) | legal | a5 | b5
   margins: { top: 0.75, right: 0.8, bottom: 0.75, left: 0.8 },  // inches
   font_family: null,              // null = template default
   font_size: null,                // pt; null = template default
@@ -41,7 +41,7 @@ export function cleanSettings(patch) {
   const num = (v, min, max) => typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max;
   for (const [k, v] of Object.entries(patch || {})) {
     switch (k) {
-      case 'page_size': if (['letter', 'a4', 'folio'].includes(v)) out[k] = v; else errors[k] = 'letter, a4 or folio'; break;
+      case 'page_size': if (['letter', 'a4', 'folio', 'legal', 'a5', 'b5'].includes(v)) out[k] = v; else errors[k] = 'letter, a4, folio, legal, a5 or b5'; break;
       case 'margins':
         if (v && typeof v === 'object' && ['top', 'right', 'bottom', 'left'].every((s) => v[s] === undefined || num(v[s], 0.3, 2))) out[k] = v;
         else errors[k] = 'Each margin must be between 0.3 and 2 inches'; break;

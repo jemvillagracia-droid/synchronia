@@ -11,6 +11,8 @@ export interface Preferences {
   sidebar_collapsed: boolean;
   reduce_motion?: boolean;
   theme?: string;
+  paper_size?: string;
+  paper_sizes?: Record<string, string>;
 }
 
 export interface FieldSpec {

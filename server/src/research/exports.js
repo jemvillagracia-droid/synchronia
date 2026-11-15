@@ -3,6 +3,7 @@
 // and saved with saveReport. APA 7 references are produced from linked literature.
 import ExcelJS from 'exceljs';
 import { HttpError } from '../repo.js';
+import { defaultPaper, PAPERS } from '../paper.js';
 import { buildDocument, pageGeometry, saveReport } from '../academic/docs.js';
 import { letterheadFor } from '../academic/institution.js';
 import { loadImage } from '../docimages.js';
@@ -15,7 +16,7 @@ const refPara = (l) => ({ type: 'paragraph', content: apaParts(l).filter((p) => 
 const fields = (rows) => tableOf(rows.filter(([, v]) => v !== undefined && v !== null && v !== '').map(([k, v]) => [{ text: k, bold: true }, String(v)]), { header: false });
 const sectionBody = (b) => (b && Array.isArray(b.content) ? b.content : []);
 
-async function render(db, userId, { doc, title, format, landscape = false, pageSize = 'letter', type, fileStem, pdfRenderer }) {
+async function render(db, userId, { doc, title, format, landscape = false, pageSize = null, type, fileStem, pdfRenderer }) {
   if (!['docx', 'pdf'].includes(format)) throw new HttpError(422, 'Choose Word or PDF');
   if (format === 'pdf' && !pdfRenderer) throw new HttpError(503, 'PDF output is produced by the SYNCHRONIA desktop app.');
   const lh = letterheadFor(db, userId);
@@ -25,7 +26,7 @@ async function render(db, userId, { doc, title, format, landscape = false, pageS
     const g = pageGeometry(pageSize, landscape);
     buffer = await buildDocument({ title, children: toDocxChildren(doc, { width: g.contentWidth, image }), pageSize, landscape, letterhead: lh, showTitle: false });
   } else {
-    buffer = await pdfRenderer(toHtmlPage(doc, { title, page: { letter: 'Letter', a4: 'A4', folio: '8.5in 13in' }[pageSize] || 'Letter', landscape, letterhead: lh, image }), { title });
+    buffer = await pdfRenderer(toHtmlPage(doc, { title, page: (PAPERS[pageSize || defaultPaper()] || PAPERS.letter).css, landscape, letterhead: lh, image }), { title });
   }
   // Verification checks that the document's own first heading is readable in the file.
   const first = plainText(doc.content?.[0]).trim();

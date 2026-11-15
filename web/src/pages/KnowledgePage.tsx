@@ -14,6 +14,7 @@ const PROVIDER: Record<string, string> = { google_drive: 'Google Drive', url: 'W
 const fmtBytes = (n?: number | null) => (n == null ? '' : n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(0)} KB` : `${(n / 1048576).toFixed(1)} MB`);
 
 function routeFor(type: string, id: number, module: string) {
+  if (type === 'moodboards') return `/moodboard/${id}`;
   if (type === 'courses') return `/academic/courses/${id}`;
   if (type === 'cv_profiles') return `/cv/${id}`;
   if (type === 'reports') return '/academic?tab=reports';
@@ -203,7 +204,7 @@ function UnifiedSearch() {
       {data && (data.results.length ? (
         <ul className="list search-results">{data.results.map((r: any) => (
           <li key={`${r.type}-${r.id}`}><span className="tag">{r.label}</span>
-            <button className="rowlink grow" onClick={() => (['profile', 'reports', 'courses', 'cv_profiles'].includes(r.type) ? navigate(r.type === 'profile' ? '/portfolio/profile' : routeFor(r.type, r.id, r.module)) : openRecord(r.type, r.id))}>
+            <button className="rowlink grow" onClick={() => (['profile', 'reports', 'courses', 'cv_profiles', 'moodboards'].includes(r.type) ? navigate(r.type === 'profile' ? '/portfolio/profile' : routeFor(r.type, r.id, r.module)) : openRecord(r.type, r.id))}>
               <span className="t">{hl(r.title_highlighted || r.title)}</span>{r.snippet && <span className="s wrap">{hl(r.snippet)}</span>}</button></li>
         ))}</ul>
       ) : <div className="empty">Nothing found for “{q}”{module ? ' in this area' : ''}.</div>)}

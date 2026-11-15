@@ -8,10 +8,11 @@ import { buildDocument, pageGeometry, saveReport } from './docs.js';
 import { getSyllabus } from './service.js';
 import { letterheadFor } from './institution.js';
 import { loadImage } from '../docimages.js';
+import { PAPERS } from '../paper.js';
 import { sanitize, toDocxChildren, toHtmlPage, wordCount, para, heading, tableOf, bullets, numbered } from '../richdoc.js';
 
-export const PAGE_SIZES = { letter: 'Letter (8.5 × 11 in)', a4: 'A4', folio: 'Folio / long (8.5 × 13 in)', legal: 'Legal (8.5 × 14 in)' };
-const CSS_PAGE = { letter: 'Letter', a4: 'A4', folio: '8.5in 13in', legal: 'Legal' };
+export const PAGE_SIZES = Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.label]));
+const CSS_PAGE = Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.css]));
 const DEFAULT_PAGE = { size: 'folio', landscape: true };
 const SNAPSHOT_EVERY_MS = 10 * 60 * 1000;
 const SEM = { first: 'First Semester', second: 'Second Semester', summer: 'Summer' };

@@ -8,7 +8,9 @@ export const NAV: NavGroup[] = [
   { label: 'Command Center', items: [
     { id: 'nexus', label: 'Central Nexus', to: '/', icon: 'nexus' },
     { id: 'calendar', label: 'Academic Calendar', to: '/calendar', icon: 'calendar' },
+    { id: 'timer', label: 'System Timer', to: '/timer', icon: 'clock' },
     { id: 'capture', label: 'Quick Capture', to: '', icon: 'bolt', action: 'capture' },
+    { id: 'moodboard', label: 'Idea Moodboard', to: '/moodboard', icon: 'panel' },
   ] },
   { label: 'Academic Operations', items: [
     { id: 'academic', label: 'Academic Workspace', to: '/academic', icon: 'academic' },
