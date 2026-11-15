@@ -413,7 +413,7 @@ function commandDisplay(db, userId, t) {
   const magi = [
     { key: 'portfolio', name: 'BALTHASAR · 2', system: 'Professional Portfolio',
       status: pAttention.total === 0 ? 'no_data' : pAttention.attention ? 'review' : 'ready',
-      detail: pAttention.total === 0 ? 'No records yet' : pAttention.attention ? `${pAttention.attention} of ${pAttention.total} records need evidence or details` : `All ${pAttention.total} records evidenced and complete` },
+      detail: pAttention.total === 0 ? 'No records yet' : pAttention.attention ? `${pAttention.attention} of ${pAttention.total} records need evidence or details` : (pAttention.total === 1 ? 'The record is evidenced and complete' : `All ${pAttention.total} records evidenced and complete`) },
     { key: 'cv', name: 'CASPER · 3', system: 'Curriculum Vitae Studio',
       status: !(cvCount.draft || cvCount.finalized) ? 'no_data' : cvPending ? 'review' : cvCount.finalized ? 'ready' : 'review',
       detail: !(cvCount.draft || cvCount.finalized) ? 'No CVs yet' : cvPending ? `${cvPending} new portfolio record(s) to review in drafts`

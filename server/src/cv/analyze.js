@@ -2,6 +2,7 @@
 // All checks run against text read back from the generated DOCX/PDF files. No compatibility guarantee is claimed.
 import { STANDARD_ATS_HEADINGS, SECTION_BY_KEY } from './sections.js';
 import { FONT_STACKS, styleFor } from './templates.js';
+import { plural } from '../text.js';
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, '-').replace(/\s+/g, ' ').trim();
 const STOP = new Set('a an and are as at be by for from has have in is it its of on or that the this to was were will with we you your our their they shall must should can may who what when where which while into about over under than then them these those such also other more most any each all not no yes per via using use used job work position applicant applicants candidate candidates required requirements preferred qualifications responsibilities including include ability strong excellent good well able experience years year'.split(' '));
@@ -34,7 +35,7 @@ export function analyzeAts(model, { pdf, docx, style }) {
   const missingText = entries.filter((e) => probe(e) && !text.includes(probe(e)));
   const nameOk = model.header.name && text.includes(norm(model.header.name));
   if (!nameOk) add('extraction', 'Text extraction', 'fail', 'Your name was not found in the text extracted from the PDF.');
-  else if (!missingText.length) add('extraction', 'Text extraction', 'pass', `All ${entries.length} entries and your name were read back from the PDF as selectable text.`);
+  else if (!missingText.length) add('extraction', 'Text extraction', 'pass', `${entries.length === 1 ? 'The entry' : `All ${entries.length} entries`} and your name were read back from the PDF as selectable text.`);
   else add('extraction', 'Text extraction', missingText.length / Math.max(entries.length, 1) <= 0.1 ? 'warn' : 'fail',
     `${missingText.length} of ${entries.length} entries could not be found verbatim in the extracted text.`, missingText.map((e) => e.title || (e.text || '').slice(0, 80)));
 
@@ -229,7 +230,7 @@ export function qualityChecklist(model, editorView, ats) {
 
   // ATS readability
   add('ats', 'ATS readability', ats.summary.fail ? 'incomplete' : 'complete',
-    ats.summary.fail ? `${ats.summary.fail} ATS check(s) failed.` : `${ats.summary.pass} checks passed${ats.summary.warn ? `, ${ats.summary.warn} with recommendations` : ''}.`);
+    ats.summary.fail ? `${ats.summary.fail} ATS check(s) failed.` : `${plural(ats.summary.pass, 'check')} passed${ats.summary.warn ? `, ${ats.summary.warn} with recommendations` : ''}.`);
 
   // Integrity: what the CV rests on
   const fromPortfolio = model.sections.flatMap((s) => s.entries).filter((e) => e.source && e.source.type !== 'profile');

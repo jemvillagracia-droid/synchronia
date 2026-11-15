@@ -24,7 +24,7 @@ export function StatusBar() {
       <span className={st?.integrity === 'ok' ? 'ok' : 'warn'}>{st ? (st.integrity === 'ok' ? '■ DATABASE OK' : '■ DATABASE CHECK FAILED') : '■ …'}</span>
       <span className="grow">
         {st?.last_saved_at ? `Last saved ${fmtTime12(new Date(st.last_saved_at))}` : 'No changes saved yet'}
-        <span className="hide-narrow">{st?.last_backup ? ` · Automatic backup: ${st.last_backup.file} (${fmtTime12(new Date(st.last_backup.at))})` : ''}{st ? ` · ${st.records} records` : ''}</span>
+        <span className="hide-narrow">{st?.last_backup ? ` · Automatic backup: ${st.last_backup.file} (${fmtTime12(new Date(st.last_backup.at))})` : ''}{st ? ` · ${st.records} record${st.records === 1 ? '' : 's'}` : ''}</span>
       </span>
       <span className="clock">{fmtLongDate(now)} · {fmtTime12(now)}</span>
     </footer>

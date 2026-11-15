@@ -10,6 +10,7 @@ import { letterheadFor } from './institution.js';
 import { loadImage } from '../docimages.js';
 import { PAPERS } from '../paper.js';
 import { sanitize, toDocxChildren, toHtmlPage, wordCount, para, heading, tableOf, bullets, numbered } from '../richdoc.js';
+import { plural } from '../text.js';
 
 export const PAGE_SIZES = Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.label]));
 const CSS_PAGE = Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.css]));
@@ -179,7 +180,7 @@ export function saveSyllabusDocument(db, userId, id, body = {}) {
     db.prepare("UPDATE syllabi SET document_json = ?, page_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?").run(json, JSON.stringify(page), s.id);
     const row = owned(db, userId, id);
     reindex(db, getResource('syllabi'), row);
-    if (s.document_json !== json) audit(db, userId, 'syllabi', s.id, 'update', `Edited syllabus ${s.version_label} (${wordCount(doc)} words)`);
+    if (s.document_json !== json) audit(db, userId, 'syllabi', s.id, 'update', `Edited syllabus ${s.version_label} (${plural(wordCount(doc), 'word')})`);
     return { updated_at: row.updated_at, words: wordCount(doc), page };
   });
 }

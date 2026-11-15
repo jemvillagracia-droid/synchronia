@@ -1052,7 +1052,9 @@ a.link { color: var(--accent-2); text-decoration: underline; text-underline-offs
 /* ── Administrative Operations (Phase 6) ─────────────────────────────────── */
 .drawer.wide { width: min(1080px, 100%); }
 .admin-stats { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
-.quick-log { display: grid; grid-template-columns: 136px 136px minmax(200px, 3fr) minmax(130px, 1fr) minmax(120px, 1.2fr) 80px auto; gap: var(--s-2); align-items: center; }
+.quick-log { display: grid; grid-template-columns: 136px 136px minmax(160px, 3fr) minmax(120px, 1fr) minmax(110px, 1.2fr) 72px auto; gap: var(--s-2); align-items: center; }
+:has(> .quick-log) { container-type: inline-size; }
+@container (max-width: 980px) { .quick-log { grid-template-columns: 1fr 1fr; } .quick-log .ql-act { grid-column: 1 / -1; } .quick-log .btn { grid-column: 1 / -1; justify-self: start; } }
 @media (max-width: 1100px) { .quick-log { grid-template-columns: 1fr 1fr; } .quick-log .ql-act { grid-column: 1 / -1; } .quick-log .btn { grid-column: 1 / -1; justify-self: start; } }
 .log-time { width: 150px; flex-shrink: 0; font-size: 13px; }
 .follow-list li.is-overdue { box-shadow: inset 3px 0 0 var(--orange); padding-left: var(--s-2); }
@@ -1182,7 +1184,7 @@ html[data-desktop] .modal, html[data-desktop] .palette { margin: auto; max-heigh
 /* ── Calendar page ───────────────────────────────────────────────────────── */
 .cal-controls { gap: var(--s-3); margin-bottom: var(--s-3); }
 .cal-month { font-family: var(--font-mono); font-size: 18px; color: var(--orange); min-width: 170px; text-align: center; letter-spacing: .06em; }
-.cal-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--s-4); align-items: start; margin-bottom: var(--s-5); }
+.cal-layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 26%, 360px); gap: var(--s-4); align-items: start; margin-bottom: var(--s-5); }
 @media (max-width: 1100px) { .cal-layout { grid-template-columns: minmax(0, 1fr); } }
 .cal-month-grid { background: #050505; border: 1px solid #3a1d00; padding: var(--s-2); }
 .cal-head, .cal-cells { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
@@ -1226,7 +1228,7 @@ html[data-desktop] .modal, html[data-desktop] .palette { margin: auto; max-heigh
 .eva-count-t { font-size: 13.5px; color: var(--text); overflow-wrap: anywhere; }
 .eva-count-t b { font-family: var(--font-cond); font-size: 11px; letter-spacing: .1em; color: #c9a27e; margin-right: 4px; }
 .eva-clock-inner { display: flex; flex-direction: column; gap: var(--s-2); height: 100%; }
-.cal-hol, .cal-ev, .cal-more { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; } .cal-cell { overflow: visible; }
+.cal-hol, .cal-ev, .cal-more { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; } .cal-cell { overflow: visible; }
 
 .partial-date { display: flex; gap: var(--s-2); align-items: center; } .partial-date .input { flex: 1; min-width: 0; } .partial-date .pd-mode { width: auto; flex: 0 0 auto; }
 
@@ -1526,7 +1528,8 @@ html[data-motion='reduced'] *, html[data-motion='reduced'] *::before, html[data-
 .theme-l { display: flex; flex-direction: column; min-width: 0; }
 .theme-l .t { color: var(--text); font-weight: 600; font-size: 14px; }
 .theme-l .s { color: var(--text-3); font-size: 12px; }
-.cal-quick { display: grid; gap: 6px; padding: var(--s-2) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.cal-quick { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: var(--s-2) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.cal-quick .input { min-width: 0; width: 100%; box-sizing: border-box; } .cal-quick .row { flex-wrap: wrap; } .cal-quick .row .select { flex: 1 1 110px; min-width: 0; }
 .eva-cal-grid a.c { text-decoration: none; cursor: pointer; }
 .eva-cal-grid a.c:hover { outline: 1px solid var(--accent-2); outline-offset: -1px; }
 .eva-cal-grid a.c:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; }

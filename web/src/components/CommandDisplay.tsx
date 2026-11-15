@@ -2,7 +2,7 @@ import { EvaCalendar, useCalendar } from './EvaCalendar';
 import { CalData, KIND_LABEL, todayIso } from '../lib/calendar';
 import { useEffect, useMemo, useState } from 'react';
 import dsegUrl from 'dseg/fonts/DSEG7-Classic/DSEG7Classic-BoldItalic.woff2?url';
-import { monthName, weekdayName } from '../lib/format';
+import { monthName, weekdayName, plural } from '../lib/format';
 
 // Seven-segment LCD face (DSEG, SIL Open Font License), loaded locally.
 if (typeof FontFace !== 'undefined') {
@@ -96,7 +96,7 @@ function SyncGraph({ a }: { a: Command['activity'] }) {
     <section className="eva-tile eva-sync" aria-label="Synchronization graph: record activity in the last 30 days">
       <div className="eva-cap"><span>SYNCHRONIZATION GRAPH</span><span className="eva-cap-sub">RECORD ACTIVITY · LAST 30 DAYS</span></div>
       <div className="eva-sync-body">
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`${a.total_30} changes in 30 days; ${a.this_week} this week`}>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`${plural(a.total_30, 'change')} in 30 days; ${a.this_week} this week`}>
           <defs>
             <filter id="glow"><feGaussianBlur stdDeviation="2.4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
             {layers.map((l) => (

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, dataChanged, onDataChanged } from '../../lib/api';
-import { fmtDate, fmtLongDate, humanize } from '../../lib/format';
+import { fmtDate, fmtLongDate, humanize, plural } from '../../lib/format';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
 import { CorrespondenceFile, MeetingWorkspace, RoleChange, TurnoverEditor, t12 } from './AdminWorkspaces';
@@ -231,7 +231,7 @@ function DailyLog() {
         <button className="btn btn-sm" onClick={() => setTo(shift(to, 7))} disabled={to >= todayIso()}>Next week<Icon name="right" /></button>
       </div>
       {!data ? <div className="skeleton" style={{ height: 200 }} /> : (<>
-        {cats.length > 0 && <div className="stat-row">{cats.map(([k, c]) => <div key={k} className="stat"><div className="v">{c.entries}</div><div className="k">{humanize(k)}{c.quantity ? ` · ${c.quantity} outputs` : ''}{c.minutes ? ` · ${Math.round(c.minutes / 6) / 10} h` : ''}</div></div>)}</div>}
+        {cats.length > 0 && <div className="stat-row">{cats.map(([k, c]) => <div key={k} className="stat"><div className="v">{c.entries}</div><div className="k">{humanize(k)}{c.quantity ? ` · ${plural(c.quantity, 'output')}` : ''}{c.minutes ? ` · ${Math.round(c.minutes / 6) / 10} h` : ''}</div></div>)}</div>}
         {data.days.length ? data.days.map((d: any) => (
           <section key={d.date} className="panel"><header className="panel-head"><h2>{longDay(d.date)}</h2><span className="faint">{d.entries.length}</span></header>
             <div className="panel-body"><LogEntries entries={d.entries} /></div></section>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, dataChanged, onDataChanged } from '../../lib/api';
-import { fmtDate, fmtDateTime, fmtNum, humanize } from '../../lib/format';
+import { fmtDate, fmtDateTime, fmtNum, humanize, plural } from '../../lib/format';
 import { download } from '../../lib/download';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
@@ -92,7 +92,7 @@ function Extension({ o }: { o: Overview }) {
               <button className="what rowlink" style={{ all: 'unset', cursor: 'pointer' }} onClick={() => openRecord('extension_projects', e.id)}>
                 <div className="t">{e.title}</div>
                 <div className="s">{[humanize(e.project_type), e.partner, e.location, e.role].filter(Boolean).join(' · ')}</div>
-                <div className="s">{[e.participants_count != null && `${e.participants_count} participants`, e.training_hours != null && `${fmtNum(e.training_hours)} hours`].filter(Boolean).join(' · ')}</div>
+                <div className="s">{[e.participants_count != null && plural(e.participants_count, 'participant'), e.training_hours != null && `${fmtNum(e.training_hours)} hours`].filter(Boolean).join(' · ')}</div>
               </button>
               <div className="status">
                 <span className="tag">{humanize(e.status)}</span>

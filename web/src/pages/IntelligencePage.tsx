@@ -195,7 +195,7 @@ export function IntelligencePage() {
       <div className="page-head">
         <div>
           <div className="crumb"><span className="bar" /><span className="label">Intelligence · Reports and Analytics</span></div>
-          <h1 className="display">Intelligence</h1>
+          <h1 className="display">Reports and Analytics</h1>
           <div className="sub">Analytics and reports computed only from your records. Every figure opens to the records behind it.</div>
         </div>
       </div>

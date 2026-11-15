@@ -4,6 +4,7 @@
 import { HttpError, audit, create, update, get as getRecord, getResource, reindex, createHooks, updateHooks } from '../repo.js';
 import { tx } from '../db.js';
 import { sanitize, wordCount, plainText, para } from '../richdoc.js';
+import { plural } from '../text.js';
 
 const now = () => new Date().toISOString();
 const today = () => now().slice(0, 10);
@@ -536,7 +537,7 @@ function checklist(db, userId, d, sections, words) {
   items.push({ ok: !open.length, label: open.length ? `${open.length} section${open.length === 1 ? '' : 's'} not marked complete: ${open.slice(0, 4).map((s) => s.heading).join(', ')}${open.length > 4 ? '…' : ''}` : 'Every section is complete or marked not applicable' });
   if (d.word_limit) items.push({ ok: words <= d.word_limit, label: `${words.toLocaleString('en')} of ${d.word_limit.toLocaleString('en')} words` });
   const abstract = sections.find((s) => s.section_key === 'abstract');
-  if (abstract && abstract.status !== 'not_applicable') items.push({ ok: abstract.words > 0 && abstract.words <= 300, label: abstract.words ? `Abstract: ${abstract.words} words${abstract.words > 300 ? ' (most journals ask for 150–300)' : ''}` : 'Abstract not written yet' });
+  if (abstract && abstract.status !== 'not_applicable') items.push({ ok: abstract.words > 0 && abstract.words <= 300, label: abstract.words ? `Abstract: ${plural(abstract.words, 'word')}${abstract.words > 300 ? ' (most journals ask for 150–300)' : ''}` : 'Abstract not written yet' });
   const refs = sections.find((s) => s.section_key === 'references');
   const linked = d.project_id ? db.prepare('SELECT COUNT(*) n FROM research_project_literature WHERE project_id = ?').get(d.project_id).n : 0;
   if (refs && refs.status !== 'not_applicable') items.push({ ok: refs.words > 0 || linked > 0, label: refs.words > 0 ? 'References written' : linked ? `References: ${linked} linked source${linked === 1 ? '' : 's'} will be listed in APA style on export` : 'No references written or linked yet' });

@@ -2,7 +2,7 @@ import { CvImportButton } from './CvImport';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, useParams } from 'react-router-dom';
 import { api, onDataChanged } from '../lib/api';
-import { daysUntil, fmtDate, fmtNum, humanize, relTime } from '../lib/format';
+import { daysUntil, fmtDate, fmtNum, humanize, relTime, plural } from '../lib/format';
 import { PORTFOLIO, categoryByKey, type PortfolioCategory } from '../lib/portfolio';
 import { VERIFICATION_INFO } from '../lib/forms';
 import type { PortfolioSummary, RecordRow } from '../lib/types';
@@ -39,11 +39,11 @@ function PortfolioNav({ summary }: { summary: PortfolioSummary | null }) {
   return (
     <nav className="pf-nav" aria-label="Portfolio sections">
       <NavLink to="/portfolio" end><span className="code">00</span>Overview</NavLink>
-      <NavLink to="/portfolio/profile"><span className="code">PRF</span>Professional Profile</NavLink>
-      <NavLink to="/portfolio/timeline"><span className="code">TL</span>Professional Timeline</NavLink>
-      {PORTFOLIO.map((c) => (
+      <NavLink to="/portfolio/profile"><span className="code">01</span>Professional Profile</NavLink>
+      <NavLink to="/portfolio/timeline"><span className="code">02</span>Professional Timeline</NavLink>
+      {PORTFOLIO.map((c, i) => (
         <NavLink key={c.key} to={`/portfolio/${c.key}`}>
-          <span className="code">{c.code}</span>{c.label}<span className="n">{count(c.key) ?? ''}</span>
+          <span className="code">{String(i + 3).padStart(2, '0')}</span>{c.label}<span className="n">{count(c.key) ?? ''}</span>
         </NavLink>
       ))}
     </nav>
@@ -117,7 +117,7 @@ export function PortfolioOverview() {
             {s.categories.map((c, i) => {
               const meta = categoryByKey[c.key];
               return (
-                <button key={c.key} className="cat-card" onClick={() => navigate(`/portfolio/${c.key}`)} aria-label={`${c.label}: ${c.total} records`}>
+                <button key={c.key} className="cat-card" onClick={() => navigate(`/portfolio/${c.key}`)} aria-label={`${c.label}: ${plural(c.total, 'record')}`}>
                   <div className="between">
                     <span className="label">{String.fromCharCode(66 + i)} · {meta.code}</span>
                     {c.attention_count > 0 && <span className="tag orange">{c.attention_count} to review</span>}

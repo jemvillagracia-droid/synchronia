@@ -86,7 +86,7 @@ export function CalendarPage() {
       <div className="page-head">
         <div>
           <div className="crumb"><span className="bar" /><span className="label">Command Center · Academic Calendar</span></div>
-          <h1 className="display">Calendar</h1>
+          <h1 className="display">Academic Calendar</h1>
           <div className="sub">Philippine and Australian public holidays alongside your deadlines, meetings, classes, assessments, trainings and renewals. Every item opens its record.</div>
         </div>
       </div>

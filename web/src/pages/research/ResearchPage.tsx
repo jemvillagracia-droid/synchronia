@@ -82,7 +82,7 @@ function ProjectCardView({ p }: { p: ProjectCard }) {
       <span className="t">{p.title}</span>
       <Progress p={p.progress} />
       {p.next_action && p.next_action.kind !== 'none' && <span className={`res-next ${p.next_action.urgent ? 'urgent' : ''}`}>Next: {p.next_action.text}</span>}
-      <span className="faint" style={{ fontSize: 12 }}>{[p.counts.documents && `${p.counts.documents} doc${p.counts.documents > 1 ? 's' : ''}`, p.counts.literature && `${p.counts.literature} sources`,
+      <span className="faint" style={{ fontSize: 12 }}>{[p.counts.documents && `${p.counts.documents} doc${p.counts.documents > 1 ? 's' : ''}`, p.counts.literature && `${p.counts.literature} source${p.counts.literature > 1 ? 's' : ''}`,
         p.counts.publications && `${p.counts.publications} publication${p.counts.publications > 1 ? 's' : ''}`, `updated ${relTime(p.updated_at)}`].filter(Boolean).join(' · ')}</span>
     </Link>
   );

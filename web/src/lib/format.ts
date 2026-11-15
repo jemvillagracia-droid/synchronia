@@ -88,3 +88,5 @@ const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 export const fmtLongDate = (d: Date) => `${DAYS[d.getDay()].slice(0, 3)}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 export const weekdayName = (d: Date) => DAYS[d.getDay()];
 export const monthName = (d: Date) => MONTHS_LONG[d.getMonth()];
+/** "1 record", "3 records"; irregular plurals passed explicitly ("1 category", "2 categories"). */
+export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;

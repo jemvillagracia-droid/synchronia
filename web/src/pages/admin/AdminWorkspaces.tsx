@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api, dataChanged } from '../../lib/api';
 import { download } from '../../lib/download';
-import { fmtDate, humanize } from '../../lib/format';
+import { fmtDate, humanize, plural } from '../../lib/format';
 import { useAutosave } from '../../lib/autosave';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
@@ -241,7 +241,7 @@ export function TurnoverEditor({ id, onClose }: { id: number; onClose: () => voi
     follow_ups: `${s.follow_ups.length} item${s.follow_ups.length === 1 ? '' : 's'}`,
     meetings: `${s.meetings.upcoming.length} scheduled · ${s.meetings.minutes_pending.length} minutes not approved`,
     secretariat: `${s.secretariat.length} in process`,
-    routine: `${s.routine.length} categories in the last 90 days`,
+    routine: `${plural(s.routine.length, 'category', 'categories')} in the last 90 days`,
     files: `${s.files.length} file reference${s.files.length === 1 ? '' : 's'}`,
     other: 'Your notes only',
   };
@@ -280,7 +280,7 @@ export function RoleChange({ onClose }: { onClose: () => void }) {
       const r = await api.post<any>('/admin/role-change', v);
       await updatePrefs({});
       dataChanged();
-      toast(`Role updated to ${v.position}${r.ended.length ? `; ${r.ended.length} previous position closed` : ''}${r.turnover_id ? '; turnover draft created' : ''}.`, 'ok');
+      toast(`Role updated to ${v.position}${r.ended.length ? `; ${plural(r.ended.length, 'previous position')} closed` : ''}${r.turnover_id ? '; turnover draft created' : ''}.`, 'ok');
       onClose();
     } catch (e: any) { setErrors(e.details || {}); toast(e.message, 'error'); } finally { setBusy(false); }
   }
