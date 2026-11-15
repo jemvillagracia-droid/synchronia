@@ -1463,3 +1463,56 @@ html[data-motion='reduced'] *, html[data-motion='reduced'] *::before, html[data-
 .rdoc-check ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; font-size: 12.5px; color: var(--text-2); }
 .rdoc-check li.ok { color: #8fe0b8; }
 .rdoc-h { margin: 0; font-family: var(--font-cond); font-size: 20px; letter-spacing: .04em; color: var(--text); }
+
+/* ===== 1.2 module sub-navigation: a numbered list on the left, like the SOUL ARCHIVE help and dossier lists =====
+   Applies to every page whose tab bar sits directly under the page heading; the page becomes two columns. */
+@media (min-width: 1000px) {
+  .page:has(> .tabs[role='tablist']) { display: grid; grid-template-columns: 236px minmax(0, 1fr); column-gap: var(--s-5); row-gap: 0; align-items: start; }
+  .page:has(> .tabs[role='tablist']) > * { grid-column: 2; min-width: 0; }
+  .page:has(> .tabs[role='tablist']) > .page-head { grid-column: 1 / -1; }
+  .page:has(> .tabs[role='tablist']) > .stat-row { grid-column: 1 / -1; }
+  .page:has(> .tabs[role='tablist']) > * + * { margin-top: 0; }
+  .page:has(> .tabs[role='tablist']) > :not(.page-head):not(.tabs):not(.stat-row) { margin-bottom: var(--s-4); }
+  .page > .tabs[role='tablist'] { grid-column: 1; grid-row: span 60; position: sticky; top: var(--s-3); align-self: start;
+    display: flex; flex-direction: column; flex-wrap: nowrap; gap: 2px; margin: 0; padding: var(--s-2) 0; border: 0; border-right: 1px solid rgba(155, 92, 255, .3);
+    background: linear-gradient(180deg, rgba(155, 92, 255, .06), transparent 60%); counter-reset: subnav; overflow: visible; }
+  .page > .tabs[role='tablist'] > button, .page > .tabs[role='tablist'] > a {
+    display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left; box-sizing: border-box; padding: 8px 12px 8px 12px; margin: 0;
+    border: 0; border-left: 4px solid transparent; border-bottom: 0; background: transparent; color: var(--text-2);
+    font-family: var(--font-cond); font-weight: 600; font-size: 13.5px; letter-spacing: .06em; text-transform: uppercase; line-height: 1.25; white-space: normal; }
+  .page > .tabs[role='tablist'] > button::before, .page > .tabs[role='tablist'] > a::before {
+    counter-increment: subnav; content: counter(subnav, decimal-leading-zero); font-family: var(--font-mono); font-size: 11px; color: var(--text-3); flex-shrink: 0; letter-spacing: 0; }
+  .page > .tabs[role='tablist'] > button:hover, .page > .tabs[role='tablist'] > a:hover { background: var(--bg-2); color: var(--text); border-left-color: var(--line-3); }
+  .page > .tabs[role='tablist'] > [aria-selected='true'], .page > .tabs[role='tablist'] > .active { background: var(--accent); color: var(--on-accent); border-left-color: var(--accent-2); }
+  .page > .tabs[role='tablist'] > [aria-selected='true']::before, .page > .tabs[role='tablist'] > .active::before { color: var(--on-accent); }
+  .page > .tabs[role='tablist'] > button:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; }
+}
+
+/* ===== 1.2 UI quality pass ===== */
+/* Panel headers wrap instead of cutting their title when they also hold buttons. */
+.panel-head { flex-wrap: wrap; row-gap: 6px; }
+.panel-head h2 { overflow: visible; text-overflow: clip; min-width: 0; }
+/* Text and links on the filled (violet) panel header use the header's own text colour. */
+.panel-head .link, .panel-head a:not(.btn) { color: var(--on-accent); text-decoration: underline; text-underline-offset: 2px; }
+.panel-head .save-ind { color: var(--on-accent); opacity: .9; }
+/* Nexus: unlit indicators stay legible. */
+.nexus-page .eva-ampm span { color: #9b89c4; border-color: #4a3a6e; }
+.lamp:not(.on) { color: #9a9a9a; border-color: #4a4a4a; }
+/* Portfolio sections: the same numbered list as module navigation; wraps (never hides items) on narrow windows. */
+.pf-nav { border: 0; border-right: 1px solid rgba(155, 92, 255, .3); background: linear-gradient(180deg, rgba(155, 92, 255, .06), transparent 60%); padding: var(--s-2) 0; gap: 2px; }
+.pf-nav a { border-bottom: 0; border-left: 4px solid transparent; font-family: var(--font-cond); font-weight: 600; font-size: 13.5px; letter-spacing: .06em; text-transform: uppercase; }
+.pf-nav a:hover { border-left-color: var(--line-3); }
+.pf-nav a.active { background: var(--accent); color: var(--on-accent); border-left-color: var(--accent-2); box-shadow: none; }
+.pf-nav a.active .code, .pf-nav a.active .n { color: var(--on-accent); }
+@media (max-width: 1100px) {
+  .pf-nav { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); overflow: visible; border-right: 0; border-bottom: 1px solid rgba(155, 92, 255, .3); }
+  .pf-nav a { white-space: normal; border-right: 0; }
+}
+/* Content beside the module list is narrower: paired panels stack until there is room, and list rows wrap their
+   buttons under the text instead of squeezing it. */
+@media (max-width: 1599px) { .page:has(> .tabs[role='tablist']) .res-cols { grid-template-columns: minmax(0, 1fr); } }
+.list li { flex-wrap: wrap; }
+.list li > .grow, .list li > .rowlink.grow { flex: 1 1 260px; min-width: 0; }
+.pf-nav .code { width: auto; min-width: 30px; white-space: nowrap; flex-shrink: 0; }
+.pf-nav a, .pf-nav a span { overflow-wrap: normal; word-break: normal; }
+@media (max-width: 1100px) { .pf-nav { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); } }

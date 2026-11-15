@@ -27,6 +27,8 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onNavigate }: { collapsed: b
   const loc = useLocation();
   const [version, setVersion] = useState('');
   useEffect(() => { api.get<{ version: string }>('/meta').then((m) => setVersion(m.version)).catch(() => {}); }, []);
+  // Keep the current entry visible in the sidebar (it scrolls when the window is short).
+  useEffect(() => { document.querySelector('.sidebar .nav-item.active')?.scrollIntoView({ block: 'nearest' }); }, [loc.pathname, loc.search]);
   return (
     <nav className={`sidebar ${mobileOpen ? 'open' : ''}`} aria-label="Primary">
       <div className="sidebar-top">
