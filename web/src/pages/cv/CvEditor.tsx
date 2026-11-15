@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, ApiError, dataChanged } from '../../lib/api';
-import { fmtDateTime, humanize } from '../../lib/format';
+import { api, ApiError, dataChanged, onDataChanged } from '../../lib/api';
+import { fmtDateTime, humanize, plural } from '../../lib/format';
 import { CV_TYPES, FORMAT_LABEL, type Analysis, type CvCatalog, type CvEntry, type CvSection, type CvSettings, type CvView } from '../../lib/cv';
 import { VERIFICATION_INFO } from '../../lib/forms';
 import { useApp } from '../../components/AppContext';
@@ -136,6 +136,7 @@ function SectionCard({ cv, section, index, count, readOnly, mutate, dnd, expande
   const [overEntry, setOverEntry] = useState<number | null>(null);
   useEffect(() => setHeading(section.heading), [section.heading]);
   const included = section.entries.filter((e) => e.included).length;
+  const unfilled = section.entries.length > 0 && section.entries.every(blankEntry);
   const move = (dir: -1 | 1) => {
     const ids = cv.sections.map((s) => s.id);
     const j = index + dir;
@@ -162,7 +163,7 @@ function SectionCard({ cv, section, index, count, readOnly, mutate, dnd, expande
         </button>
         <button className="cv-section-title" onClick={onToggle} aria-expanded={expanded}>
           <span>{section.heading}</span>
-          <span className="faint num" style={{ fontSize: 12 }}>{included}/{section.entries.length}</span>
+          {unfilled ? <span className="tag st-system" title="Fill this in on your Professional Profile">Not filled in</span> : <span className="faint num" style={{ fontSize: 12 }}>{included}/{section.entries.length}</span>}
           {section.pending.length > 0 && <span className="tag violet">{section.pending.length} new</span>}
           {section.custom && <span className="tag">Custom</span>}
         </button>
@@ -239,11 +240,40 @@ function SectionCard({ cv, section, index, count, readOnly, mutate, dnd, expande
   );
 }
 
+/** A profile-based entry with nothing written yet (e.g. research interests not filled in): it prints nothing. */
+const blankEntry = (e: CvEntry) => e.missing.length > 0 && !e.title && !e.text && !(e.items && e.items.length) && !e.details.length;
+
+/** What the CV header prints, from the Professional Profile — with the way to fix it when something is missing. */
+function CvHeaderCard() {
+  const [p, setP] = useState<Record<string, string | null> | null>(null);
+  useEffect(() => { const load = () => api.get<Record<string, string | null>>('/profile').then(setP).catch(() => {}); load(); return onDataChanged(load); }, []);
+  if (!p) return null;
+  const contact = [p.email, p.phone, p.address, p.website].filter(Boolean);
+  const missing = [!p.full_name && 'your name', !contact.length && 'an email address or phone number'].filter(Boolean) as string[];
+  return (
+    <div className={`cv-headcard ${missing.length ? 'warn' : ''}`}>
+      <div className="grow" style={{ minWidth: 0 }}>
+        <div className="label">CV header · from your Professional Profile</div>
+        <div className="cv-headcard-name">{p.full_name || 'Name not recorded'}</div>
+        <div className="faint">{[p.professional_title || p.current_position, p.current_institution].filter(Boolean).join(' · ') || 'No position recorded'}</div>
+        <div className="faint">{contact.length ? contact.join(' · ') : 'No contact details'}</div>
+        {missing.length > 0 && <div className="cv-headcard-miss">Add {missing.join(' and ')} — the CV and its ATS check need {missing.length > 1 ? 'them' : 'it'}.</div>}
+      </div>
+      <Link to="/portfolio/profile" className="btn btn-sm"><Icon name="edit" />Edit profile</Link>
+    </div>
+  );
+}
+
 function ContentPanel({ cv, readOnly, mutate }: { cv: CvView; readOnly: boolean; mutate: Mutate }) {
   const [open, setOpen] = useState<number | null>(null);
   const [drag, setDrag] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
   const [newHeading, setNewHeading] = useState('');
+  // Empty sections (nothing in the portfolio for them yet) are tucked away so the list shows what the CV holds.
+  const [showEmpty, setShowEmpty] = useState(() => { try { return localStorage.getItem('synchronia-cv-show-empty') === '1'; } catch { return false; } });
+  const toggleEmpty = () => setShowEmpty((v) => { try { localStorage.setItem('synchronia-cv-show-empty', v ? '0' : '1'); } catch { /* this session only */ } return !v; });
+  const isEmpty = (sec: CvSection) => (!sec.entries.length || sec.entries.every(blankEntry)) && !sec.pending.length && !sec.custom;
+  const emptyCount = cv.sections.filter(isEmpty).length;
   const drop = (target: number) => {
     if (drag === null || drag === target) return;
     const ids = cv.sections.map((s) => s.id).filter((x) => x !== drag);
@@ -262,11 +292,18 @@ function ContentPanel({ cv, readOnly, mutate }: { cv: CvView; readOnly: boolean;
         Entries are linked to your portfolio: edits there flow into this draft. Use the pencil to word an entry differently for this CV only.
         {cv.settings.hide_empty ? ' Sections with no included entries are left out.' : ''}
       </p>
-      {cv.sections.map((s, i) => (
+      <CvHeaderCard />
+      {cv.sections.map((s, i) => (showEmpty || !isEmpty(s)) && (
         <SectionCard key={s.id} cv={cv} section={s} index={i} count={cv.sections.length} readOnly={readOnly} mutate={mutate}
           expanded={open === s.id} onToggle={() => setOpen((o) => (o === s.id ? null : s.id))}
           dnd={{ onDragStart: () => setDrag(s.id), onDrop: () => drop(s.id), over: over === s.id, setOver: (b) => setOver(b ? s.id : null) }} />
       ))}
+      {emptyCount > 0 && (
+        <button className="btn btn-ghost btn-sm cv-empty-toggle" onClick={toggleEmpty} aria-expanded={showEmpty}>
+          <Icon name={showEmpty ? 'up' : 'down'} />{showEmpty ? `Hide ${plural(emptyCount, 'empty section')}` : `Show ${plural(emptyCount, 'empty section')}`}
+          <span className="faint">— nothing in your portfolio for {emptyCount === 1 ? 'it' : 'them'} yet</span>
+        </button>
+      )}
       {!readOnly && (
         <form className="row" onSubmit={async (e) => { e.preventDefault(); if (newHeading.trim() && await mutate(api.post(`/cv/${cv.id}/sections`, { heading: newHeading }), 'Section added')) setNewHeading(''); }}>
           <input className="input" value={newHeading} onChange={(e) => setNewHeading(e.target.value)} placeholder="New custom section, e.g. Languages" aria-label="Custom section heading" />
@@ -629,9 +666,9 @@ export function CvEditor() {
       <div className="cv-editor-body">
         <aside className="cv-left">
           <div className="tabs" role="tablist" style={{ marginBottom: 'var(--s-4)' }}>
-            <button role="tab" aria-selected={tab === 'content'} onClick={() => setTab('content')}>Content{cv.pending_total ? ` · ${cv.pending_total} new` : ''}</button>
-            <button role="tab" aria-selected={tab === 'design'} onClick={() => setTab('design')}>Design</button>
-            <button role="tab" aria-selected={tab === 'check'} onClick={() => setTab('check')}>Check &amp; approve</button>
+            <button role="tab" aria-selected={tab === 'content'} onClick={() => setTab('content')}><span className="code">01</span>Content{cv.pending_total ? ` · ${cv.pending_total} new` : ''}</button>
+            <button role="tab" aria-selected={tab === 'design'} onClick={() => setTab('design')}><span className="code">02</span>Design</button>
+            <button role="tab" aria-selected={tab === 'check'} onClick={() => setTab('check')}><span className="code">03</span>Check &amp; approve</button>
           </div>
           {tab === 'content' && <ContentPanel cv={cv} readOnly={readOnly} mutate={mutate} />}
           {tab === 'design' && <DesignPanel cv={cv} catalog={catalog} readOnly={readOnly} mutate={mutate} />}

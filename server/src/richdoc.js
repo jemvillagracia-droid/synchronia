@@ -90,8 +90,9 @@ export const tableOf = (rows, { header = true } = {}) => ({
     type: 'tableRow',
     content: r.map((c) => {
       const cell = typeof c === 'object' && c !== null ? c : { text: c };
-      return { type: header && ri === 0 ? 'tableHeader' : 'tableCell', ...(cell.colspan > 1 ? { attrs: { colspan: cell.colspan } } : {}),
-        content: [para(cell.text ?? '', { bold: !!cell.bold })] };
+      const attrs = { ...(cell.colspan > 1 ? { colspan: cell.colspan } : {}), ...(cell.width ? { colwidth: [cell.width] } : {}) };
+      return { type: header && ri === 0 ? 'tableHeader' : 'tableCell', ...(Object.keys(attrs).length ? { attrs } : {}),
+        content: [para(cell.text ?? '', { bold: !!cell.bold, align: cell.align })] };
     }),
   })),
 });
@@ -238,7 +239,16 @@ function blockHtml(n, image) {
     case 'bulletList': return `<ul>${kids()}</ul>`;
     case 'orderedList': return `<ol${n.attrs?.start ? ` start="${n.attrs.start}"` : ''}>${kids()}</ol>`;
     case 'listItem': return `<li>${kids()}</li>`;
-    case 'table': return `<table>${kids()}</table>`;
+    case 'table': {
+      // Column widths as set in the editor (or by the export), so PDF matches Word.
+      const rows = n.content || [];
+      const cols = Math.max(1, ...rows.map((r) => (r.content || []).reduce((t, c) => t + (c.attrs?.colspan || 1), 0)));
+      const first = rows.find((r) => (r.content || []).every((c) => !c.attrs?.colspan || c.attrs.colspan === 1)) || rows[0];
+      const w = (first?.content || []).map((c) => c.attrs?.colwidth?.[0] || 0);
+      if (w.length !== cols || w.some((x) => !x)) return `<table>${kids()}</table>`;
+      const total = w.reduce((a, b) => a + b, 0);
+      return `<table style="table-layout:fixed"><colgroup>${w.map((x) => `<col style="width:${((x / total) * 100).toFixed(2)}%">`).join('')}</colgroup>${kids()}</table>`;
+    }
     case 'tableRow': return `<tr>${kids()}</tr>`;
     case 'tableCell': case 'tableHeader': {
       const tag = n.type === 'tableHeader' ? 'th' : 'td';

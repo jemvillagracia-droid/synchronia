@@ -106,7 +106,9 @@ if (!app.requestSingleInstanceLock()) {
       const ext = path.extname(name).slice(1).toLowerCase();
       const folder = path.join(app.getPath('documents'), 'SYNCHRONIA');
       try { fs.mkdirSync(folder, { recursive: true }); } catch { /* fall back to the dialog's default */ }
-      const target = dialog.showSaveDialogSync(win, {
+      // SYNCHRONIA_DOWNLOAD_DIR (automated tests only): save there without asking.
+      const auto = process.env.SYNCHRONIA_DOWNLOAD_DIR;
+      const target = auto ? path.join(auto, name) : dialog.showSaveDialogSync(win, {
         title: 'Save exported file', defaultPath: path.join(folder, name),
         filters: [...(FILTERS[ext] || []), { name: 'All files', extensions: ['*'] }],
       });

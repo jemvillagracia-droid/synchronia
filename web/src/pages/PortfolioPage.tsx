@@ -1,4 +1,5 @@
 import { CvImportButton } from './CvImport';
+import { PdsLearning } from './PdsLearning';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, useParams } from 'react-router-dom';
 import { api, onDataChanged } from '../lib/api';
@@ -343,8 +344,10 @@ export function PortfolioCategoryPage() {
   const { category = '' } = useParams();
   const cat = categoryByKey[category];
   const [tab, setTab] = useState(0);
+  const [view, setView] = useState<'records' | 'pds'>(() => { try { return (localStorage.getItem('synchronia-cpd-view') as 'pds') || 'records'; } catch { return 'records'; } });
   const summary = useSummary();
   useEffect(() => setTab(0), [category]);
+  const pick = (v: 'records' | 'pds') => { setView(v); try { localStorage.setItem('synchronia-cpd-view', v); } catch { /* remembered for this session only */ } };
   if (!cat) return <PortfolioShell title="Not found" crumb=""><div className="empty">Unknown portfolio section. <Link to="/portfolio">Back to overview</Link></div></PortfolioShell>;
   const idx = Math.min(tab, cat.resources.length - 1);
   return (
@@ -355,7 +358,13 @@ export function PortfolioCategoryPage() {
           {cat.resources.map((r, i) => <button key={r.type} role="tab" aria-selected={idx === i} onClick={() => setTab(i)}>{r.tab}</button>)}
         </div>
       )}
-      <ResourceList key={cat.resources[idx].type} type={cat.resources[idx].type} />
+      {cat.key === 'development' && (
+        <div className="seg pds-switch" role="group" aria-label="View">
+          <button aria-pressed={view === 'records'} onClick={() => pick('records')}>All records</button>
+          <button aria-pressed={view === 'pds'} onClick={() => pick('pds')}>PDS · L&D attended by year</button>
+        </div>
+      )}
+      {cat.key === 'development' && view === 'pds' ? <PdsLearning /> : <ResourceList key={cat.resources[idx].type} type={cat.resources[idx].type} />}
     </PortfolioShell>
   );
 }

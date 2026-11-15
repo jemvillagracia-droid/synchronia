@@ -268,7 +268,7 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
   api.use('/doc-images', docImagesRouter(db));
   api.use('/research', researchRouter(db, { pdfRenderer }));
   api.use('/moodboards', moodboardRouter(db));
-  api.use('/portfolio', portfolioImportRouter(db));
+  api.use('/portfolio', portfolioImportRouter(db, { pdfRenderer }));
   api.use('/integrations', integrationsRouter(db));
   api.use('/images', imageRouter(db));
   api.use('/academic', academicRouter(db, { pdfRenderer }));

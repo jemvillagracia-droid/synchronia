@@ -74,6 +74,7 @@ export const RESOURCES = {
       title: text(req),
       training_type: oneOf(['training', 'seminar', 'workshop', 'conference', 'webinar', 'course', 'certification', 'other']),
       role: oneOf(['participant', 'speaker', 'facilitator', 'organizer']),
+      ld_type: oneOf(['managerial', 'supervisory', 'technical', 'foundation', 'other']),
       organizer: text(), location: text(), start_date: pdate(), end_date: pdate(),
       hours: real({ min: 0 }), cpd_units: real({ min: 0 }), ...verification,
     },

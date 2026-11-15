@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BrandMark, Icon } from './Icon';
 import { useApp } from './AppContext';
 import { NAV, isActive, navCode } from '../lib/nav';
@@ -271,6 +271,19 @@ export function Shell({ children }: { children: ReactNode }) {
 
 
   useEffect(() => { setMobileNav(false); }, [location.pathname]);
+  // Deep links to a record pop-up: ?new=<type> opens a new record of that type, ?open=<type>:<id> an existing one.
+  const navigateTo = useNavigate();
+  const { openNew: deepNew, openRecord: deepOpen } = useApp();
+  useEffect(() => {
+    const q = new URLSearchParams(location.search);
+    const n = q.get('new'); const o = q.get('open');
+    if (!n && !o) return;
+    if (n && /^[a-z_]+$/.test(n)) deepNew(n);
+    const m = o && /^([a-z_]+):(\d+)$/.exec(o);
+    if (m) deepOpen(m[1], Number(m[2]));
+    q.delete('new'); q.delete('open');
+    navigateTo({ pathname: location.pathname, search: q.toString() ? `?${q}` : '' }, { replace: true });
+  }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
   // Settings › Appearance: turn off non-essential motion.
   useEffect(() => { document.documentElement.dataset.motion = prefs?.reduce_motion ? 'reduced' : 'normal'; }, [prefs?.reduce_motion]);
   useEffect(() => { if (prefs) applyTheme(prefs.theme); }, [prefs?.theme]); // eslint-disable-line react-hooks/exhaustive-deps

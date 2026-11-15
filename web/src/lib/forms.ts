@@ -57,13 +57,13 @@ export const FORMS: Record<string, FormLayout> = {
   },
   trainings: {
     sections: [
-      { title: 'Activity', fields: ['title', 'training_type', 'role'] },
-      { title: 'Organizer', fields: ['organizer', 'location'] },
+      { title: 'Activity', fields: ['title', 'training_type', 'role', 'ld_type'] },
+      { title: 'Conducted or sponsored by', fields: ['organizer', 'location'] },
       { title: 'Dates and credit', fields: ['start_date', 'end_date', 'hours', 'cpd_units'] },
       RECORD,
     ],
-    labels: { training_type: 'Type', role: 'Your role', organizer: 'Organizing institution', cpd_units: 'CPD units' },
-    hints: { hours: 'Training hours as stated on the certificate.' },
+    labels: { training_type: 'Type', role: 'Your role', ld_type: 'Type of L&D (PDS)', organizer: 'Conducted / sponsored by', cpd_units: 'CPD units' },
+    hints: { hours: 'Training hours as stated on the certificate.', ld_type: 'As asked in the Personal Data Sheet: Managerial, Supervisory, Technical or Foundation.' },
   },
   awards: {
     sections: [

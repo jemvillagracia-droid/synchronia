@@ -16,7 +16,7 @@ const refPara = (l) => ({ type: 'paragraph', content: apaParts(l).filter((p) => 
 const fields = (rows) => tableOf(rows.filter(([, v]) => v !== undefined && v !== null && v !== '').map(([k, v]) => [{ text: k, bold: true }, String(v)]), { header: false });
 const sectionBody = (b) => (b && Array.isArray(b.content) ? b.content : []);
 
-async function render(db, userId, { doc, title, format, landscape = false, pageSize = null, type, fileStem, pdfRenderer }) {
+export async function render(db, userId, { doc, title, format, landscape = false, pageSize = null, type, fileStem, pdfRenderer }) {
   if (!['docx', 'pdf'].includes(format)) throw new HttpError(422, 'Choose Word or PDF');
   if (format === 'pdf' && !pdfRenderer) throw new HttpError(503, 'PDF output is produced by the SYNCHRONIA desktop app.');
   const lh = letterheadFor(db, userId);
