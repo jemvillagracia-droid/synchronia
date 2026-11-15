@@ -139,7 +139,8 @@ export function missingRecommended(r, row) {
   });
 }
 
-const hasVerification = (r) => !!r.fields.verification;
+/** Records that take evidence (linked files, Drive documents, web links): verified records, and research records flagged `evidence`. */
+const hasVerification = (r) => !!r.fields.verification || !!r.evidence;
 
 /** Number of active evidence references linked to each of the given record ids. */
 export function evidenceCounts(db, r, ids) {

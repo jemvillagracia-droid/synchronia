@@ -59,8 +59,8 @@ const ok = (n, c, x = '') => { R.push(!!c); console.log(`${c ? 'PASS' : 'FAIL'} 
   const iv = await w.evaluate(() => document.querySelector('#ver').value);
   await w.screenshot({ path: S + '/shots/instrument.png' });
   // Tabs render
-  for (const t of ['Ethics', 'Dissemination', 'Funding and team']) { await go(`/research/projects/${pid}`); await w.getByRole('tab', { name: t }).click(); await w.waitForTimeout(300); }
-  for (const t of ['literature', 'instruments', 'writing', 'dissemination', 'stages', 'projects']) { await go(`/research?tab=${t}`); await w.waitForTimeout(400); }
+  for (const t of ['Ethics', 'Manuscripts and publications', 'Funding and team']) { await go(`/research/projects/${pid}`); await w.getByRole('tab', { name: t }).click(); await w.waitForTimeout(300); }
+  for (const t of ['literature', 'instruments', 'manuscripts', 'dissemination', 'stages', 'projects']) { await go(`/research?tab=${t}`); await w.waitForTimeout(400); }
   await go('/research?tab=literature'); await w.waitForTimeout(500); await w.screenshot({ path: S + '/shots/literature.png' });
   ok('All research tabs render without errors', errors.length === 0, JSON.stringify(errors).slice(0, 300));
   console.log(`\n${R.filter(Boolean).length} passed, ${R.filter((r) => !r).length} failed`); process.exitCode = R.every(Boolean) ? 0 : 1;

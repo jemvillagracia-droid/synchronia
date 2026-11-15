@@ -25,7 +25,7 @@ export interface FieldSpec {
 }
 export interface ResourceSpec {
   label: string; module: string; title: string; subtitle: string[]; date: string | null;
-  group: string | null; recommended: string[];
+  group: string | null; recommended: string[]; evidence?: boolean;
   fields: Record<string, FieldSpec>;
 }
 export type Schema = Record<string, ResourceSpec>;

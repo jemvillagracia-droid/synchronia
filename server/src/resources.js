@@ -411,6 +411,8 @@ const SEARCH_JSON = { syllabi: ['content_json'], materials: ['content_json'], to
   meetings: ['agenda_json', 'minutes_json'], turnover_documents: ['notes_json'] };
 for (const [k, fields] of Object.entries(SEARCH_JSON)) if (RESOURCES[k]) RESOURCES[k].searchJson = fields;
 RESOURCES.syllabi.searchRich = ['document_json'];
+// Research records link to their documents (Word, PDF, Google Drive) — opened in their own applications.
+for (const k of ['research_documents', 'literature', 'research_instruments', 'ethics_reviews', 'research_submissions']) RESOURCES[k].evidence = true;
 RESOURCES.research_sections.searchRich = ['body'];
 
 // Searchable text: every text field (secrets and JSON excluded).

@@ -228,3 +228,13 @@ test('archiving takes a project off the dashboard without deleting it', async ()
   assert.ok(JSON.stringify((await call('GET', '/search?q=readiness')).body).includes('Blended learning readiness'), 'still searchable');
   await call('PATCH', `/records/research_projects/${P}`, { archived_at: null });
 });
+
+test('manuscripts are tracked, not written: a manuscript record links its Word or Drive document', async () => {
+  const m = (await call('POST', '/records/research_documents', { project_id: P, kind: 'manuscript', title: 'Readiness manuscript', status: 'drafting', target: 'Asia Pacific Education Review' })).body;
+  const link = await call('POST', `/records/research_documents/${m.id}/evidence`, { provider: 'url', url: 'https://docs.google.com/document/d/abc/edit', title: 'Manuscript draft v3' });
+  assert.equal(link.status, 201, JSON.stringify(link.body));
+  assert.equal((await call('GET', `/records/research_documents/${m.id}/evidence`)).body[0].title, 'Manuscript draft v3');
+  const pl = await call('POST', `/records/research_projects/${P}/evidence`, { provider: 'url', url: 'https://example.org/approval.pdf', title: 'Ethics approval letter' });
+  assert.equal(pl.status, 201);
+  assert.ok((await call('GET', '/research/overview')).body.manuscripts.some((x) => x.id === m.id));
+});

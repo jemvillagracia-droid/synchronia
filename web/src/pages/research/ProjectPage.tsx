@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, dataChanged, onDataChanged } from '../../lib/api';
+import { openReference } from '../../lib/desktop';
 import { fmtDate, humanize, relTime } from '../../lib/format';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
@@ -14,7 +15,7 @@ interface Workspace {
   publications: any[]; presentations: any[]; recent: { summary: string; at: string }[]; milestone_templates: string[];
 }
 type Tab = 'overview' | 'literature' | 'methods' | 'ethics' | 'dissemination' | 'team';
-const TABS: [Tab, string][] = [['overview', 'Overview'], ['literature', 'Literature'], ['methods', 'Methods and instruments'], ['ethics', 'Ethics'], ['dissemination', 'Dissemination'], ['team', 'Funding and team']];
+const TABS: [Tab, string][] = [['overview', 'Overview'], ['literature', 'Literature'], ['methods', 'Methods and instruments'], ['ethics', 'Ethics'], ['dissemination', 'Manuscripts and publications'], ['team', 'Funding and team']];
 
 /** One research project: its stage, milestones and next action, and everything linked to it. */
 export function ProjectPage() {
@@ -107,6 +108,7 @@ function Overview({ w }: { w: Workspace }) {
           </div>
         </section>
       </div>
+      <ProjectDocuments projectId={p.id} />
       <section className="panel">
         <header className="panel-head"><span className="code">MS</span><h2>Milestones</h2><span style={{ flex: 1 }} />
           <select className="select select-sm" value={tpl} onChange={(e) => setTpl(e.target.value)} aria-label="Stage to add usual milestones for">
@@ -253,6 +255,19 @@ function Dissemination({ w }: { w: Workspace }) {
   const manuscript = w.documents.find((d) => d.kind === 'manuscript');
   return (
     <div className="stack">
+      <section className="panel">
+        <header className="panel-head"><span className="code">MSS</span><h2>Manuscripts</h2><span style={{ flex: 1 }} />
+          <button className="btn btn-sm" onClick={() => openNew('research_documents', { project_id: w.project.id, kind: 'manuscript', status: 'drafting', title: w.project.title })}><Icon name="plus" />Track a manuscript</button></header>
+        <div className="panel-body">
+          <p className="faint" style={{ marginTop: 0, fontSize: 12.5 }}>Write in Word or Google Docs. Here, keep its status, target journal and revisions, and link the file in the record's Evidence tab so it opens in one click.</p>
+          {w.documents.length === 0 ? <div className="faint">No manuscripts tracked.</div> : (
+            <ul className="list">{w.documents.map((d) => (
+              <li key={d.id}><span className={`tag ${d.status === 'final' ? 'ok' : ''}`}>{humanize(d.status)}</span>
+                <button className="rowlink grow" onClick={() => openRecord('research_documents', d.id)}><span className="t">{d.title}</span><span className="s">{[humanize(d.kind), d.target, d.word_limit && `limit ${d.word_limit} words`].filter(Boolean).join(' · ')}</span></button></li>
+            ))}</ul>
+          )}
+        </div>
+      </section>
       <div className="row wrap">
         <button className="btn btn-primary" onClick={() => openNew('research_submissions', { project_id: w.project.id, document_id: manuscript?.id, title: manuscript?.title || w.project.title, kind: 'journal', status: 'planned' })}><Icon name="plus" />Submission</button>
         <span className="faint" style={{ fontSize: 13 }}>When a submission is accepted, published or presented, “Record in portfolio” fills your publication or presentation record, so you never type it twice.</span>
@@ -299,5 +314,32 @@ function Team({ w }: { w: Workspace }) {
         </div>
       </section>
     </div>
+  );
+}
+
+/** Files and links of the project (Word, PDF, Google Drive, web), opened in their own applications. */
+function ProjectDocuments({ projectId }: { projectId: number }) {
+  const { openRecord, toast } = useApp();
+  const [items, setItems] = useState<{ link_id: number; provider: string; url: string | null; title: string; external_id: string | null }[] | null>(null);
+  const load = useCallback(() => { api.get<any[]>(`/records/research_projects/${projectId}/evidence`).then(setItems).catch(() => setItems([])); }, [projectId]);
+  useEffect(() => { load(); return onDataChanged(load); }, [load]);
+  async function open(it: { provider: string; url: string | null }) {
+    const err = await openReference(it.provider, it.url);
+    if (err) toast(err, 'error');
+  }
+  return (
+    <section className="panel">
+      <header className="panel-head"><span className="code">DOC</span><h2>Documents and links</h2><span style={{ flex: 1 }} />
+        <button className="btn btn-sm" onClick={() => openRecord('research_projects', projectId)} title="Use the Evidence tab to add a Word or PDF file, a Google Drive link or a web link"><Icon name="link" />Add document or link</button></header>
+      <div className="panel-body">
+        {!items ? <div className="skeleton" style={{ height: 40 }} /> : items.length === 0 ? <div className="faint">No documents linked. Add the proposal, manuscript drafts, instrument files or approval letters — they stay where they are and open in Word, your PDF reader or Google Drive.</div> : (
+          <ul className="list">{items.map((it) => (
+            <li key={it.link_id}><span className="tag">{it.provider === 'google_drive' ? 'Drive' : it.provider === 'local_path' ? 'File' : 'Link'}</span>
+              <span className="grow"><span className="t">{it.title}</span></span>
+              <button className="btn btn-sm" onClick={() => open(it)}>Open</button></li>
+          ))}</ul>
+        )}
+      </div>
+    </section>
   );
 }

@@ -38,7 +38,7 @@ export function RecordDrawer({ type, id, onClose, onCreated, defaults }: { type:
   const isNew = id === null;
   const { schema, toast } = useApp();
   const spec = schema?.[type];
-  const takesEvidence = !!spec?.fields.verification;
+  const takesEvidence = !!spec?.fields.verification || !!spec?.evidence;
   const [row, setRow] = useState<RecordRow | null>(null);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<'details' | 'evidence' | 'history'>('details');

@@ -7,9 +7,9 @@ import { Icon } from '../../components/Icon';
 import { askText } from '../../components/AskText';
 import { exportFile, type Overview, type ProjectCard, type Stage } from '../../lib/research';
 
-type Tab = 'overview' | 'projects' | 'literature' | 'instruments' | 'dissemination' | 'stages';
+type Tab = 'overview' | 'projects' | 'literature' | 'instruments' | 'manuscripts' | 'dissemination' | 'stages';
 const TABS: [Tab, string][] = [['overview', 'Dashboard'], ['projects', 'Projects'], ['literature', 'Literature review'], ['instruments', 'Instruments'],
-  ['dissemination', 'Dissemination'], ['stages', 'Stages']];
+  ['manuscripts', 'Manuscripts'], ['dissemination', 'Publications'], ['stages', 'Stages']];
 
 /** Research Development: develop, organise and monitor research with as little administration as possible. */
 export function ResearchPage() {
@@ -36,6 +36,7 @@ export function ResearchPage() {
           {tab === 'projects' && <Projects o={o} archived={archived} setArchived={(a) => setParams(a ? { tab: 'projects', archived: '1' } : { tab: 'projects' })} />}
           {tab === 'literature' && <Literature />}
           {tab === 'instruments' && <Instruments />}
+          {tab === 'manuscripts' && <Manuscripts o={o} />}
           {tab === 'dissemination' && <Dissemination o={o} />}
           {tab === 'stages' && <Stages />}
         </>
@@ -298,5 +299,23 @@ function Stages() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** Manuscript tracker: status, target and revisions of manuscripts written in Word or Google Docs. */
+function Manuscripts({ o }: { o: Overview }) {
+  const { openNew, openRecord } = useApp();
+  return (
+    <div className="stack">
+      <div className="row wrap"><button className="btn btn-primary" onClick={() => openNew('research_documents', { kind: 'manuscript', status: 'drafting' })}><Icon name="plus" />Track a manuscript</button>
+        <span className="faint" style={{ fontSize: 13 }}>Write in Word or Google Docs; link the file in the record's Evidence tab so it opens in one click. SYNCHRONIA tracks it, it does not replace your word processor.</span></div>
+      {o.manuscripts.length === 0 ? <div className="empty">No manuscripts tracked.</div> : (
+        <ul className="list">{o.manuscripts.map((m) => (
+          <li key={m.id}><span className={`tag ${m.status === 'final' ? 'ok' : ''}`}>{humanize(m.status)}</span>
+            <button className="rowlink grow" onClick={() => openRecord('research_documents', m.id)}><span className="t">{m.title}</span>
+              <span className="s">{[humanize(m.kind), m.project_title, m.target, `updated ${relTime(m.updated_at)}`].filter(Boolean).join(' · ')}</span></button></li>
+        ))}</ul>
+      )}
+    </div>
   );
 }
