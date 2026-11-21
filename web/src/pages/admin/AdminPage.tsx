@@ -33,7 +33,7 @@ function FollowList({ items, onOpen }: { items: any[]; onOpen: (x: any) => void 
         <li key={`${x.kind}-${x.route_id || x.entity_id}`} className={x.overdue ? 'is-overdue' : ''}>
           <span className={`tag ${x.overdue ? 'st-self' : 'st-confirmed'}`}>{KIND[x.kind] || x.kind}</span>
           <button className="rowlink grow" onClick={() => onOpen(x)}><span className="t">{[x.ref, x.title].filter(Boolean).join(' — ')}</span><span className="s">{x.detail}</span></button>
-          <span className="fu-when">{x.due ? <span className={x.overdue ? 'overdue' : ''}>{x.overdue ? 'Overdue · ' : 'Due '}{fmtDate(x.due)}</span> : null}{x.age_days != null ? <span className="faint">{x.age_days} day{x.age_days === 1 ? '' : 's'}</span> : null}</span>
+          <span className="fu-when">{x.due ? <span className={x.overdue ? 'overdue' : ''}>{x.overdue ? 'Overdue · ' : 'Due '}{fmtDate(x.due)}</span> : null}{x.age_days != null ? <span className="faint">{x.age_days === 0 ? 'added today' : `open ${x.age_days} day${x.age_days === 1 ? '' : 's'}`}</span> : null}</span>
         </li>
       ))}
     </ul>

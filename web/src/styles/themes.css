@@ -90,3 +90,5 @@ html[data-theme='light'] { --orange: #a8380b; --ok: #176631; }
 :is(html[data-theme='light'], html[data-theme='sepia']) .cal-cell.today .cal-num { color: #fff; }
 :is(html[data-theme='light'], html[data-theme='sepia']) .st-system { color: var(--text-2); border-color: var(--line-3); }
 :is(html[data-theme='light'], html[data-theme='sepia']) .st-self { color: #9a3412; border-color: #c2410c; background: rgba(194, 65, 12, .08); }
+/* Overdue dates and library warnings: the bright orange is for dark surfaces; a deep red-orange on light ones. */
+:is(html[data-theme='light'], html[data-theme='sepia']) :is(.overdue, .lib-warn) { color: #a8380b; }

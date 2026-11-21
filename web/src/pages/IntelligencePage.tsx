@@ -221,10 +221,12 @@ export function IntelligencePage() {
             <div className="seg" role="group" aria-label="Sections">
               {(cat?.sections || []).map((s) => <button key={s.key} aria-pressed={sections.includes(s.key)} onClick={() => toggle(s.key)}>{s.code} · {s.label.replace(/ analytics$/i, '')}</button>)}
             </div>
-            <span className="label" style={{ margin: '0 0 0 var(--s-3)' }}>Include</span>
-            <select className="select" style={{ width: 'auto' }} value={support} onChange={(e) => setSupport(e.target.value)} aria-label="Records to include">
-              <option value="all">All records</option><option value="confirmed">Confirmed or evidenced</option><option value="evidenced">Evidence only</option>
-            </select>
+            <span className="row" style={{ gap: 'var(--s-2)', flexWrap: 'nowrap' }}>{/* label and its choice stay together when the row wraps */}
+              <span className="label" style={{ margin: 0 }}>Include</span>
+              <select className="select" style={{ width: 'auto' }} value={support} onChange={(e) => setSupport(e.target.value)} aria-label="Records to include">
+                <option value="all">All records</option><option value="confirmed">Confirmed or evidenced</option><option value="evidenced">Evidence only</option>
+              </select>
+            </span>
             <span style={{ flex: 1 }} />
             <button className="btn btn-sm" disabled={!sections.length} onClick={() => { download(`/api/intelligence/analytics.xlsx?${query}`, 'SYNCHRONIA_Analytics.xlsx'); toast('Exporting analytics spreadsheet', 'info'); }}><Icon name="download" />Spreadsheet</button>
           </div>

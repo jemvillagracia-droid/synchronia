@@ -271,7 +271,7 @@ function ResourceList({ type }: { type: string }) {
             <button key={k} aria-pressed={filter === k} onClick={() => setFilter(k)}>{l}{counts ? ` · ${counts[k]}` : ''}</button>
           ))}
         </div>
-        <select className="select" style={{ width: 'auto', height: 32 }} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort order">
+        <select className="select" style={{ width: 'auto' }} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort order">
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
           <option value="updated">Recently edited</option>

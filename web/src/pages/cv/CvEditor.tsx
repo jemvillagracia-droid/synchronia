@@ -649,7 +649,7 @@ export function CvEditor() {
         </div>
         <span className={`tag ${readOnly ? 'ok' : 'orange'}`}>{readOnly ? 'Finalized' : 'Draft'} · v{cv.version}</span>
         {cv.versions.length > 1 && (
-          <select className="select" style={{ width: 'auto', height: 30 }} value={cv.id} aria-label="Version" onChange={(e) => navigate(`/cv/${e.target.value}`)}>
+          <select className="select" style={{ width: 'auto' }} value={cv.id} aria-label="Version" onChange={(e) => navigate(`/cv/${e.target.value}`)}>
             {cv.versions.map((v) => <option key={v.id} value={v.id}>v{v.version} — {v.status}</option>)}
           </select>
         )}

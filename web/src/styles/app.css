@@ -1058,10 +1058,18 @@ a.link { color: var(--accent-2); text-decoration: underline; text-underline-offs
 /* ── Administrative Operations (Phase 6) ─────────────────────────────────── */
 .drawer.wide { width: min(1080px, 100%); }
 .admin-stats { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
-.quick-log { display: grid; grid-template-columns: 136px 136px minmax(160px, 3fr) minmax(120px, 1fr) minmax(110px, 1.2fr) 72px auto; gap: var(--s-2); align-items: center; }
+.quick-log { display: grid; grid-template-columns: 118px 118px minmax(150px, 3fr) minmax(110px, 1fr) minmax(100px, 1.2fr) 64px auto; gap: var(--s-2); align-items: center; }
 :has(> .quick-log) { container-type: inline-size; }
-@container (max-width: 980px) { .quick-log { grid-template-columns: 1fr 1fr; } .quick-log .ql-act { grid-column: 1 / -1; } .quick-log .btn { grid-column: 1 / -1; justify-self: start; } }
-@media (max-width: 1100px) { .quick-log { grid-template-columns: 1fr 1fr; } .quick-log .ql-act { grid-column: 1 / -1; } .quick-log .btn { grid-column: 1 / -1; justify-self: start; } }
+/* Narrower panels: times and category on the first line, the activity on its own line, output · number · Log last. */
+@container (max-width: 760px) {
+  .quick-log { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .quick-log > :nth-child(1) { grid-column: 1; } .quick-log > :nth-child(2) { grid-column: 2; }
+  .quick-log > select { grid-column: 3 / span 2; grid-row: 1; }
+  .quick-log .ql-act { grid-column: 1 / -1; grid-row: 2; }
+  .quick-log > :nth-child(5) { grid-column: 1 / span 2; grid-row: 3; }
+  .quick-log .ql-qty { grid-column: 3; grid-row: 3; }
+  .quick-log .btn { grid-column: 4; grid-row: 3; justify-self: stretch; }
+}
 .log-time { width: 150px; flex-shrink: 0; font-size: 13px; }
 .follow-list li.is-overdue { box-shadow: inset 3px 0 0 var(--orange); padding-left: var(--s-2); }
 .fu-when { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 13px; white-space: nowrap; }
@@ -1726,3 +1734,25 @@ html[data-motion='reduced'] *, html[data-motion='reduced'] *::before, html[data-
 .pds-sort { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; text-transform: uppercase; letter-spacing: .05em; }
 .pds-sort:hover { color: var(--accent-2); } .pds-sort:focus-visible { outline: 2px solid var(--accent-2); }
 .pds-actions .seg button { display: inline-flex; gap: 4px; align-items: center; }
+
+/* Tables everywhere: headings, status tags and reference numbers stay on one line (the table scrolls if it must). */
+.table th { white-space: nowrap; }
+.table .tag { white-space: nowrap; }
+.table td.mono, .table td.mono .rowlink { white-space: nowrap; }
+/* ── Consistency pass ─────────────────────────────────────── */
+/* Buttons never wrap inside table cells (narrow columns squeezed them to two lines). */
+.table .btn { white-space: nowrap; overflow-wrap: normal; }
+/* Page-head actions keep their own height next to a taller control (e.g. a stage selector). */
+.page-head .actions { align-items: center; }
+/* List filters match every other field's height. */
+.toolbar .input, .toolbar .select { height: 36px; }
+/* Editor pages (syllabus, moodboard board, CV) use the same title style as every page, one size smaller. */
+.doc-title h1, .mb-title, .cv-editor-head .cv-title {
+  font-family: var(--font-cond); font-weight: 700; font-variation-settings: normal; font-stretch: normal;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-2); font-size: 26px; line-height: 1.15;
+}
+/* Needs attention: tag · item · when, on one row; the date and age sit on the right. */
+.follow-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; column-gap: var(--s-3); }
+.follow-list li > .rowlink.grow { flex: none; }
+.follow-list .fu-when { display: grid; justify-items: end; gap: 2px; text-align: right; white-space: nowrap; font-size: 12.5px; }
+.follow-list .tag { margin-top: 2px; }

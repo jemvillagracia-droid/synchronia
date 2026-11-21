@@ -40,7 +40,7 @@ export function ProjectPage() {
       <div className="page-head">
         <div>
           <div className="crumb"><span className="bar" /><span className="label"><Link to="/research">Research Development</Link> · Project</span></div>
-          <h1 className="display" style={{ fontSize: 'clamp(26px, 3vw, 40px)' }}>{p.title}</h1>
+          <h1 className="display">{p.title}</h1>
           <div className="sub">{[p.role, p.research_area, p.archived_at && 'Archived'].filter(Boolean).join(' · ') || 'Research project'}</div>
         </div>
         <div className="actions">

@@ -45,7 +45,7 @@ export function InstrumentPage() {
       <div className="page-head">
         <div>
           <div className="crumb"><span className="bar" /><span className="label"><Link to="/research?tab=instruments">Research Development · Instruments</Link></span></div>
-          <h1 className="display" style={{ fontSize: 'clamp(24px, 3vw, 38px)' }}>{i.title}</h1>
+          <h1 className="display">{i.title}</h1>
           <div className="sub">{humanize(i.origin)}{i.source ? ` · ${i.source}` : ''}{w.projects.length ? ` · ${w.projects.map((p) => p.title).join(', ')}` : ''}</div>
         </div>
         <div className="actions">

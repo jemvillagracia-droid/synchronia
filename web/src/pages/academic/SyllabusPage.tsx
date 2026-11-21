@@ -122,8 +122,10 @@ export function SyllabusPage() {
           </div>
           <button className="btn btn-sm" onClick={() => setHistory((h) => !h)} aria-expanded={history}><Icon name="history" />Recovery points</button>
           <button className="btn btn-sm" onClick={() => openRecord('syllabi', v.syllabus.id)}><Icon name="edit" />Details</button>
-          <button className="btn btn-sm btn-primary" onClick={() => exportAs('docx')} disabled={!!busy}><Icon name="download" />{busy === 'docx' ? 'Exporting…' : 'Word'}</button>
-          <button className="btn btn-sm" onClick={() => exportAs('pdf')} disabled={!!busy}><Icon name="download" />{busy === 'pdf' ? 'Exporting…' : 'PDF'}</button>
+          <span className="row" style={{ gap: 'var(--s-2)', flexWrap: 'nowrap' }}>{/* the two exports stay together */}
+            <button className="btn btn-sm btn-primary" onClick={() => exportAs('docx')} disabled={!!busy}><Icon name="download" />{busy === 'docx' ? 'Exporting…' : 'Word'}</button>
+            <button className="btn btn-sm" onClick={() => exportAs('pdf')} disabled={!!busy}><Icon name="download" />{busy === 'pdf' ? 'Exporting…' : 'PDF'}</button>
+          </span>
         </div>
       </div>
       {history && (
