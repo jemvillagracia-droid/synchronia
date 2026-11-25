@@ -272,6 +272,7 @@ h1, h2, h3 { break-after: avoid; }
 p { margin: 0 0 5pt; } ul, ol { margin: 0 0 6pt; padding-left: 22pt; }
 table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; page-break-inside: auto; }
 tr { break-inside: avoid; } th, td { border: 0.75pt solid #000; padding: 3pt 5pt; vertical-align: top; font-size: 10pt; text-align: left; }
+th, td { overflow-wrap: anywhere; } /* text that cannot fit its column wraps inside it, never over the next */
 th { background: #e7e6e6; -webkit-print-color-adjust: exact; } td p, th p { margin: 0; }
 blockquote { margin: 0 0 6pt 24pt; } hr { border: 0; border-top: 0.75pt solid #000; }
 </style></head><body>${img(letterhead?.header)}${toHtmlBody(doc, image)}</body></html>`;

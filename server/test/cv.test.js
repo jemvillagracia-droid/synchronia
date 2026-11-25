@@ -196,9 +196,9 @@ test('ATS DOCX uses conventional headings and the plain template', async () => {
   const x = await call('POST', `/cv/${cvId}/exports`, { format: 'docx_ats' });
   const file = await call('GET', x.body.download.replace('/api', ''), undefined, { raw: true });
   const xml = await (await JSZip.loadAsync(file.buf)).file('word/document.xml').async('string');
-  assert.match(xml, />Education</);
-  assert.match(xml, />Professional Experience</);
-  assert.doesNotMatch(xml, />Educational Background</);
+  assert.match(xml, />Education</i); // headings print in capitals, in Word as in the PDF
+  assert.match(xml, />Professional Experience</i);
+  assert.doesNotMatch(xml, />Educational Background</i);
   assert.match(x.body.file_name, /MinimalistATS/);
 });
 
@@ -222,7 +222,7 @@ test('PDF export is text-based and the analyzer reads it back', { skip: !chromiu
   assert.ok(['warn', 'pass'].includes(check('headings').status));
   assert.match(a.ats.disclaimer, /cannot guarantee/);
   const ats = (await call('GET', `/cv/${cvId}/analysis?mode=ats`)).body;
-  assert.ok(ats.extracted.docx_headings.includes('Education'));
+  assert.ok(ats.extracted.docx_headings.some((h) => h.toLowerCase() === 'education'));
   const items = a.checklist.items.map((i) => i.id);
   for (const id of ['contact', 'education', 'employment', 'licenses', 'references', 'consistency', 'chronology', 'text', 'ats', 'integrity']) assert.ok(items.includes(id), id);
   assert.equal(a.checklist.items.find((i) => i.id === 'integrity').status, 'incomplete', 'self-reported records are surfaced');

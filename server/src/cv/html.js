@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR } from '../config.js';
+import { contactLines, splitColumnDate } from './contact.js';
 import { FONT_STACKS, styleFor } from './templates.js';
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -31,7 +32,7 @@ function entryHtml(e, st) {
   if (e.kind === 'citation' || (!e.title && e.text)) return `<p class="cite">${esc(e.text || e.title)}</p>`;
   const details = e.details?.length ? `<ul>${e.details.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>` : '';
   const text = e.text ? `<p class="text">${esc(e.text)}</p>` : '';
-  const sub = e.subtitle ? `<div class="sub">${esc(e.subtitle)}</div>` : '';
+  let sub = e.subtitle ? `<div class="sub">${esc(e.subtitle)}</div>` : '';
   const note = e.note ? `<div class="note">${esc(e.note)}</div>` : '';
   if (st.layout === 'harvard' && e.org) {
     // Harvard convention: organization (bold) + location on the first line; role or degree (italic) + dates on the second.
@@ -39,7 +40,9 @@ function entryHtml(e, st) {
       + `<div class="line1"><span class="role">${esc(e.role || e.title || '')}</span>${e.dates ? `<span class="d">${esc(e.dates)}</span>` : ''}</div>${note}${details}${text}</div>`;
   }
   if (st.dates === 'column') {
-    return `<div class="entry col"><div class="d">${esc(e.dates || '')}</div><div class="body"><div class="t">${esc(e.title || '')}</div>${sub}${note}${details}${text}</div></div>`;
+    const cd = splitColumnDate(e.dates);
+    if (cd.extra) sub = `${sub}<div class="sub">${esc(cd.extra)}</div>`;
+    return `<div class="entry col"><div class="d">${esc(cd.date)}</div><div class="body"><div class="t">${esc(e.title || '')}</div>${sub}${note}${details}${text}</div></div>`;
   }
   if (st.dates === 'line') {
     return `<div class="entry"><div class="t">${esc(e.title || '')}</div>${sub}${e.dates ? `<div class="dl">${esc(e.dates)}</div>` : ''}${note}${details}${text}</div>`;
@@ -66,6 +69,7 @@ body { margin: 0; font-family: ${font}; font-size: ${st.size}pt; line-height: ${
 /* The name is never small-caps or uppercased: Chromium writes such text into the PDF as capitals, and parsers would read the name in all caps. */
 .title { margin: 0 0 2pt; font-size: 1.02em; }
 .contact { margin: 0; font-size: .95em; }
+.contact .ci { white-space: nowrap; }
 h2 { ${headingCss(st)} }
 section.pb { break-before: page; }
 .entry { margin: 0 0 ${(0.55 * st.spacing).toFixed(2)}em; break-inside: avoid; }
@@ -75,15 +79,17 @@ section.pb { break-before: page; }
 .dl { font-style: italic; }
 .sub { font-style: italic; }
 .note { font-size: .92em; }
-.col { display: grid; grid-template-columns: 1.25in 1fr; gap: 10pt; }
-.col .d { white-space: normal; }
+.col { display: grid; grid-template-columns: 1.45in 1fr; gap: 10pt; }
+.col .d { white-space: nowrap; }
 ul { margin: 2pt 0 0 0; padding-left: 1.2em; }
 li { margin: 0 0 1pt; }
 p { margin: 0 0 ${(0.45 * st.spacing).toFixed(2)}em; }
 .cite { padding-left: 2em; text-indent: -2em; break-inside: avoid; }
 .text { text-align: left; }
 `;
-  const contact = h.contact.map(esc).join(st.separator ? esc(st.separator).replace(/ /g, '&nbsp;') : ' &nbsp;|&nbsp; ');
+  const sepHtml = st.separator ? esc(st.separator).replace(/ /g, '&nbsp;') : ' &nbsp;|&nbsp; ';
+  const cLines = contactLines(h.contact, { widthIn: st.page.width - m.left - m.right, sizePt: st.size, sep: st.separator || '  |  ' });
+  const contact = cLines.map((line) => line.map((it) => `<span class="ci">${esc(it)}</span>`).join(sepHtml)).join('<br>');
   const head = `<header class="cv-head">${photo ? `<img class="photo" src="${photo}" alt="Photograph of ${esc(h.name || '')}">` : ''}`
     + `<h1 class="name">${esc(h.name || 'Name not recorded')}</h1>${h.title ? `<p class="title">${esc(h.title)}</p>` : ''}`
     + `${contact ? `<p class="contact">${contact}</p>` : ''}</header>`;

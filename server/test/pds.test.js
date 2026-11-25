@@ -88,6 +88,11 @@ test('exports in the PDS layout: Excel with the Section VII headings, Word, and 
   assert.equal(w.status, 201, JSON.stringify(w.body));
   const xml = await (await JSZip.loadAsync(await download(w.body.download))).file('word/document.xml').async('string');
   for (const t of ['LEARNING AND DEVELOPMENT', '27/12/2025', 'Inclusive Education Summit', 'TOTAL NUMBER OF HOURS', '105.0']) assert.ok(xml.includes(t), t);
+  await call('PUT', '/preferences', { paper_size: 'a5' });
+  const small = await call('POST', '/portfolio/ld/export', { year: 2025, format: 'docx' });
+  const sxml = await (await JSZip.loadAsync(await download(small.body.download))).file('word/document.xml').async('string');
+  assert.match(sxml, /w:orient="landscape"/, 'six PDS columns print in landscape on A5');
+  await call('PUT', '/preferences', { paper_size: 'letter' });
   assert.equal((await call('POST', '/portfolio/ld/export', { year: 2019, format: 'xlsx' })).status, 422);
   assert.equal((await call('POST', '/portfolio/ld/export', { year: 2025, format: 'pdf' })).status, 503, 'PDF needs the desktop app');
 });

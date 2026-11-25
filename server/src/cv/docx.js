@@ -7,6 +7,7 @@ import {
   AlignmentType, BorderStyle, Document, Footer, HeadingLevel, ImageRun, LevelFormat, Packer, PageNumber, Paragraph, Tab, TabStopType, TextRun,
 } from 'docx';
 import { DATA_DIR } from '../config.js';
+import { contactLines, splitColumnDate } from './contact.js';
 import { styleFor } from './templates.js';
 
 const TWIP = 1440;
@@ -21,7 +22,7 @@ export async function buildDocx(model) {
   const contentWidth = pw - Math.round((m.left + m.right) * TWIP);
   const half = (pt) => Math.round(pt * 2);
   const sp = (pt) => Math.round(pt * 20 * st.spacing); // points → twentieths, scaled by spacing
-  const dateCol = Math.round(1.3 * TWIP);
+  const dateCol = Math.round(1.5 * TWIP); // fits "Jun 2016 – May 2020" on one line
 
   const headingRun = {
     bold: true,
@@ -52,7 +53,11 @@ export async function buildDocx(model) {
   const align = st.align === 'center' ? AlignmentType.CENTER : AlignmentType.LEFT;
   children.push(new Paragraph({ heading: HeadingLevel.TITLE, alignment: align, children: [new TextRun({ text: h.name || 'Name not recorded' })] }));
   if (h.title) children.push(new Paragraph({ alignment: align, spacing: { after: 40 }, children: [new TextRun(h.title)] }));
-  if (h.contact.length) children.push(new Paragraph({ alignment: align, spacing: { after: sp(8) }, children: [new TextRun(h.contact.join(st.separator || '  |  '))] }));
+  if (h.contact.length) {
+    const lines = contactLines(h.contact, { widthIn: contentWidth / TWIP, sizePt: st.size, sep: st.separator || '  |  ' });
+    children.push(new Paragraph({ alignment: align, spacing: { after: sp(8) },
+      children: lines.flatMap((line, i) => [...(i ? [new TextRun({ break: 1 })] : []), new TextRun(line.join(st.separator || '  |  '))]) }));
+  }
 
   const P = (o) => o; // paragraph options; converted to Paragraph objects at the end
   const bullet = (text, indentLeft = 0) => P({
@@ -63,7 +68,8 @@ export async function buildDocx(model) {
   });
 
   for (const sec of model.sections) {
-    children.push(P({ heading: HeadingLevel.HEADING_1, pageBreakBefore: !!sec.page_break_before, children: [new TextRun(sec.heading)] }));
+    children.push(P({ heading: HeadingLevel.HEADING_1, pageBreakBefore: !!sec.page_break_before, children: [new TextRun({ text: headingRun.allCaps ? String(sec.heading).toUpperCase() : sec.heading, allCaps: headingRun.allCaps })] }));
+    // Capitals are written into the text as well: the heading style's caps setting does not reach the file.
     for (const e of sec.entries) {
       if (e.kind === 'text') { if (e.text) children.push(P({ spacing: { after: sp(6) }, children: [new TextRun(e.text)] })); continue; }
       if (e.kind === 'list') { if (e.items?.length) children.push(P({ spacing: { after: sp(6) }, children: [new TextRun(e.items.join('; '))] })); continue; }
@@ -83,10 +89,11 @@ export async function buildDocx(model) {
         const ind = { left: dateCol, hanging: dateCol };
         children.push(P({
           indent: ind, tabStops: [{ type: TabStopType.LEFT, position: dateCol }], keepNext: true, spacing: { after: 0 },
-          children: [new TextRun(e.dates || ''), new TextRun({ children: [new Tab(), e.title || ''], bold: true })],
+          children: [new TextRun(splitColumnDate(e.dates).date), new TextRun({ children: [new Tab(), e.title || ''], bold: true })],
         }));
         const rest = [];
         if (e.subtitle) rest.push(P({ indent: { left: dateCol }, children: [new TextRun({ text: e.subtitle, italics: true })] }));
+        if (splitColumnDate(e.dates).extra) rest.push(P({ indent: { left: dateCol }, children: [new TextRun({ text: splitColumnDate(e.dates).extra, italics: true })] }));
         if (e.note) rest.push(P({ indent: { left: dateCol }, children: [new TextRun(e.note)] }));
         for (const d of e.details || []) rest.push(bullet(d, dateCol));
         if (e.text) rest.push(P({ indent: { left: dateCol }, children: [new TextRun(e.text)] }));

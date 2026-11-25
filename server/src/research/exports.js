@@ -13,7 +13,9 @@ import { apaParts, apa, documentView, instrumentWorkspace, literatureList, owned
 const parse = (j, d) => { try { return j ? JSON.parse(j) : d; } catch { return d; } };
 const human = (s) => (s ? String(s).replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) : '');
 const refPara = (l) => ({ type: 'paragraph', content: apaParts(l).filter((p) => p.t).map((p) => ({ type: 'text', text: p.t, ...(p.i ? { marks: [{ type: 'italic' }] } : {}) })) });
-const fields = (rows) => tableOf(rows.filter(([, v]) => v !== undefined && v !== null && v !== '').map(([k, v]) => [{ text: k, bold: true }, String(v)]), { header: false });
+const fields = (rows) => tableOf(rows.filter(([, v]) => v !== undefined && v !== null && v !== '').map(([k, v], i) => [{ text: k, bold: true, ...(i === 0 ? { width: 30 } : {}) }, { text: String(v), ...(i === 0 ? { width: 70 } : {}) }]), { header: false });
+/** A table heading row with relative column widths (Word and PDF both follow them). */
+const cols = (heads, widths) => heads.map((h, i) => ({ text: h, width: widths[i] }));
 const sectionBody = (b) => (b && Array.isArray(b.content) ? b.content : []);
 
 export async function render(db, userId, { doc, title, format, landscape = false, pageSize = null, type, fileStem, pdfRenderer }) {
@@ -68,7 +70,7 @@ export async function exportMatrix(db, userId, { project_id: projectId, format =
     return saveReport(db, userId, { type: 'research_literature_matrix', title, buffer, format: 'xlsx', fileStem: title, expect: [] });
   }
   const doc = { type: 'doc', content: [heading(title, 1, 'center'), para(`${items.length} source${items.length === 1 ? '' : 's'}`, { align: 'center' }),
-    tableOf([['Source', 'Objectives', 'Methodology', 'Major findings', 'Limitations', 'Relevance'], ...items.map((l) => [apa(l), l.objectives || '', l.methodology || '', l.findings || '', l.limitations || '', l.relevance || ''])])] };
+    tableOf([cols(['Source', 'Objectives', 'Methodology', 'Major findings', 'Limitations', 'Relevance'], [26, 14, 14, 18, 14, 14]), ...items.map((l) => [apa(l), l.objectives || '', l.methodology || '', l.findings || '', l.limitations || '', l.relevance || ''])])] };
   return render(db, userId, { doc, title, format, landscape: true, type: 'research_literature_matrix', fileStem: title, ...opts });
 }
 
@@ -85,16 +87,16 @@ export async function exportInstrument(db, userId, id, { format = 'docx', versio
   for (const d of v.structure.dimensions) {
     content.push(heading(d.name || 'Items', 2));
     if (d.description) content.push(para(d.description));
-    if (d.items.length) content.push(tableOf([['No.', 'Item', ...(v.response_scale ? ['Response'] : [])], ...d.items.map((it) => [String(++n), `${it.text}${it.reverse ? ' (reverse-scored)' : ''}`, ...(v.response_scale ? [''] : [])])]));
+    if (d.items.length) content.push(tableOf([v.response_scale ? cols(['No.', 'Item', 'Response'], [7, 68, 25]) : cols(['No.', 'Item'], [7, 93]), ...d.items.map((it) => [String(++n), `${it.text}${it.reverse ? ' (reverse-scored)' : ''}`, ...(v.response_scale ? [''] : [])])]));
   }
   content.push(heading('Instrument Development and Validation', 1),
     fields([['Origin', human(i.origin)], ['Source', i.source], ['Permission', human(i.permission_status)], ['Permission notes', i.permission_notes], ['Purpose', i.purpose], ['Current stage', human(i.stage)]]));
   if (v.scoring) content.push(heading('Scoring', 2), para(v.scoring));
   if (v.interpretation) content.push(heading('Interpretation', 2), para(v.interpretation));
   content.push(heading('Expert Review (Content Validation)', 2),
-    w.reviews.length ? tableOf([['Validator', 'Credentials', 'Date', 'Recommendation', 'Rating', 'Comments', 'Addressed'], ...w.reviews.map((r) => [r.validator, r.credentials || '', r.review_date || '', human(r.recommendation), r.rating || '', r.comments || '', r.addressed ? 'Yes' : 'No'])])
+    w.reviews.length ? tableOf([cols(['Validator', 'Credentials', 'Date', 'Recommendation', 'Rating', 'Comments', 'Addressed'], [12, 14, 10, 19, 8, 23, 14]), ...w.reviews.map((r) => [r.validator, r.credentials || '', r.review_date || '', human(r.recommendation), r.rating || '', r.comments || '', r.addressed ? 'Yes' : 'No'])])
       : para('No expert reviews recorded.'));
-  content.push(heading('Version History', 2), tableOf([['Version', 'Stage', 'Recorded', 'Changes'], ...w.versions.slice().reverse().map((x) => [`v${x.version_no} ${x.label || ''}`.trim(), human(x.stage), String(x.created_at).slice(0, 10), x.change_notes || ''])]));
+  content.push(heading('Version History', 2), tableOf([cols(['Version', 'Stage', 'Recorded', 'Changes'], [16, 16, 16, 52]), ...w.versions.slice().reverse().map((x) => [`v${x.version_no} ${x.label || ''}`.trim(), human(x.stage), String(x.created_at).slice(0, 10), x.change_notes || ''])]));
   if (i.external_results) content.push(heading('Results Obtained Externally', 2), para(i.external_results), para('Recorded as reported; SYNCHRONIA does not compute statistics.'));
   return render(db, userId, { doc: { type: 'doc', content }, title: `Research Instrument — ${i.title}`, format, type: 'research_instrument', fileStem: `Instrument_${i.title}`, ...opts });
 }
@@ -119,14 +121,14 @@ export async function exportProgress(db, userId, projectId, { format = 'docx' } 
     fields([['Stage', w.stage_label], ['Role', p.role], ['Research area', p.research_area], ['Period', [p.start_date, p.end_date].filter(Boolean).join(' to ')],
       ['Progress', w.progress.total ? `${w.progress.done} of ${w.progress.total} milestones completed` : 'No milestones defined'], ['Next action', w.next_action?.text]]),
     heading('Milestones', 2),
-    w.milestones.length ? tableOf([['Milestone', 'Due', 'Status', 'Completed'], ...w.milestones.map((m) => [m.title, m.due_date || '', human(m.status), m.completed_on || ''])]) : para('No milestones recorded.'),
+    w.milestones.length ? tableOf([cols(['Milestone', 'Due', 'Status', 'Completed'], [46, 18, 18, 18]), ...w.milestones.map((m) => [m.title, m.due_date || '', human(m.status), m.completed_on || ''])]) : para('No milestones recorded.'),
     heading('Writing', 2),
-    w.documents.length ? tableOf([['Document', 'Type', 'Status', 'Sections done'], ...w.documents.map((d) => [d.title, KIND_LABEL[d.kind], human(d.status), `${d.sections_done} of ${d.sections}`])]) : para('No documents yet.'),
+    w.documents.length ? tableOf([cols(['Document', 'Type', 'Status', 'Sections done'], [44, 20, 16, 20]), ...w.documents.map((d) => [d.title, KIND_LABEL[d.kind], human(d.status), `${d.sections_done} of ${d.sections}`])]) : para('No documents yet.'),
     heading('Literature', 2), para(`${w.literature.length} source${w.literature.length === 1 ? '' : 's'} linked.`),
     heading('Instruments', 2), w.instruments.length ? bullets(w.instruments.map((i) => `${i.title} — ${human(i.stage)} (${i.versions} version${i.versions === 1 ? '' : 's'}, ${i.reviews} expert review${i.reviews === 1 ? '' : 's'})`)) : para('None linked.'),
     heading('Ethics', 2), w.ethics.length ? bullets(w.ethics.map((e) => `${e.committee || 'Ethics review'}: ${human(e.status)}${e.reference_no ? ` (${e.reference_no})` : ''}${e.expiry_date ? `, valid until ${e.expiry_date}` : ''}`)) : para('None recorded.'),
     heading('Dissemination', 2),
-    w.submissions.length ? tableOf([['Title', 'Venue', 'Status', 'Submitted'], ...w.submissions.map((s) => [s.title, s.venue || '', human(s.status), s.submission_date || ''])]) : para('No submissions recorded.'),
+    w.submissions.length ? tableOf([cols(['Title', 'Venue', 'Status', 'Submitted'], [40, 30, 15, 15]), ...w.submissions.map((s) => [s.title, s.venue || '', human(s.status), s.submission_date || ''])]) : para('No submissions recorded.'),
     ...(w.publications.length ? [bullets(w.publications.map((x) => `Publication: ${x.title}${x.venue ? `, ${x.venue}` : ''}${x.publication_date ? ` (${x.publication_date})` : ''}`))] : []),
     ...(w.presentations.length ? [bullets(w.presentations.map((x) => `Presentation: ${x.title}, ${x.conference}${x.presentation_date ? ` (${x.presentation_date})` : ''}`))] : []),
     heading('Funding and Collaboration', 2),
@@ -142,9 +144,9 @@ export async function exportDissemination(db, userId, { format = 'docx' } = {}, 
   const pres = db.prepare('SELECT * FROM conference_presentations WHERE user_id = ? AND deleted_at IS NULL ORDER BY presentation_date DESC').all(userId);
   const subs = db.prepare("SELECT * FROM research_submissions WHERE user_id = ? AND deleted_at IS NULL AND status NOT IN ('published','presented') ORDER BY updated_at DESC").all(userId);
   const content = [heading('Publications and Presentations Record', 1, 'center'),
-    heading('Publications', 2), pubs.length ? tableOf([['Title', 'Authors', 'Venue', 'Status', 'Date', 'DOI'], ...pubs.map((x) => [x.title, x.authors, x.venue || '', human(x.status), x.publication_date || '', x.doi || ''])]) : para('None recorded.'),
-    heading('Conference Presentations', 2), pres.length ? tableOf([['Title', 'Conference', 'Type', 'Date', 'Location'], ...pres.map((x) => [x.title, x.conference, human(x.presentation_type), x.presentation_date || '', x.location || ''])]) : para('None recorded.'),
-    heading('Submissions in Progress', 2), subs.length ? tableOf([['Title', 'Venue', 'Status', 'Submitted', 'Revision due'], ...subs.map((x) => [x.title, x.venue || '', human(x.status), x.submission_date || '', x.revision_due || ''])]) : para('None.'),
+    heading('Publications', 2), pubs.length ? tableOf([cols(['Title', 'Authors', 'Venue', 'Status', 'Date', 'DOI'], [28, 18, 18, 11, 9, 16]), ...pubs.map((x) => [x.title, x.authors, x.venue || '', human(x.status), x.publication_date || '', x.doi || ''])]) : para('None recorded.'),
+    heading('Conference Presentations', 2), pres.length ? tableOf([cols(['Title', 'Conference', 'Type', 'Date', 'Location'], [34, 26, 10, 12, 18]), ...pres.map((x) => [x.title, x.conference, human(x.presentation_type), x.presentation_date || '', x.location || ''])]) : para('None recorded.'),
+    heading('Submissions in Progress', 2), subs.length ? tableOf([cols(['Title', 'Venue', 'Status', 'Submitted', 'Revision due'], [34, 26, 14, 13, 13]), ...subs.map((x) => [x.title, x.venue || '', human(x.status), x.submission_date || '', x.revision_due || ''])]) : para('None.'),
   ];
   return render(db, userId, { doc: { type: 'doc', content }, title: 'Publications and Presentations Record', format, landscape: true, type: 'research_dissemination', fileStem: 'Publications_and_Presentations', ...opts });
 }

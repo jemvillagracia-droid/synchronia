@@ -76,7 +76,7 @@ export async function exportLd(db, userId, { year = 'all', format = 'xlsx', orde
 
   if (format === 'xlsx') {
     const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet(`L&D ${label}`.slice(0, 31), { pageSetup: { paperSize: EXCEL_PAPER[defaultPaper()] || 1, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } } });
+    const ws = wb.addWorksheet(`L&D ${label}`.slice(0, 31), { pageSetup: { paperSize: EXCEL_PAPER[defaultPaper()] || 1, orientation: ['a5', 'b5'].includes(defaultPaper()) ? 'landscape' : 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } } });
     ws.columns = [{ width: 62 }, { width: 13 }, { width: 13 }, { width: 11 }, { width: 15 }, { width: 40 }];
     const thin = { style: 'thin', color: { argb: 'FF000000' } };
     const box = { top: thin, left: thin, bottom: thin, right: thin };
@@ -97,6 +97,9 @@ export async function exportLd(db, userId, { year = 'all', format = 'xlsx', orde
         c.alignment = { vertical: 'middle', wrapText: true, horizontal: i === 1 ? 'left' : 'center' };
       });
       row.getCell(4).numFmt = '0.0';
+      // Excel only fits row heights when a cell is edited: size each row for its longest wrapped cell.
+      const lines = Math.max(Math.ceil(String(it.title).length / 58), Math.ceil(String(it.organizer || '').length / 36), 1);
+      row.height = Math.max(20, lines * 13 + 6);
     }
     const tr = ws.addRow(['TOTAL NUMBER OF HOURS', '', '', total, '', '']);
     ws.mergeCells(`A${tr.number}:C${tr.number}`);
@@ -109,13 +112,14 @@ export async function exportLd(db, userId, { year = 'all', format = 'xlsx', orde
   }
 
   const rows = [
-    [{ text: 'TITLE OF LEARNING AND DEVELOPMENT INTERVENTIONS / TRAINING PROGRAMS (write in full)', width: 34 }, { text: 'From (dd/mm/yyyy)', width: 11, align: 'center' }, { text: 'To (dd/mm/yyyy)', width: 11, align: 'center' },
-      { text: 'Number of hours', width: 8, align: 'center' }, { text: 'Type of L&D', width: 11, align: 'center' }, { text: 'Conducted / sponsored by (write in full)', width: 25, align: 'center' }],
+    [{ text: 'TITLE OF LEARNING AND DEVELOPMENT INTERVENTIONS / TRAINING PROGRAMS (write in full)', width: 27 }, { text: 'From', width: 13, align: 'center' }, { text: 'To', width: 13, align: 'center' },
+      { text: 'Hours', width: 9, align: 'center' }, { text: 'Type of L&D', width: 14, align: 'center' }, { text: 'Conducted / sponsored by (write in full)', width: 24, align: 'center' }],
     ...items.map((it) => [{ text: it.title, bold: true }, { text: it.from, align: 'center' }, { text: it.to, align: 'center' }, { text: num(it.hours), align: 'center' }, { text: type(it.ld_type), align: 'center' }, { text: it.organizer || '', align: 'center' }]),
     [{ text: 'TOTAL NUMBER OF HOURS', bold: true, colspan: 3, align: 'right' }, { text: num(total), bold: true, align: 'center' }, { text: '' }, { text: '' }],
   ];
-  const doc = { type: 'doc', content: [heading(SECTION, 2), para(`${label} · ${items.length} intervention${items.length === 1 ? '' : 's'} · ${num(total)} hours`), tableOf(rows)] };
-  return render(db, userId, { doc, title, format, type: 'pds_ld', fileStem, pdfRenderer });
+  const doc = { type: 'doc', content: [heading(SECTION, 2), para(`${label} · ${items.length} intervention${items.length === 1 ? '' : 's'} · ${num(total)} hours · inclusive dates of attendance in dd/mm/yyyy`), tableOf(rows)] };
+  // Six columns do not fit upright on the small papers (A5, B5): those print in landscape.
+  return render(db, userId, { doc, title, format, type: 'pds_ld', fileStem, pdfRenderer, landscape: ['a5', 'b5'].includes(defaultPaper()) });
 }
 
 // ── Read an existing PDS (Excel) ────────────────────────────
