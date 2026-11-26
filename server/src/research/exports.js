@@ -18,7 +18,7 @@ const fields = (rows) => tableOf(rows.filter(([, v]) => v !== undefined && v !==
 const cols = (heads, widths) => heads.map((h, i) => ({ text: h, width: widths[i] }));
 const sectionBody = (b) => (b && Array.isArray(b.content) ? b.content : []);
 
-export async function render(db, userId, { doc, title, format, landscape = false, pageSize = null, type, fileStem, pdfRenderer }) {
+export async function render(db, userId, { doc, title, format, landscape = false, pageSize = null, type, fileStem, pdfRenderer, font = 'Times New Roman' }) {
   if (!['docx', 'pdf'].includes(format)) throw new HttpError(422, 'Choose Word or PDF');
   if (format === 'pdf' && !pdfRenderer) throw new HttpError(503, 'PDF output is produced by the SYNCHRONIA desktop app.');
   const lh = letterheadFor(db, userId);
@@ -28,7 +28,7 @@ export async function render(db, userId, { doc, title, format, landscape = false
     const g = pageGeometry(pageSize, landscape);
     buffer = await buildDocument({ title, children: toDocxChildren(doc, { width: g.contentWidth, image }), pageSize, landscape, letterhead: lh, showTitle: false });
   } else {
-    buffer = await pdfRenderer(toHtmlPage(doc, { title, page: (PAPERS[pageSize || defaultPaper()] || PAPERS.letter).css, landscape, letterhead: lh, image }), { title });
+    buffer = await pdfRenderer(toHtmlPage(doc, { title, page: (PAPERS[pageSize || defaultPaper()] || PAPERS.letter).css, landscape, letterhead: lh, image, font: `"${font}", Times, serif` }), { title });
   }
   // Verification checks that the document's own first heading is readable in the file.
   const first = plainText(doc.content?.[0]).trim();

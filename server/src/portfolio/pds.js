@@ -62,6 +62,7 @@ export function setFolder(db, userId, year, url) {
 }
 
 // ── Export in the PDS layout ────────────────────────────────
+const DOC_FONT = 'Times New Roman'; // the SYNCHRONIA document font, as in every other report
 const SECTION = 'VII. LEARNING AND DEVELOPMENT (L&D) INTERVENTIONS/TRAINING PROGRAMS ATTENDED';
 const EXCEL_PAPER = { letter: 1, legal: 5, a4: 9, a5: 11, b5: 13, folio: 14 };
 
@@ -82,18 +83,18 @@ export async function exportLd(db, userId, { year = 'all', format = 'xlsx', orde
     const box = { top: thin, left: thin, bottom: thin, right: thin };
     const grey = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAEAEA' } };
     ws.mergeCells('A1:F1');
-    Object.assign(ws.getCell('A1'), { value: SECTION, font: { bold: true, italic: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Arial Narrow' }, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF969696' } }, alignment: { vertical: 'middle' } });
+    Object.assign(ws.getCell('A1'), { value: SECTION, font: { bold: true, italic: true, color: { argb: 'FFFFFFFF' }, size: 11, name: DOC_FONT }, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF969696' } }, alignment: { vertical: 'middle' } });
     ws.getRow(1).height = 20;
     ws.mergeCells('A2:A3'); ws.mergeCells('B2:C2'); ws.mergeCells('D2:D3'); ws.mergeCells('E2:E3'); ws.mergeCells('F2:F3');
     const head = { A2: '30.  TITLE OF LEARNING AND DEVELOPMENT INTERVENTIONS/TRAINING PROGRAMS\n(Write in full)', B2: 'INCLUSIVE DATES OF ATTENDANCE\n(dd/mm/yyyy)', B3: 'From', C3: 'To',
       D2: 'NUMBER OF HOURS', E2: 'Type of L&D\n(Managerial/ Supervisory/ Technical/etc)', F2: 'CONDUCTED/ SPONSORED BY\n(Write in full)' };
-    for (const [ref, v] of Object.entries(head)) Object.assign(ws.getCell(ref), { value: v, font: { size: 8, name: 'Arial Narrow' }, alignment: { horizontal: 'center', vertical: 'middle', wrapText: true }, fill: grey });
+    for (const [ref, v] of Object.entries(head)) Object.assign(ws.getCell(ref), { value: v, font: { size: 8, name: DOC_FONT }, alignment: { horizontal: 'center', vertical: 'middle', wrapText: true }, fill: grey });
     for (const r of [2, 3]) for (const c of 'ABCDEF') Object.assign(ws.getCell(`${c}${r}`), { border: box, fill: grey });
     ws.getRow(2).height = 42; ws.getRow(3).height = 16;
     for (const it of items) {
       const row = ws.addRow([it.title, it.from, it.to, it.hours == null ? '' : Number(it.hours), type(it.ld_type), it.organizer || '']);
       row.eachCell({ includeEmpty: true }, (c, i) => {
-        c.border = box; c.font = { bold: true, size: 10, name: 'Arial' };
+        c.border = box; c.font = { bold: true, size: 10, name: DOC_FONT };
         c.alignment = { vertical: 'middle', wrapText: true, horizontal: i === 1 ? 'left' : 'center' };
       });
       row.getCell(4).numFmt = '0.0';
@@ -103,7 +104,7 @@ export async function exportLd(db, userId, { year = 'all', format = 'xlsx', orde
     }
     const tr = ws.addRow(['TOTAL NUMBER OF HOURS', '', '', total, '', '']);
     ws.mergeCells(`A${tr.number}:C${tr.number}`);
-    tr.eachCell({ includeEmpty: true }, (c) => { c.border = box; c.font = { bold: true, size: 10, name: 'Arial' }; c.alignment = { horizontal: 'center', vertical: 'middle' }; });
+    tr.eachCell({ includeEmpty: true }, (c) => { c.border = box; c.font = { bold: true, size: 10, name: DOC_FONT }; c.alignment = { horizontal: 'center', vertical: 'middle' }; });
     tr.getCell(1).alignment = { horizontal: 'right', vertical: 'middle' }; tr.getCell(4).numFmt = '0.0';
     ws.views = [{ state: 'frozen', ySplit: 3 }];
     ws.pageSetup.printTitlesRow = '1:3';
@@ -117,7 +118,20 @@ export async function exportLd(db, userId, { year = 'all', format = 'xlsx', orde
     ...items.map((it) => [{ text: it.title, bold: true }, { text: it.from, align: 'center' }, { text: it.to, align: 'center' }, { text: num(it.hours), align: 'center' }, { text: type(it.ld_type), align: 'center' }, { text: it.organizer || '', align: 'center' }]),
     [{ text: 'TOTAL NUMBER OF HOURS', bold: true, colspan: 3, align: 'right' }, { text: num(total), bold: true, align: 'center' }, { text: '' }, { text: '' }],
   ];
-  const doc = { type: 'doc', content: [heading(SECTION, 2), para(`${label} · ${items.length} intervention${items.length === 1 ? '' : 's'} · ${num(total)} hours · inclusive dates of attendance in dd/mm/yyyy`), tableOf(rows)] };
+  // SYNCHRONIA document style: centred title and subtitle, the person, then the PDS table.
+  const prof = db.prepare('SELECT full_name, professional_title, current_position, current_office, current_institution FROM professional_profiles WHERE user_id = ?').get(userId) || {};
+  const labelled = (k, v) => ({ type: 'paragraph', content: [{ type: 'text', text: `${k}: `, marks: [{ type: 'bold' }] }, { type: 'text', text: v }] });
+  const position = [prof.current_position || prof.professional_title, prof.current_office].filter(Boolean).join(', ');
+  const doc = { type: 'doc', content: [
+    heading('Learning and Development Interventions Attended', 1, 'center'),
+    { type: 'paragraph', attrs: { textAlign: 'center' }, content: [{ type: 'text', text: `Personal Data Sheet (CS Form 212), Section VII · ${label}`, marks: [{ type: 'italic' }] }] },
+    labelled('Name', prof.full_name || '—'),
+    ...(position ? [labelled('Position', position)] : []),
+    ...(prof.current_institution ? [labelled('Institution', prof.current_institution)] : []),
+    labelled('Summary', `${items.length} intervention${items.length === 1 ? '' : 's'} · ${num(total)} hours · inclusive dates of attendance in dd/mm/yyyy, most recent first`),
+    heading(SECTION, 2),
+    tableOf(rows),
+  ] };
   // Six columns do not fit upright on the small papers (A5, B5): those print in landscape.
   return render(db, userId, { doc, title, format, type: 'pds_ld', fileStem, pdfRenderer, landscape: ['a5', 'b5'].includes(defaultPaper()) });
 }
