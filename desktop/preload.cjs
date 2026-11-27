@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('synchronia', {
   version: info.version,
   dataDir: info.dataDir,
   pickFile: () => ipcRenderer.invoke('synchronia:pick-file'),
+  pickFolder: () => ipcRenderer.invoke('synchronia:pick-folder'),
   openPath: (p) => ipcRenderer.invoke('synchronia:open-path', String(p)),
   openExternal: (url) => ipcRenderer.invoke('synchronia:open-external', String(url)),
   showDataFolder: () => ipcRenderer.invoke('synchronia:show-data-folder'),

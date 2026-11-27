@@ -156,6 +156,31 @@ const launch = async () => {
   ok('Restoring the backup returns the data to that moment', awards.includes('Outstanding Faculty Award') && !awards.includes('Added after the backup'), awards.join(', '));
   ok('Data from before the backup is intact', (await api('GET', `/academic/syllabi/${sid}/document`)).status === 200 && (await api('GET', '/records/trainings?limit=200')).body.items.length >= 4);
 
+  // ── 8b. Copies of backups in another folder (e.g. a cloud-drive folder) ──
+  const cloud = S + '/cloud'; fs.mkdirSync(cloud);
+  await api('PUT', '/system/backup-copy', { dir: cloud }); // the folder picker is a native dialog; set it the same way the app does
+  await go('/settings?tab=data'); await w.waitForSelector('text=Copy backups to another folder');
+  await w.getByRole('button', { name: 'Back up and copy now' }).click(); await w.waitForTimeout(1500);
+  const copied = fs.readdirSync(path.join(cloud, 'SYNCHRONIA Backups')).filter((f) => f.endsWith('.db'));
+  ok('Back up and copy now puts the backup in the chosen folder and says so', copied.length >= 1 && /Last copied/.test(await w.locator('section.panel', { hasText: 'Copy backups to another folder' }).innerText()));
+  fs.rmSync(cloud, { recursive: true, force: true });
+  await w.getByRole('button', { name: 'Back up and copy now' }).click(); await w.waitForTimeout(1500);
+  ok('If the folder is gone, the failure is shown and the backup is still made here', /last copy failed/i.test(await w.locator('section.panel', { hasText: 'Copy backups to another folder' }).innerText()));
+  await w.getByRole('button', { name: 'Stop copying' }).click(); await w.waitForTimeout(500);
+
+  // ── 8c. Notification settings ──
+  await go('/settings'); await w.waitForSelector('text=Windows notifications while SYNCHRONIA is in the background');
+  await w.getByLabel('Sounds for System Timer warnings and “system down”').uncheck(); await w.waitForTimeout(600);
+  const mirrored = await w.evaluate(() => JSON.parse(localStorage.getItem('synchronia-notify') || '{}'));
+  ok('Turning timer sounds off is saved and reaches the timer', (await api('GET', '/preferences')).body.notify_sound === false && mirrored.sound === false);
+  await w.getByLabel('Sounds for System Timer warnings and “system down”').check(); await w.waitForTimeout(400);
+  await w.route('**/api/preferences', (route) => (route.request().method() === 'PUT' ? route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Disk is full' }) }) : route.continue()));
+  const okB = await w.locator('.toast.ok').count();
+  await w.getByLabel('Windows notifications while SYNCHRONIA is in the background').click(); await w.waitForTimeout(900);
+  ok('A setting that fails to save goes back, says why, and shows no success', await w.getByLabel('Windows notifications while SYNCHRONIA is in the background').isChecked()
+    && /Setting not saved: Disk is full/.test((await w.locator('.toast.error').allInnerTexts()).join(' ')) && (await w.locator('.toast.ok').count()) === okB);
+  await w.unroute('**/api/preferences');
+
   // ── 9. The same records export the same way every time ───
   const cv = (await api('POST', '/cv', { name: 'Academic CV', cv_type: 'academic' })).body;
   const JSZip = require('jszip');

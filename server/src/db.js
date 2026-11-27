@@ -69,6 +69,20 @@ function migrate(db, file = ':memory:') {
 /** Run fn inside a transaction. */
 const depth = new WeakMap();
 /** Run fn atomically. Nested calls use savepoints, so an outer transaction can group several record writes. */
+/**
+ * Runs a query over a long id list in chunks, so no single statement exceeds SQLite's limit on
+ * bound values (a list of many thousands of ids otherwise fails with "too many SQL variables").
+ * `run(chunk, placeholders)` returns rows; the rows of every chunk are concatenated in order.
+ */
+export function inChunks(ids, run, size = 500) {
+  const out = [];
+  for (let i = 0; i < ids.length; i += size) {
+    const chunk = ids.slice(i, i + size);
+    out.push(...run(chunk, chunk.map(() => '?').join(',')));
+  }
+  return out;
+}
+
 export function tx(db, fn) {
   const d = depth.get(db) || 0;
   const sp = `sp_${d}`;

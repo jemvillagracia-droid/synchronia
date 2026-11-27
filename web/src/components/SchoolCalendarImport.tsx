@@ -9,13 +9,13 @@ import { useApp } from './AppContext';
 
 type Kind = 'term' | 'exam' | 'holiday' | 'break' | 'enrollment' | 'deadline' | 'event';
 interface Item { start_date: string; end_date: string | null; title: string; kind: Kind; no_classes: boolean; notes: string[]; source: string; already: boolean; keep?: boolean }
-interface Read { file_name: string | null; school_year: string | null; items: Item[]; unread: string[] }
+interface Read { file_name: string | null; school_year: string | null; items: Item[]; unread: string[]; picture?: { kind: string; confidence: number } | null }
 interface Imported { id: number; file_name: string | null; school_year: string | null; created_at: string; items: number; first_date: string; last_date: string }
 
 export const SCHOOL_KIND_LABEL: Record<Kind, string> = { term: 'Classes', exam: 'Examinations', holiday: 'Holiday', break: 'Break', enrollment: 'Enrolment', deadline: 'Deadline', event: 'School event' };
-const CALENDAR_FILES = { ext: /\.(pdf|docx|xlsx|csv|txt)$/i, maxMb: 30,
-  refuse: 'cannot be read. Use the PDF, Word (.docx), Excel (.xlsx), CSV or text file of the calendar — a picture or photo of a calendar cannot be read; paste its text instead.' };
-const ACCEPT = '.pdf,.docx,.xlsx,.csv,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain';
+const CALENDAR_FILES = { ext: /\.(pdf|docx|xlsx|csv|txt|png|jpe?g|webp|bmp|tiff?|gif|heic)$/i, maxMb: 30,
+  refuse: 'cannot be read. Use the calendar as a PDF, Word (.docx), Excel (.xlsx), CSV or text file, or a photo or screenshot (JPG or PNG).' };
+const ACCEPT = '.pdf,.docx,.xlsx,.csv,.txt,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff,.gif,image/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain';
 
 export function SchoolCalendarImport({ onClose, onSaved }: { onClose: () => void; onSaved: (firstDate: string) => void }) {
   const { toast } = useApp();
@@ -72,12 +72,12 @@ export function SchoolCalendarImport({ onClose, onSaved }: { onClose: () => void
               onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
               onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) void readFile(f); }}>
               <Icon name="upload" />
-              <b>{busy === 'reading' ? 'Reading the calendar…' : 'Choose or drop the calendar file'}</b>
-              <span className="faint">PDF, Word (.docx), Excel (.xlsx), CSV or text</span>
+              <b>{busy === 'reading' ? 'Reading the calendar… (a photo takes a few seconds)' : 'Choose or drop the calendar file'}</b>
+              <span className="faint">PDF, Word (.docx), Excel (.xlsx), CSV, text — or a photo or screenshot of the calendar</span>
             </button>
             <input ref={file} type="file" hidden accept={ACCEPT} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void readFile(f); }} />
             <details className="sci-paste">
-              <summary>Or paste the calendar text (from an email, a web page or a scanned copy you typed out)</summary>
+              <summary>Or paste the calendar text (from an email or a web page)</summary>
               <textarea className="textarea" rows={6} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={'SY 2026–2027\nAugust 10, 2026 — Opening of Classes\nOctober 19–24 — Midterm Examinations'} aria-label="Calendar text" />
               <div><button className="btn btn-sm" onClick={readText} disabled={!paste.trim() || !!busy}>Read the text</button></div>
             </details>
@@ -101,6 +101,11 @@ export function SchoolCalendarImport({ onClose, onSaved }: { onClose: () => void
                 <h2 className="display" style={{ fontSize: 28, margin: 0 }}>Check the dates</h2>
                 <p className="muted" style={{ margin: '6px 0 0' }}>{plural(read.items.length, 'date')} read from <b>{read.file_name || 'the calendar'}</b>{read.school_year ? <> · School year <b>{read.school_year}</b> (dates written without a year are placed in it: June to December in {read.school_year.slice(0, 4)}, January to May in {read.school_year.slice(-4)})</> : ' · no school year was found, so dates without a year are marked to check'}. Edit anything that is not right, untick what you do not need, then save.</p>
               </div>
+              {read.picture && (
+                <div className={`alert ${read.picture.confidence >= 75 ? 'info' : ''}`} role="note">
+                  These dates were read from a {read.picture.kind === 'jpeg' ? 'photo' : 'picture'} ({read.picture.confidence}% sure of the reading{read.picture.confidence < 75 ? ' — the picture was hard to read' : ''}). Check each date and title against the original before saving.
+                </div>
+              )}
               <div className="row wrap" style={{ gap: 8 }}>
                 <button className="btn btn-sm" onClick={() => all(true)}>Select all</button>
                 <button className="btn btn-sm" onClick={() => all(false)}>Select none</button>

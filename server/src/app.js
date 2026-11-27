@@ -19,7 +19,7 @@ import { PAPERS, setDefaultPaper } from './paper.js';
 import { researchRouter } from './research/routes.js';
 import { docImagesRouter } from './docimages.js';
 import { academicRouter } from './academic/routes.js';
-import { backupFile, backupNow, importBackup, integrity, listBackups, scheduleRestore } from './backup.js';
+import { backupFile, backupNow, importBackup, integrity, listBackups, scheduleRestore, getBackupCopy, setBackupCopy } from './backup.js';
 import { tx } from './db.js';
 import { ROOT, APP_NAME, APP_TAGLINE, APP_VERSION } from './config.js';
 
@@ -112,6 +112,8 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
       context_panel_open: !!p.context_panel_open,
       sidebar_collapsed: !!p.sidebar_collapsed,
       reduce_motion: !!p.reduce_motion,
+      notify_desktop: p.notify_desktop !== 0,
+      notify_sound: p.notify_sound !== 0,
       theme: THEMES.includes(p.theme) ? p.theme : 'violet',
       paper_size: PAPERS[p.paper_size] ? p.paper_size : 'letter',
       paper_sizes: Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.label])),
@@ -144,7 +146,7 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
       if (!THEMES.includes(b.theme)) throw new HttpError(422, 'Unknown theme', { theme: `One of: ${THEMES.join(', ')}` });
       sets.push('theme = ?'); params.push(b.theme); changes.theme = b.theme;
     }
-    for (const k of ['context_panel_open', 'sidebar_collapsed', 'reduce_motion']) {
+    for (const k of ['context_panel_open', 'sidebar_collapsed', 'reduce_motion', 'notify_desktop', 'notify_sound']) {
       if (k in b) { sets.push(`${k} = ?`); params.push(b[k] ? 1 : 0); if (k === 'reduce_motion') changes.reduce_motion = !!b[k]; }
     }
     if (sets.length) {
@@ -238,6 +240,20 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
     const b = backupNow(db, dataDir, 'manual');
     audit(db, req.user.id, 'export', null, 'export', `Backup written: ${b.file}`);
     res.status(201).json(b);
+  });
+  // A copy of every backup in a folder of your choice (e.g. one Google Drive or OneDrive keeps on other computers).
+  api.get('/system/backup-copy', (_req, res) => res.json(dataDir ? getBackupCopy(dataDir) : { dir: null, unavailable: true }));
+  api.put('/system/backup-copy', (req, res) => {
+    if (!dataDir) throw new HttpError(503, 'Backups are available in the desktop app');
+    const r = setBackupCopy(dataDir, req.body?.dir);
+    audit(db, req.user.id, 'export', null, 'settings', r.dir ? `Backups will also be copied to ${r.dir}` : 'Stopped copying backups to another folder');
+    res.json(r);
+  });
+  api.post('/system/backup-copy/now', (req, res) => {
+    if (!dataDir) throw new HttpError(503, 'Backups are available in the desktop app');
+    if (!getBackupCopy(dataDir).dir) throw new HttpError(422, 'Choose a folder first');
+    const b = backupNow(db, dataDir, 'manual');
+    res.json({ backup: b, copy: getBackupCopy(dataDir) });
   });
   api.get('/system/backups/:name/download', (req, res) => {
     if (!dataDir) throw new HttpError(503, 'Backups are available in the desktop app');

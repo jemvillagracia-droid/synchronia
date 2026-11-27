@@ -84,7 +84,14 @@ const ok = (n, c, x = '') => { R.push(!!c); console.log(`${c ? 'PASS' : 'FAIL'} 
   await w.getByRole('button', { name: 'Import school calendar' }).click(); await w.waitForSelector('.sci-drop');
   fs.writeFileSync(S + '/photo.jpg', Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
   await w.locator('.sci input[type=file]').setInputFiles(S + '/photo.jpg'); await w.waitForTimeout(500);
-  ok('A photo of a calendar is refused with advice', /picture or photo of a calendar cannot be read/.test(await w.locator('.sci .alert').innerText()));
+  ok('A broken picture is refused with advice', /could not be read|No text could be read/.test(await w.locator('.sci .alert').innerText()));
+  // A real photo of a calendar is read (offline OCR) and reviewed like any file.
+  await w.locator('.sci input[type=file]').setInputFiles(path.join(__dirname, '..', '..', 'server', 'test', 'fixtures', 'calendar-photo.jpg'));
+  await w.waitForSelector('.sci-table', { timeout: 60000 });
+  const photoNote = await w.locator('.sci [role=note]').innerText();
+  const photoRows = await w.locator('.sci-row:not(.sci-th)').count();
+  ok('A photo of the calendar is read, with a notice to check it against the original', photoRows === 8 && /read from a photo/.test(photoNote), `${photoRows} rows · ${photoNote.slice(0, 80)}`);
+  await w.getByRole('button', { name: 'Choose another file' }).click();
   await w.locator('.sci-paste summary').click(); await w.fill('.sci-paste textarea', 'SY 2026-2027\nFebruary 25 — EDSA People Power Anniversary');
   await w.getByRole('button', { name: 'Read the text' }).click(); await w.waitForSelector('.sci-table');
   ok('Pasted text is read too', await w.locator('.sci-row:not(.sci-th) input[type=date]').first().inputValue() === '2027-02-25');

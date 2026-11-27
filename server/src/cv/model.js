@@ -1,7 +1,7 @@
 // CV Studio service: profiles, sections, entries, portfolio synchronisation, composition and versioning.
 import { RESOURCES } from '../resources.js';
 import { HttpError, audit, update as updateRecord } from '../repo.js';
-import { tx } from '../db.js';
+import { tx, inChunks } from '../db.js';
 import { SECTIONS, SECTION_BY_KEY, DEFAULT_ORDER, DEFAULT_TEMPLATE } from './sections.js';
 import { TEMPLATES } from './templates.js';
 
@@ -87,6 +87,7 @@ const templateId = (db, key) => {
 const sourcesOf = (def) => (def.source === null || def.source === 'profile' ? [] : Array.isArray(def.source) ? def.source : [def.source]);
 
 function loadRows(db, userId, type, ids = null) {
+  if (ids && ids.length > 500) return inChunks(ids, (chunk) => loadRows(db, userId, type, chunk));
   const r = RESOURCES[type];
   if (type === 'teaching_assignments') {
     const where = ids ? `AND a.id IN (${ids.map(() => '?').join(',')})` : '';

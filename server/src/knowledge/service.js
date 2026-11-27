@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import JSZip from 'jszip';
 import { DATA_DIR, APP_NAME, APP_VERSION } from '../config.js';
 import { RESOURCES } from '../resources.js';
+import { inChunks } from '../db.js';
 import { HttpError, createHooks, dateEnd, dateStart, displayTitle, driveFileId, getResource } from '../repo.js';
 import { decrypt } from '../secrets.js';
 
@@ -35,7 +36,7 @@ createHooks.file_references = (db, userId, input) => {
 
 function usage(db, userId, ids) {
   if (!ids.length) return {};
-  const rows = db.prepare(`SELECT file_ref_id, entity_type, entity_id, created_at FROM evidence_links WHERE user_id = ? AND file_ref_id IN (${ids.map(() => '?').join(',')}) ORDER BY id`).all(userId, ...ids);
+  const rows = inChunks(ids, (chunk, ph) => db.prepare(`SELECT file_ref_id, entity_type, entity_id, created_at FROM evidence_links WHERE user_id = ? AND file_ref_id IN (${ph}) ORDER BY id`).all(userId, ...chunk));
   const out = {};
   for (const l of rows) {
     const r = RESOURCES[l.entity_type];

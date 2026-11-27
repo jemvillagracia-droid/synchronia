@@ -67,13 +67,17 @@ function tick() {
 }
 if (typeof window !== 'undefined') window.setInterval(tick, 250);
 
+/** Settings › Notifications, mirrored here so the timer can honour them at any moment. */
+const NOTIFY_KEY = 'synchronia-notify';
+export function setNotificationPrefs(p: { desktop: boolean; sound: boolean }) { try { localStorage.setItem(NOTIFY_KEY, JSON.stringify(p)); } catch { /* defaults apply */ } }
+function notificationPrefs(): { desktop: boolean; sound: boolean } { try { return { desktop: true, sound: true, ...JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}') }; } catch { return { desktop: true, sound: true }; } }
 function notify(title: string, body: string) {
-  if (!document.hasFocus()) desktop?.notify?.(title, body).catch(() => {});
+  if (!document.hasFocus() && notificationPrefs().desktop) desktop?.notify?.(title, body).catch(() => {});
 }
 
 let audio: AudioContext | null = null;
 function beep(n: number) {
-  if (state.muted) return;
+  if (state.muted || !notificationPrefs().sound) return;
   try {
     audio ||= new AudioContext();
     for (let i = 0; i < n; i++) {

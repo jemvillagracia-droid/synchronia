@@ -12,7 +12,7 @@ interface Ctx {
   schema: Schema | null;
   profileName: string | null;
   setProfileName: (n: string | null) => void;
-  updatePrefs: (patch: Partial<Omit<Preferences, 'dashboard_layout'>> & { dashboard_layout?: Preferences['dashboard_layout'] | null }) => Promise<Preferences>;
+  updatePrefs: (patch: Partial<Omit<Preferences, 'dashboard_layout'>> & { dashboard_layout?: Preferences['dashboard_layout'] | null }) => Promise<Preferences | null>;
   toast: (text: string, kind?: Toast['kind'], actions?: ToastAction[]) => void;
   openCapture: () => void;
   openSearch: () => void;
@@ -78,10 +78,15 @@ export function AppProvider({ user, children }: ProviderProps) {
   }, [toast]);
 
   const updatePrefs = useCallback(async (patch: Parameters<Ctx['updatePrefs']>[0]) => {
-    const next = await api.put<Preferences>('/preferences', patch);
-    setPrefs(next);
-    return next;
-  }, []);
+    // Shown at once; confirmed by the server; put back if the save fails (the caller reports the error).
+    let before: Preferences | null = null;
+    setPrefs((p) => { before = p; return p && !('dashboard_layout' in patch) ? { ...p, ...patch } as Preferences : p; });
+    try {
+      const next = await api.put<Preferences>('/preferences', patch);
+      setPrefs(next);
+      return next;
+    } catch (e) { setPrefs(before); toast(`Setting not saved: ${(e as Error).message}`, 'error'); return null; } // never silent; callers show success only on a result
+  }, [toast]);
 
   const value: Ctx = {
     user, prefs, schema, profileName, setProfileName, updatePrefs, toast,

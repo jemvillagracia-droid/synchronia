@@ -289,3 +289,42 @@ test('backups: a copy can be saved; imports are verified; names cannot escape th
   assert.equal(r.status, 422);
   assert.match(r.body.error, /newer version/);
 });
+
+test('backups are also copied to a chosen folder (e.g. one a cloud drive keeps on other computers), honestly reported', async () => {
+  const cloud = fs.mkdtempSync(path.join(os.tmpdir(), 'synchronia-cloud-'));
+  assert.equal((await call('PUT', '/system/backup-copy', { dir: 'relative/folder' })).status, 422);
+  assert.equal((await call('PUT', '/system/backup-copy', { dir: path.join(cloud, 'missing') })).status, 422);
+  assert.equal((await call('PUT', '/system/backup-copy', { dir: tmp })).status, 422, 'not inside the data folder');
+  const set = ok(await call('PUT', '/system/backup-copy', { dir: cloud }));
+  assert.equal(set.dir, path.resolve(cloud));
+  const now = ok(await call('POST', '/system/backup-copy/now'));
+  const copied = path.join(cloud, 'SYNCHRONIA Backups', now.backup.file);
+  assert.ok(fs.existsSync(copied), 'the backup is in the chosen folder');
+  assert.equal(fs.readFileSync(copied).subarray(0, 15).toString(), 'SQLite format 3');
+  assert.equal(now.copy.last_file, now.backup.file);
+  assert.ok(!fs.readdirSync(path.join(cloud, 'SYNCHRONIA Backups')).some((f) => f.endsWith('.partial')), 'no half-written files left');
+  // Automatic backups are copied too.
+  const auto = backupNow(db, tmp, 'scheduled');
+  assert.ok(fs.existsSync(path.join(cloud, 'SYNCHRONIA Backups', auto.file)));
+  // The copy on the other computer can be imported there.
+  const imp = ok(await call('POST', '/system/backups/import', undefined, { bin: fs.readFileSync(copied) }), 201);
+  assert.equal(imp.ok, true);
+  // If the folder disappears, the backup is still made here and the failure is reported, not hidden.
+  fs.rmSync(cloud, { recursive: true, force: true });
+  const still = backupNow(db, tmp, 'manual');
+  assert.ok(fs.existsSync(path.join(tmp, 'backups', still.file)), 'local backup still written');
+  const st = ok(await call('GET', '/system/backup-copy'));
+  assert.ok(st.last_error, 'the failed copy is reported');
+  assert.notEqual(st.last_file, still.file);
+  ok(await call('PUT', '/system/backup-copy', { dir: '' }));
+  assert.equal(ok(await call('GET', '/system/backup-copy')).dir, null);
+});
+
+test('notification settings are saved and default to on', async () => {
+  const p = ok(await call('GET', '/preferences'));
+  assert.equal(p.notify_desktop, true); assert.equal(p.notify_sound, true);
+  ok(await call('PUT', '/preferences', { notify_desktop: false, notify_sound: false }));
+  const q = ok(await call('GET', '/preferences'));
+  assert.equal(q.notify_desktop, false); assert.equal(q.notify_sound, false);
+  ok(await call('PUT', '/preferences', { notify_desktop: true, notify_sound: true }));
+});

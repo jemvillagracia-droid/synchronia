@@ -68,7 +68,7 @@ export function NexusPage() {
 
   async function persist(next: LayoutItem[]) {
     setLayout(next);
-    try { await updatePrefs({ dashboard_layout: next }); } catch { toast('Could not save the layout', 'error'); }
+    try { await updatePrefs({ dashboard_layout: next }); } catch { /* reported by updatePrefs */ }
   }
   const move = (id: string, dir: -1 | 1) => {
     const i = layout.findIndex((w) => w.id === id);
@@ -87,7 +87,7 @@ export function NexusPage() {
     persist(next);
   };
   async function resetLayout() {
-    await updatePrefs({ dashboard_layout: null });
+    if (!(await updatePrefs({ dashboard_layout: null }))) return;
     load();
     toast('Layout reset to the default for your academic mode', 'ok');
   }

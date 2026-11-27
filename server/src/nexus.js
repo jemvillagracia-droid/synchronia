@@ -395,11 +395,12 @@ function commandDisplay(db, userId, t) {
     let total = 0, attention = 0;
     for (const g of PORTFOLIO_GROUPS) for (const key of g.resources) {
       const r = RESOURCES[key];
+      // One query per record type for the records that have live evidence (not one per record).
+      const evidenced = new Set(db.prepare(`SELECT DISTINCT e.entity_id id FROM evidence_links e JOIN external_file_references f ON f.id = e.file_ref_id AND f.deleted_at IS NULL
+          WHERE e.entity_type = ? AND e.user_id = ?`).all(key, userId).map((x) => Number(x.id)));
       for (const row of db.prepare(`SELECT * FROM ${r.table} WHERE user_id = ? AND deleted_at IS NULL`).all(userId)) {
         total += 1;
-        const ev = db.prepare(`SELECT COUNT(*) n FROM evidence_links e JOIN external_file_references f ON f.id = e.file_ref_id AND f.deleted_at IS NULL
-          WHERE e.entity_type = ? AND e.entity_id = ?`).get(key, row.id).n;
-        if (!ev || missingRecommended(r, row).length) attention += 1;
+        if (!evidenced.has(row.id) || missingRecommended(r, row).length) attention += 1;
       }
     }
     return { total, attention };

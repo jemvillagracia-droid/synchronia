@@ -3,7 +3,7 @@
 import { plainText } from './richdoc.js';
 import { RESOURCES, DATE_ORDER } from './resources.js';
 import { encrypt, decrypt } from './secrets.js';
-import { tx } from './db.js';
+import { tx, inChunks } from './db.js';
 
 export class HttpError extends Error {
   constructor(status, message, details) {
@@ -145,9 +145,9 @@ const hasVerification = (r) => !!r.fields.verification || !!r.evidence;
 /** Number of active evidence references linked to each of the given record ids. */
 export function evidenceCounts(db, r, ids) {
   if (!ids.length || !hasVerification(r)) return {};
-  const rows = db.prepare(`SELECT e.entity_id id, COUNT(*) n FROM evidence_links e
+  const rows = inChunks(ids, (chunk, ph) => db.prepare(`SELECT e.entity_id id, COUNT(*) n FROM evidence_links e
       JOIN external_file_references f ON f.id = e.file_ref_id AND f.deleted_at IS NULL
-      WHERE e.entity_type = ? AND e.entity_id IN (${ids.map(() => '?').join(',')}) GROUP BY e.entity_id`).all(r.key, ...ids);
+      WHERE e.entity_type = ? AND e.entity_id IN (${ph}) GROUP BY e.entity_id`).all(r.key, ...chunk));
   return Object.fromEntries(rows.map((x) => [x.id, x.n]));
 }
 
@@ -195,35 +195,48 @@ function indexText(r, row) {
   return { title: displayTitle(r, row), body: parts.join(' \n ') };
 }
 
+/**
+ * Search index entries are found through search_rows (entity → index row), because the full-text
+ * table cannot look up by entity without scanning every row.
+ */
+export function searchDrop(db, type, id) {
+  const m = db.prepare('SELECT fts_rowid FROM search_rows WHERE entity_type = ? AND entity_id = ?').get(type, Number(id));
+  if (!m) return;
+  db.prepare('DELETE FROM search_index WHERE rowid = ?').run(m.fts_rowid);
+  db.prepare('DELETE FROM search_rows WHERE entity_type = ? AND entity_id = ?').run(type, Number(id));
+}
+
+export function searchPut(db, type, id, userId, title, body) {
+  searchDrop(db, type, id);
+  const res = db.prepare('INSERT INTO search_index (entity_type, entity_id, user_id, title, body) VALUES (?, ?, ?, ?, ?)')
+    .run(type, Number(id), userId, title, body);
+  db.prepare('INSERT INTO search_rows (entity_type, entity_id, fts_rowid) VALUES (?, ?, ?)').run(type, Number(id), res.lastInsertRowid);
+}
+
 /** Generated documents are searchable by title (their content stays in the file). */
 export function indexReport(db, report) {
-  db.prepare("DELETE FROM search_index WHERE entity_type = 'reports' AND entity_id = ?").run(report.id);
-  db.prepare("INSERT INTO search_index (entity_type, entity_id, user_id, title, body) VALUES ('reports', ?, ?, ?, ?)")
-    .run(report.id, report.user_id, report.title, [report.report_type, report.format, report.period_start, report.period_end].filter(Boolean).join(' '));
+  searchPut(db, 'reports', report.id, report.user_id, report.title,
+    [report.report_type, report.format, report.period_start, report.period_end].filter(Boolean).join(' '));
 }
 
 export function reindex(db, r, row) {
-  db.prepare('DELETE FROM search_index WHERE entity_type = ? AND entity_id = ?').run(r.key, row.id);
-  if (row.deleted_at) return;
+  if (row.deleted_at) return searchDrop(db, r.key, row.id);
   const { title, body } = indexText(r, row);
-  db.prepare('INSERT INTO search_index (entity_type, entity_id, user_id, title, body) VALUES (?, ?, ?, ?, ?)')
-    .run(r.key, row.id, row.user_id, title, body);
+  searchPut(db, r.key, row.id, row.user_id, title, body);
 }
 
 const PROFILE_SEARCH = ['email', 'professional_title', 'academic_designation', 'specialization', 'research_interests',
   'current_position', 'current_office', 'current_institution', 'biography'];
 
 export function indexProfile(db, userId) {
-  db.prepare("DELETE FROM search_index WHERE entity_type = 'profile' AND user_id = ?").run(userId);
   const p = db.prepare('SELECT * FROM professional_profiles WHERE user_id = ?').get(userId);
   if (!p) return;
-  db.prepare('INSERT INTO search_index (entity_type, entity_id, user_id, title, body) VALUES (?, ?, ?, ?, ?)')
-    .run('profile', p.id, userId, p.full_name || 'Professional Profile', PROFILE_SEARCH.map((k) => p[k]).filter(Boolean).join(' \n '));
+  searchPut(db, 'profile', p.id, userId, p.full_name || 'Professional Profile', PROFILE_SEARCH.map((k) => p[k]).filter(Boolean).join(' \n '));
 }
 
 export function rebuildSearchIndex(db) {
   tx(db, () => {
-    db.exec('DELETE FROM search_index');
+    db.exec('DELETE FROM search_index; DELETE FROM search_rows;');
     for (const r of Object.values(RESOURCES)) {
       for (const row of db.prepare(`SELECT * FROM ${r.table} WHERE deleted_at IS NULL`).all()) reindex(db, r, row);
     }

@@ -26,6 +26,7 @@ export function backupNow(db, dataDir, reason = 'manual') {
   const file = path.join(dir, name);
   db.exec(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
   prune(dir);
+  copyBackup(dataDir, name); // also into the chosen folder, if one is set (never fails the backup)
   return describe(file);
 }
 
@@ -125,4 +126,55 @@ export function importBackup(dataDir, buffer, knownMigrations) {
     throw new HttpError(422, !v.ok ? `This backup failed verification (${v.integrity}). It was not imported.` : 'This backup was made by a newer version of SYNCHRONIA. Update the app first.');
   }
   return { file: name, ...v };
+}
+
+// ── Copy of every backup in a folder of your choice ─────────
+// For example a folder that Google Drive, OneDrive or Dropbox keeps on your other computers: backups made here appear
+// there, ready for "Import a backup". The setting lives beside the database (not inside it), so a restore never
+// changes it. A copy that fails never stops the backup itself, and its status is always shown as it is.
+export const KEEP_COPIES = 15;
+const copyConfigFile = (dataDir) => path.join(dataDir, 'backup-copy.json');
+export function getBackupCopy(dataDir) {
+  try { return JSON.parse(fs.readFileSync(copyConfigFile(dataDir), 'utf8')); } catch { return { dir: null }; }
+}
+function saveCopyConfig(dataDir, cfg) {
+  const tmp = copyConfigFile(dataDir) + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(cfg, null, 2)); fs.renameSync(tmp, copyConfigFile(dataDir));
+}
+export const copyTarget = (dir) => path.join(dir, 'SYNCHRONIA Backups');
+
+/** Choose (or clear, with an empty value) the folder. The folder must exist and be writable. */
+export function setBackupCopy(dataDir, dir) {
+  const d = String(dir || '').trim();
+  if (!d) { saveCopyConfig(dataDir, { dir: null }); return getBackupCopy(dataDir); }
+  if (!path.isAbsolute(d)) throw new HttpError(422, 'Choose a folder on this computer', { dir: 'Use Choose folder… to pick it' });
+  if (!fs.existsSync(d) || !fs.statSync(d).isDirectory()) throw new HttpError(422, 'That folder does not exist', { dir: d });
+  if (path.resolve(d).startsWith(path.resolve(dataDir))) throw new HttpError(422, 'Choose a folder outside the SYNCHRONIA data folder', { dir: d });
+  try { fs.mkdirSync(copyTarget(d), { recursive: true }); const probe = path.join(copyTarget(d), '.write-test'); fs.writeFileSync(probe, 'ok'); fs.rmSync(probe); }
+  catch (e) { throw new HttpError(422, 'SYNCHRONIA cannot write to that folder', { dir: String(e.message).slice(0, 160) }); }
+  saveCopyConfig(dataDir, { ...getBackupCopy(dataDir), dir: path.resolve(d), last_error: null });
+  return getBackupCopy(dataDir);
+}
+
+/** Copy one backup file into the chosen folder. Written under a temporary name and renamed when complete, so a
+ *  syncing service never uploads half a file. Returns the updated status; never throws. */
+export function copyBackup(dataDir, name) {
+  const cfg = getBackupCopy(dataDir);
+  if (!cfg.dir) return cfg;
+  const now = new Date().toISOString();
+  try {
+    const src = path.join(backupDir(dataDir), path.basename(name));
+    // The chosen folder itself must still be there: if a cloud drive is not running or a USB drive is unplugged,
+    // re-creating it would write to an ordinary folder that syncs nowhere — that is reported as a failed copy instead.
+    if (!fs.existsSync(cfg.dir)) throw new Error(`The folder ${cfg.dir} is not available (is the drive connected, or the sync app running?)`);
+    const target = copyTarget(cfg.dir); fs.mkdirSync(target, { recursive: true });
+    const tmp = path.join(target, `.${path.basename(name)}.partial`);
+    fs.copyFileSync(src, tmp); fs.renameSync(tmp, path.join(target, path.basename(name)));
+    const auto = fs.readdirSync(target).filter((f) => /-(startup|scheduled)\.db$/.test(f)).sort().reverse();
+    for (const f of auto.slice(KEEP_COPIES)) fs.rmSync(path.join(target, f), { force: true });
+    saveCopyConfig(dataDir, { ...cfg, last_at: now, last_file: path.basename(name), last_error: null });
+  } catch (e) {
+    saveCopyConfig(dataDir, { ...cfg, last_error: String(e.message || e).slice(0, 200), last_error_at: now });
+  }
+  return getBackupCopy(dataDir);
 }

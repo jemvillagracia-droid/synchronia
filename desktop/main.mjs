@@ -56,6 +56,13 @@ if (!app.requestSingleInstanceLock()) {
     });
     return res.canceled ? null : res.filePaths[0];
   });
+  ipcMain.handle('synchronia:pick-folder', async () => {
+    const res = await dialog.showOpenDialog(win, {
+      title: 'Choose a folder for copies of your backups (e.g. in Google Drive or OneDrive)',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    return res.canceled ? null : res.filePaths[0];
+  });
   // Evidence and file references open documents with their usual app. Programs and scripts are never launched from
   // here, even if a reference points at one.
   const NEVER_OPEN = /\.(exe|com|bat|cmd|ps1|psm1|vbs|vbe|js|jse|wsf|wsh|msi|msp|scr|pif|lnk|url|hta|cpl|jar|reg|application|appref-ms|scf|inf|sys|dll|ocx)$/i;

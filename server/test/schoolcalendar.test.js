@@ -127,7 +127,21 @@ test('Excel, PDF and pasted text calendars', async () => {
   assert.equal(none.status, 422);
   const pic = await call('POST', '/calendar/import/read', Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0]), { 'X-Filename': 'photo.png' });
   assert.equal(pic.status, 422);
-  assert.match(pic.body.error, /Pictures/);
+  assert.match(pic.body.error, /could not be read|No text/, 'a broken picture is refused with advice');
+  const heic = await call('POST', '/calendar/import/read', Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypheic'), Buffer.alloc(16)]), { 'X-Filename': 'IMG_0001.HEIC' });
+  assert.match(heic.body.error, /HEIC/);
   assert.equal((await call('POST', '/calendar/import', { items: [] })).status, 422);
   assert.equal((await call('POST', '/calendar/import', { items: [{ title: 'Bad', start_date: '2026-13-40' }] })).status, 422, 'invalid dates are refused');
+});
+
+test('a photo of the calendar is read offline (OCR) and reviewed like any file', async () => {
+  const photo = fs.readFileSync(new URL('./fixtures/calendar-photo.jpg', import.meta.url));
+  const r = await call('POST', '/calendar/import/read', photo, { 'X-Filename': 'calendar-photo.jpg' });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.picture.kind, 'jpeg');
+  assert.ok(r.body.picture.confidence >= 60, `confidence ${r.body.picture.confidence}`);
+  assert.equal(r.body.school_year, '2026–2027');
+  const got = r.body.items.map((i) => `${i.start_date}|${i.end_date || ''}|${i.title}`);
+  for (const want of ['2026-07-20|2026-07-31|Enrollment for the First Semester', '2026-08-10||Opening of Classes', '2026-10-19|2026-10-24|Midterm Examinations',
+    '2026-12-21|2027-01-03|Christmas Break', '2027-01-08||Deadline of Submission of Grades']) assert.ok(got.includes(want), `${want} in ${got.join(' / ')}`);
 });

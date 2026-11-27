@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BrandMark, Icon } from './Icon';
 import { useApp } from './AppContext';
 import { NAV, isActive, navCode } from '../lib/nav';
+import { setNotificationPrefs } from '../lib/timer';
 import { applyTheme } from '../lib/themes';
 import { TimerChip } from '../pages/TimerPage';
 import { TimerAlerts } from './TimerAlerts';
@@ -127,7 +128,7 @@ function ModeSwitch() {
   async function pick(m: Mode) {
     setOpen(false);
     if (m === prefs!.academic_mode) return;
-    await updatePrefs({ academic_mode: m });
+    if (!(await updatePrefs({ academic_mode: m }))) return;
     dataChanged();
     toast(`Academic mode: ${MODE_LABEL[m]}`, 'ok');
   }
@@ -286,6 +287,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
   // Settings › Appearance: turn off non-essential motion.
   useEffect(() => { document.documentElement.dataset.motion = prefs?.reduce_motion ? 'reduced' : 'normal'; }, [prefs?.reduce_motion]);
+  useEffect(() => { if (prefs) setNotificationPrefs({ desktop: prefs.notify_desktop !== false, sound: prefs.notify_sound !== false }); }, [prefs?.notify_desktop, prefs?.notify_sound]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (prefs) applyTheme(prefs.theme); }, [prefs?.theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

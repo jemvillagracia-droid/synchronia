@@ -5,6 +5,7 @@ export interface DesktopBridge {
   version: string;
   dataDir: string;
   pickFile: () => Promise<string | null>;
+  pickFolder?: () => Promise<string | null>;
   openPath: (p: string) => Promise<string>;
   openExternal: (url: string) => Promise<void>;
   showDataFolder: () => Promise<void>;

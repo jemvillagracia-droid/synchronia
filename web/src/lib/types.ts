@@ -10,6 +10,8 @@ export interface Preferences {
   context_panel_open: boolean;
   sidebar_collapsed: boolean;
   reduce_motion?: boolean;
+  notify_desktop?: boolean;
+  notify_sound?: boolean;
   theme?: string;
   paper_size?: string;
   paper_sizes?: Record<string, string>;

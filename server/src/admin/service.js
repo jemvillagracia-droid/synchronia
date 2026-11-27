@@ -2,7 +2,7 @@
 // records, the daily activity log, turnover documentation and role changes. Everything is read from and written to
 // stored records; follow-ups and turnover snapshots are computed, never typed in twice.
 import { HttpError, audit, create, createHooks, get as getRecord, indexProfile, update } from '../repo.js';
-import { tx } from '../db.js';
+import { tx, inChunks } from '../db.js';
 
 export const today = () => new Date().toISOString().slice(0, 10);
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
@@ -37,7 +37,7 @@ export function createCorrespondence(db, userId, body = {}) {
 
 function routeSummary(db, ids) {
   if (!ids.length) return {};
-  const rows = db.prepare(`SELECT * FROM document_routes WHERE transaction_id IN (${ids.map(() => '?').join(',')}) ORDER BY routed_date, id`).all(...ids);
+  const rows = inChunks(ids, (chunk, ph) => db.prepare(`SELECT * FROM document_routes WHERE transaction_id IN (${ph}) ORDER BY routed_date, id`).all(...chunk));
   const out = {};
   for (const r of rows) (out[r.transaction_id] ||= []).push(r);
   return out;

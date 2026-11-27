@@ -1,7 +1,7 @@
 // Idea moodboards: an endless canvas of note, picture and link cards, one board per place of work.
 // Card text is searchable; pictures are stored pictures (/api/doc-images/…), never outside links.
 import express from 'express';
-import { HttpError, audit } from './repo.js';
+import { HttpError, audit, searchPut } from './repo.js';
 import { tx } from './db.js';
 
 const CONTEXTS = { general: null, research_projects: 'research_projects', courses: 'courses', syllabi: 'syllabi' };
@@ -61,8 +61,7 @@ function clean(body, partial) {
 function touch(db, b) { db.prepare("UPDATE moodboards SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?").run(b.id); }
 function reindexBoard(db, b) {
   const text = db.prepare('SELECT text, url FROM moodboard_items WHERE board_id = ? AND deleted_at IS NULL').all(b.id).map((r) => [r.text, r.url].filter(Boolean).join(' ')).join('\n').slice(0, 60000);
-  db.prepare("DELETE FROM search_index WHERE entity_type = 'moodboards' AND entity_id = ?").run(b.id);
-  db.prepare("INSERT INTO search_index (entity_type, entity_id, user_id, title, body) VALUES ('moodboards', ?, ?, ?, ?)").run(b.id, b.user_id, `Moodboard · ${b.title}`, text);
+  searchPut(db, 'moodboards', b.id, b.user_id, `Moodboard · ${b.title}`, text);
 }
 
 export function addItem(db, userId, boardId, body = {}) {

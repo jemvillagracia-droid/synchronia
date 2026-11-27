@@ -19,6 +19,18 @@ function Workspace() {
   return (
     <div className="stack">
       <section className="panel">
+        <header className="panel-head"><span className="code">NTF</span><h2>Notifications</h2></header>
+        <div className="panel-body stack">
+          <label className="checkline"><input type="checkbox" className="check" checked={prefs.notify_desktop !== false}
+            onChange={async (e) => { if (await updatePrefs({ notify_desktop: e.target.checked })) toast(e.target.checked ? 'Windows notifications turned on' : 'Windows notifications turned off', 'ok'); }} />
+            Windows notifications while SYNCHRONIA is in the background</label>
+          <label className="checkline"><input type="checkbox" className="check" checked={prefs.notify_sound !== false}
+            onChange={async (e) => { if (await updatePrefs({ notify_sound: e.target.checked })) toast(e.target.checked ? 'Timer sounds turned on' : 'Timer sounds turned off', 'ok'); }} />
+            Sounds for System Timer warnings and “system down”</label>
+          <p className="faint" style={{ margin: 0, fontSize: 13 }}>These cover the System Timer: warnings at 5 and 1 minute, “system down” when time runs out, and “recharge complete”. Alerts inside SYNCHRONIA (the warning strip and the system-down pop-up) always show. The timer page’s own Sound button still mutes a single session.</p>
+        </div>
+      </section>
+      <section className="panel">
         <header className="panel-head"><span className="code">ROLE</span><h2>Academic mode</h2></header>
         <div className="panel-body stack">
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
@@ -29,7 +41,7 @@ function Workspace() {
             {(Object.keys(MODE_LABEL) as Mode[]).map((m) => (
               <button key={m} className="cap" style={{ textAlign: 'left', cursor: 'pointer', borderColor: prefs.academic_mode === m ? 'var(--orange-line)' : undefined, background: prefs.academic_mode === m ? 'var(--orange-dim)' : undefined }}
                 aria-pressed={prefs.academic_mode === m}
-                onClick={async () => { await updatePrefs({ academic_mode: m }); dataChanged(); toast(`Academic mode: ${MODE_LABEL[m]}`, 'ok'); }}>
+                onClick={async () => { if (await updatePrefs({ academic_mode: m })) { dataChanged(); toast(`Academic mode: ${MODE_LABEL[m]}`, 'ok'); } }}>
                 <h3 style={{ color: prefs.academic_mode === m ? 'var(--orange)' : undefined }}>{MODE_LABEL[m]}</h3>
                 <span className="muted" style={{ fontSize: 13 }}>{MODE_DESC[m]}</span>
               </button>
@@ -42,7 +54,7 @@ function Workspace() {
         <div className="panel-body stack">
           <div className="between wrap">
             <div><div>Central Nexus widgets</div><div className="faint" style={{ fontSize: 13 }}>{prefs.layout_customised ? 'Customised order and visibility' : 'Using the default for your academic mode'}</div></div>
-            <button className="btn btn-sm" disabled={!prefs.layout_customised} onClick={async () => { await updatePrefs({ dashboard_layout: null }); dataChanged(); toast('Layout reset', 'ok'); }}><Icon name="restore" />Reset</button>
+            <button className="btn btn-sm" disabled={!prefs.layout_customised} onClick={async () => { if (await updatePrefs({ dashboard_layout: null })) { dataChanged(); toast('Layout reset', 'ok'); } }}><Icon name="restore" />Reset</button>
           </div>
           <label className="checkline"><input type="checkbox" className="check" checked={prefs.sidebar_collapsed} onChange={(e) => updatePrefs({ sidebar_collapsed: e.target.checked })} />Collapse the navigation sidebar to icons (names show on hover)</label>
           <label className="checkline"><input type="checkbox" className="check" checked={prefs.context_panel_open} onChange={(e) => updatePrefs({ context_panel_open: e.target.checked })} />Open the context panel by default (wide screens)</label>
@@ -143,6 +155,63 @@ function Backups() {
   );
 }
 
+/** Copies of every backup in a folder of your choice — for example one Google Drive or OneDrive keeps on your
+ *  other computers. Not synchronization: the other computer imports a copy with "Import a backup file". */
+interface CopyStatus { dir: string | null; last_at?: string; last_file?: string; last_error?: string | null; last_error_at?: string; unavailable?: boolean }
+function BackupCopy() {
+  const { toast } = useApp();
+  const [st, setSt] = useState<CopyStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(() => { api.get<CopyStatus>('/system/backup-copy').then(setSt).catch(() => setSt({ dir: null })); }, []);
+  useEffect(() => { load(); return onDataChanged(load); }, [load]);
+  async function choose() {
+    const dir = await desktop?.pickFolder?.();
+    if (!dir) return;
+    try { setSt(await api.put<CopyStatus>('/system/backup-copy', { dir })); toast('Backups will also be copied to that folder', 'ok'); }
+    catch (e: any) { toast(e.details ? `${e.message}: ${Object.values(e.details)[0]}` : e.message, 'error'); }
+  }
+  async function copyNow() {
+    setBusy(true);
+    try { const r = await api.post<{ copy: CopyStatus }>('/system/backup-copy/now'); setSt(r.copy); dataChanged(); toast(r.copy.last_error ? 'The backup was made here, but copying it failed — see below' : 'Backup made and copied', r.copy.last_error ? 'error' : 'ok'); }
+    catch (e) { toast((e as Error).message, 'error'); } finally { setBusy(false); }
+  }
+  async function stop() {
+    try { setSt(await api.put<CopyStatus>('/system/backup-copy', { dir: '' })); toast('Stopped copying backups', 'ok'); }
+    catch (e) { toast(`Not changed: ${(e as Error).message}`, 'error'); }
+  }
+  if (!st || st.unavailable) return null;
+  const failedLast = st.last_error && (!st.last_at || (st.last_error_at || '') > st.last_at);
+  return (
+    <section className="panel">
+      <header className="panel-head"><span className="code">CPY</span><h2>Copy backups to another folder</h2></header>
+      <div className="panel-body stack">
+        <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+          Choose a folder that Google Drive, OneDrive or Dropbox keeps on your other computers, and every backup — automatic or manual — is copied there too.
+          On the other computer, open Settings › Backup and recovery › Import a backup file. SYNCHRONIA itself still works on one computer at a time; this is a copy, not live synchronization.
+        </p>
+        {st.dir ? (
+          <>
+            <div className="row wrap" style={{ gap: 8 }}><span className="label">Folder</span><span className="mono" style={{ overflowWrap: 'anywhere' }}>{st.dir}{desktop?.platform === 'win32' ? '\\' : '/'}SYNCHRONIA Backups</span></div>
+            {failedLast
+              ? <div className="alert" role="alert">The last copy failed{st.last_error_at ? ` (${fmtDateTime(st.last_error_at)})` : ''}: {st.last_error} Your backups are still saved on this computer.</div>
+              : st.last_at ? <div className="alert info">Last copied {fmtDateTime(st.last_at)}: <span className="mono">{st.last_file}</span></div>
+                : <div className="faint" style={{ fontSize: 13 }}>Nothing copied yet — the next backup will be.</div>}
+            <div className="row wrap">
+              <button className="btn btn-primary" onClick={copyNow} disabled={busy}><Icon name="download" />{busy ? 'Copying…' : 'Back up and copy now'}</button>
+              <button className="btn" onClick={choose}>Change folder…</button>
+              <button className="btn btn-ghost" onClick={stop}>Stop copying</button>
+            </div>
+          </>
+        ) : (
+          <div className="row wrap">
+            {desktop?.pickFolder ? <button className="btn btn-primary" onClick={choose}>Choose folder…</button> : <span className="faint">Available in the desktop app.</span>}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 interface BinItem { type: string; label: string; id: number; title: string; deleted_at: string }
 interface AuditItem { id: number; entity_type: string; entity_id: number | null; action: string; summary: string; at: string }
 
@@ -175,6 +244,7 @@ function Data() {
       </section>
       <ArchiveExport />
       <Backups />
+      <BackupCopy />
       <section className="panel">
         <header className="panel-head"><span className="code">BIN</span><h2>Recycle bin</h2><span className="num faint">{bin?.length ?? '…'}</span></header>
         <div className="panel-body">
@@ -247,7 +317,7 @@ function Appearance() {
         <header className="panel-head"><span className="code">MOT</span><h2>Motion</h2></header>
         <div className="panel-body stack">
           <label className="checkline"><input type="checkbox" className="check" checked={!!prefs.reduce_motion}
-            onChange={async (e) => { await updatePrefs({ reduce_motion: e.target.checked }); toast(e.target.checked ? 'Non-essential motion turned off' : 'Short transitions turned back on', 'ok'); }} />
+            onChange={async (e) => { if (await updatePrefs({ reduce_motion: e.target.checked })) toast(e.target.checked ? 'Non-essential motion turned off' : 'Short transitions turned back on', 'ok'); }} />
             Turn off non-essential motion (pop-ups and menus appear instantly)</label>
           <p className="faint" style={{ margin: 0, fontSize: 13 }}>SYNCHRONIA already keeps motion short and avoids continuous animation. If your computer is set to reduce motion, that is followed too.</p>
         </div>
@@ -310,7 +380,7 @@ function PaperSetting() {
       <header className="panel-head"><span className="code">PPR</span><h2>Paper size</h2></header>
       <div className="panel-body stack">
         <label className="field" style={{ maxWidth: 360 }}><span className="label">Paper for exported documents</span>
-          <select className="select" value={prefs.paper_size || 'letter'} onChange={async (e) => { await updatePrefs({ paper_size: e.target.value }); toast(`Documents will be exported on ${prefs.paper_sizes![e.target.value]}`, 'ok'); }}>
+          <select className="select" value={prefs.paper_size || 'letter'} onChange={async (e) => { if (await updatePrefs({ paper_size: e.target.value })) toast(`Documents will be exported on ${prefs.paper_sizes![e.target.value]}`, 'ok'); }}>
             {Object.entries(prefs.paper_sizes).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select></label>
         <p className="faint" style={{ margin: 0, fontSize: 13 }}>Used by reports, minutes, turnover documents, research exports and Intelligence reports, in Word and PDF. Margins and tables adjust to the paper. A syllabus keeps its own page setup, and each CV its own paper size.</p>

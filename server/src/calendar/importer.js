@@ -6,6 +6,7 @@ import ExcelJS from 'exceljs';
 import { pdfText } from '../cv/extract.js';
 import { HttpError, create as createRecord, remove as removeRecord } from '../repo.js';
 import { tx } from '../db.js';
+import { pictureKind, readPicture } from '../ocr.js';
 
 // ── Text extraction ─────────────────────────────────────────
 const decode = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
@@ -54,7 +55,7 @@ export async function documentLines(buffer, fileName = '') {
   if (head === '%PDF-') {
     const { text } = await pdfText(buffer).catch(() => { throw new HttpError(422, 'This PDF could not be read.'); });
     const lines = text.split('\n').filter((l) => l !== '\f');
-    if (lines.join('').replace(/\s/g, '').length < 20) throw new HttpError(422, 'This PDF has no readable text — it is probably a scan or a picture. Import the Word or PDF file the office released, or paste the calendar text instead.');
+    if (lines.join('').replace(/\s/g, '').length < 20) throw new HttpError(422, 'This PDF has no readable text — it is probably a scan. Take a screenshot of each page and import the picture, or import the Word or PDF file the office released.');
     return lines;
   }
   if (head.startsWith('PK')) {
@@ -63,9 +64,16 @@ export async function documentLines(buffer, fileName = '') {
     if (zip?.file('xl/workbook.xml')) return xlsxLines(buffer);
     throw new HttpError(422, 'Use a PDF, Word (.docx), Excel (.xlsx), CSV or text file.');
   }
-  if (/\.(png|jpe?g|gif|webp|heic|bmp|tiff?)$/i.test(fileName) || /^\x89PNG|^\xff\xd8/.test(head)) {
-    throw new HttpError(422, 'Pictures of a calendar cannot be read. Import the Word or PDF file the office released, or paste the calendar text instead.');
+  // Pictures (a photo or screenshot of the calendar): read offline with OCR, then reviewed like any other file.
+  const kind = pictureKind(buffer);
+  if (kind === 'heic') throw new HttpError(422, 'iPhone HEIC photos cannot be read. Share or save the photo as JPG (or take a screenshot), then import that.');
+  if (kind) {
+    const { lines, confidence } = await readPicture(buffer).catch(() => { throw new HttpError(422, 'This picture could not be read. Try a clearer photo or a screenshot, or paste the calendar text instead.'); });
+    if (lines.join('').replace(/\s/g, '').length < 15) throw new HttpError(422, 'No text could be read from this picture. Try a clearer, straighter photo or a screenshot, or paste the calendar text instead.');
+    lines.picture = { kind, confidence };
+    return lines;
   }
+  if (/\.(png|jpe?g|gif|webp|heic|bmp|tiff?)$/i.test(fileName)) throw new HttpError(422, 'This picture file could not be opened. Save it again as JPG or PNG and import that.');
   if (/\.doc$|\.xls$/i.test(fileName)) throw new HttpError(422, 'Older .doc and .xls files cannot be read. Open the file and save it as .docx or .xlsx (or PDF), then import that.');
   const text = buffer.toString('utf8');
   if (/\u0000/.test(text)) throw new HttpError(422, 'Use a PDF, Word (.docx), Excel (.xlsx), CSV or text file.');
@@ -253,6 +261,7 @@ function days(a, b) { return Math.round((Date.parse(b + 'T00:00:00Z') - Date.par
 export async function previewImport(db, userId, { buffer, fileName, text } = {}) {
   const lines = text != null ? String(text).split(/\r?\n/) : await documentLines(buffer, fileName);
   const r = parseCalendar(lines);
+  const picture = lines.picture || null; // read from a picture: the review says so, with how sure the reading is
   if (!r.items.length) throw new HttpError(422, 'No dates were found in this file. Check that it is the academic calendar, or paste its text instead.', { unread: r.unread.join('\n').slice(0, 2000) });
   // Already saved: the same day with the same title, or the same day read from the same line (even if you renamed it).
   const have = new Set();
@@ -262,7 +271,7 @@ export async function previewImport(db, userId, { buffer, fileName, text } = {})
     if (src) have.add(`${x.start_date}|src:${src}`);
   }
   return {
-    file_name: fileName || null, school_year: r.school_year, unread: r.unread,
+    file_name: fileName || null, school_year: r.school_year, unread: r.unread, picture,
     items: r.items.map((it) => ({ ...it, already: have.has(`${it.start_date}|${it.title.toLowerCase()}`) || have.has(`${it.start_date}|src:${it.source.slice(0, 300)}`) })),
   };
 }

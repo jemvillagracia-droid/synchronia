@@ -2,7 +2,7 @@
   "name": "synchronia",
   "productName": "SYNCHRONIA",
   "private": true,
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "SYNCHRONIA — The Academic Ascension System. Synchronize. Evolve. Transcend.",
   "author": "SYNCHRONIA",
   "type": "module",
@@ -20,11 +20,13 @@
     "dist:win": "npm run build && electron-builder --win --x64 --publish never"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
     "docx": "^9.5.1",
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "jszip": "^3.10.1",
-    "pdfjs-dist": "^4.10.38"
+    "pdfjs-dist": "^4.10.38",
+    "tesseract.js": "7.0.0"
   },
   "devDependencies": {
     "@fontsource-variable/noto-serif-display": "5.1.1",
@@ -65,7 +67,8 @@
       "server/src/**",
       "server/migrations/**",
       "web/dist/**",
-      "!**/*.map"
+      "!**/*.map",
+      "!node_modules/@tesseract.js-data/eng/4.0.0/**"
     ],
     "asar": true,
     "win": {
@@ -89,7 +92,12 @@
       "shortcutName": "SYNCHRONIA",
       "deleteAppDataOnUninstall": false
     },
-    "publish": null
+    "publish": null,
+    "asarUnpack": [
+      "node_modules/tesseract.js/**",
+      "node_modules/tesseract.js-core/**",
+      "node_modules/@tesseract.js-data/**"
+    ]
   },
   "overrides": {
     "uuid": "11.1.1"
