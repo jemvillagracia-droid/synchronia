@@ -71,7 +71,7 @@ export function ProfilePage() {
   }
 
   return (
-    <PortfolioShell title="Professional Profile" crumb="Profile" sub="The foundation of your academic identity. CVs and reports draw on it. Professional photographs are managed in the CV Studio (Phase 3).">
+    <PortfolioShell title="Professional Profile" crumb="Profile" sub="The foundation of your academic identity. CVs and reports draw on it. Professional photographs are managed in the CV Studio.">
       {!profile ? <div className="skeleton" style={{ height: 200 }} /> : (
         <form onSubmit={save} className="stack">
           {SECTIONS.map((s) => (

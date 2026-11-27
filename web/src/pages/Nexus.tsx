@@ -353,7 +353,7 @@ export function NexusPage() {
       data.recent_cvs.exports.length === 0 ? (
         <Empty title="No CV documents generated yet.">
           {data.recent_cvs.profiles > 0 ? `${data.recent_cvs.profiles} CV profile(s) defined. ` : ''}
-          The Curriculum Vitae Studio (Phase 3) generates DOCX and PDF documents from your portfolio; each export will be listed here.
+          CV Studio makes Word and PDF CVs from your portfolio; each one you export is listed here.
         </Empty>
       ) : (
         <ul className="list">
