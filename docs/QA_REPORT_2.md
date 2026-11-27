@@ -158,11 +158,11 @@ Version 1.4.5 · 27 November 2026 (updated after the follow-up fixes; first issu
 
 | Test | Result |
 |---|---|
-| Automated tests (unit, integration, API, database) | 133 tests in 20 files — all pass |
-| QA workflows (new; directive sections III–V) | 28/28 — typing with Shift symbols, accents, Backspace/Delete, Tab inside pop-ups, Enter, validation that keeps input, a failed save never shown as success, back/forward/reload, unsaved-change guard, search/filter/sort, recycle-bin restore, crash recovery, backup and restore, identical repeated exports, tablet and phone widths |
+| Automated tests (unit, integration, API, database) | 138 tests in 22 files — all pass |
+| QA workflows (new; directive sections III–V) | 32/32 — typing with Shift symbols, accents, Backspace/Delete, Tab inside pop-ups, Enter, validation that keeps input, a failed save never shown as success, back/forward/reload, unsaved-change guard, search/filter/sort, recycle-bin restore, crash recovery, backup and restore, identical repeated exports, tablet and phone widths, backup copy folder, notification settings |
 | Every record pop-up | 44 of 44 record types created, reopened, edited and closed through their pop-ups |
 | Keyboard | 41 pop-up keyboard checks (Shift key regression) + 31 shortcut checks — all pass |
-| Module walkthroughs | Syllabus editor 16, Research 10, School calendar 20, PDS L&D 19, Timer/Moodboard/paper 24 — all pass |
+| Module walkthroughs | Syllabus editor 16, Research 10, School calendar 21 (including reading a calendar photo), PDS L&D 19, Timer/Moodboard/paper 24 — all pass |
 | CV output | 28 files (7 templates × 4 formats) inspected page by page with a full sample portfolio and re-opened in LibreOffice; 52 exports across templates and all six paper sizes — 0 problems |
 | Other exports | 90 Word reports (15 types × 6 papers) rendered by LibreOffice; PDFs at every paper size — 0 problems |
 | Interface | 157 pages: accessibility, overflow and clipping — clean; 172 page views across 10 themes — clean; controls inside panels at 1024/1280/1500 px — clean; consistency measurements across all modules |
