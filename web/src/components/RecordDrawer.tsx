@@ -163,7 +163,13 @@ export function RecordDrawer({ type, id, onClose, onCreated, defaults }: { type:
   const sections = spec ? sectionsFor(type, spec) : [];
 
   const form = spec && editing ? (
-    <form className="stack" onSubmit={save} id="record-form">
+    // noValidate: the app's own messages (every problem at once, under each field) replace the browser's brief tooltip.
+    <form className="stack" onSubmit={save} id="record-form" noValidate>
+      {Object.keys(errors).length > 0 && (
+        <div className="alert" role="alert">Not saved — check the {Object.keys(errors).length === 1 ? 'field' : `${Object.keys(errors).length} fields`} marked below. Everything you entered is kept.
+          {Object.entries(errors).filter(([k]) => !sections.some((sec) => sec.fields.includes(k))).map(([k, m]) => <div key={k}>{m}</div>)}
+        </div>
+      )}
       {sections.map((sec) => (
         <fieldset key={sec.title} className="fieldset">
           <legend className="label">{sec.title}</legend>

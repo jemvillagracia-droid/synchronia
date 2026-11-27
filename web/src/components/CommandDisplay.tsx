@@ -209,7 +209,7 @@ function StatusStrip({ c, mode }: { c: Command; mode: string }) {
       <span className="eva-status-id"><i aria-hidden />CENTRAL NEXUS</span>
       <span><b>PATTERN</b>{mode.toUpperCase()}</span>
       <span><b>ALERT</b>{lvl === 'nominal' ? 'NOMINAL' : lvl === 'caution' ? 'CAUTION' : 'DANGER'}{c.deadlines.overdue ? ` · ${c.deadlines.overdue} OVERDUE` : ''}</span>
-      <span><b>SYNC</b>{String(c.activity.this_week).padStart(3, '0')} THIS WEEK · {delta >= 0 ? '+' : ''}{delta}</span>
+      <span title="Records added or changed this week (SYNCHRONIA works on this computer only; nothing is synced to a cloud)"><b>ACTIVITY</b>{String(c.activity.this_week).padStart(3, '0')} THIS WEEK · {delta >= 0 ? '+' : ''}{delta}</span>
       <span><b>MAGI</b>{c.magi.filter((m) => m.status === 'ready').length}/3 READY</span>
       {lvl !== 'nominal' && <span className="eva-hazard" aria-hidden />}
     </div>
