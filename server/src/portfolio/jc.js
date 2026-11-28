@@ -241,10 +241,45 @@ function label(type, r) {
 }
 
 const DOC_STATUS = ['secured', 'missing', 'pending', 'na'];
+/** Short column headings for the document grid (the full wording stays in the tooltip and the checklist). */
+const SHORT = [
+  [/^valid rrpa/i, 'RRPA / COPC'], [/^organiser’s profile/i, 'Org profile'], [/^project:/i, 'Project proof'], [/^policy:/i, 'Policy proof'], [/^product:/i, 'Product proof'],
+  [/^certification from the head of finance/i, 'Finance cert.'], [/^certification from the agriculturist/i, 'Certification'], [/^certification from the organiser/i, 'Certification'],
+  [/^copy of or access/i, 'Material copy'], [/^dean’s certification/i, 'Dean’s cert.'], [/^documents for each stage/i, 'Stage documents'], [/^end-user/i, 'End-user cert.'],
+  [/^evidence of your contribution/i, 'Contribution proof'], [/^financial report/i, 'Financial report'], [/^licensing agreement/i, 'Licensing / sales'],
+  [/^designation as mentor/i, 'Designation'], [/^complete stand-alone module/i, 'Module copy'], [/^complete instructional manual/i, 'Manual copy'],
+  [/^registration or certificate/i, 'Registration'], [/^photo or field/i, 'Photos'], [/^photo of the/i, 'Photo'], [/^the work, or documentation/i, 'Work copy'],
+  [/^proof of first performance/i, 'First performance'], [/^proof of invitation, acceptance/i, 'Selection proof'], [/^user manual/i, 'User manual'],
+  [/^academic council/i, 'Council resolution'], [/^governing board resolution/i, 'Board resolution'], [/^certificate of registration/i, 'Registration cert.'],
+  [/^invitation|official invitation/i, 'Invitation'], [/^acceptance or invitation/i, 'Acceptance'], [/^program|conference program/i, 'Program'],
+  [/^certificate of participation as paper/i, 'Certificate'], [/^certificate of (appreciation|participation)|certificate or program showing/i, 'Certificate'],
+  [/^authori[sz]ation|approval to (attend|present)/i, 'Approval'], [/research director’s certification that the paper/i, 'RD cert.'],
+  [/research director’s certification that the journal/i, 'Indexing cert.'], [/^the published article/i, 'Article copy'],
+  [/^virtual activities|held in the philippines|journals in filipino/i, 'If applicable'],
+  [/^local: cav/i, 'CAV / TOR'], [/^foreign/i, 'Foreign diploma'], [/valid certificate of membership/i, 'Membership ID'],
+  [/^non-apo/i, 'Org profile'], [/specific role/i, 'Role evidence'], [/head of the organisation/i, 'Head’s cert.'],
+  [/^short description of the award/i, 'Description'], [/^certificate, or photo|award certificate or photo/i, 'Certificate / photo'],
+  [/criteria and mechanics|mechanics of the competition/i, 'Mechanics'], [/^profile of the awarding|profile, mandate, history/i, 'Org profile'],
+  [/co-authors|co-inventors|co-creators/i, 'Contribution cert.'], [/^special order/i, 'Special Order'], [/approved extension project proposal|board-approved/i, 'Approved proposal'],
+  [/evidence of your role/i, 'Role evidence'], [/status or terminal report/i, 'Terminal report'], [/^appointment or designation/i, 'Designation'],
+  [/accomplishment report/i, 'Accomplishment rpt.'], [/^committees: governing board/i, 'Board approval'], [/service record/i, 'Service record'],
+  [/brief job description/i, 'Job description'], [/signed approval sheet/i, 'Approval sheet'], [/^rrpa or copc/i, 'RRPA / COPC'],
+  [/^cover\/title page|^cover, copyright/i, 'Title pages'], [/^signed evaluation report/i, 'Evaluation / IMDC'], [/syllabus or course guide/i, 'Syllabus listing'],
+  [/^librarian/i, 'Library cert.'], [/publisher’s (guidelines|editorial)/i, 'Peer-review proof'], [/^full text of your chapter/i, 'Chapter text'],
+  [/certified final set|certified final supervisor/i, 'QCE ratings'], [/fedaf/i, 'FEDAF'], [/^special status/i, 'Leave approval'],
+  [/^copy of the published work|^copy of the publication/i, 'Publication copy'], [/evidence of editorial review/i, 'Review proof'], [/publisher’s credibility/i, 'Publisher proof'],
+  [/^approval to enter/i, 'Approval'], [/notarized moa/i, 'MOA / MOU'], [/implementation or terminal report/i, 'Terminal report'], [/came from your initiative/i, 'Initiative cert.'],
+  [/^appointment as evaluator/i, 'Appointment'], [/proof of actual engagement/i, 'Engagement proof'], [/agency profile/i, 'Agency profile'],
+  [/announcement and guidelines/i, 'Guidelines'], [/written agreement/i, 'Contract'], [/consultancy report/i, 'Report'], [/^board approval/i, 'Board approval'],
+  [/summary of client satisfaction|css report/i, 'CSS report'], [/must also be claimed/i, 'ISR claim'], [/compiled articles/i, 'Articles / contract'], [/link or copy of the publication/i, 'Link / copy'],
+  [/the completed research output/i, 'Research output'], [/^project:/i, 'Project proof'], [/^policy:/i, 'Policy proof'], [/^product:/i, 'Product proof'],
+  [/your cited publication/i, 'Cited work'], [/the citing article/i, 'Citing article'], [/^research director’s certification$/i, 'RD cert.'],
+];
+const shortOf = (label) => SHORT.find(([re]) => re.test(label))?.[1] || label.split(/[,(;—]/)[0].split(' ').slice(0, 3).join(' ');
 function docsOf(ind, claim) {
   let saved = {};
   try { saved = JSON.parse(claim.docs_json || '{}') || {}; } catch { saved = {}; }
-  return ind.evidence.map((label, i) => ({ index: i, label, status: DOC_STATUS.includes(saved[i]) ? saved[i] : 'unset' }));
+  return ind.evidence.map((label, i) => ({ index: i, label, short: shortOf(label), status: DOC_STATUS.includes(saved[i]) ? saved[i] : 'unset' }));
 }
 
 /** Points an indicator contributes for a claimed quantity (ratings are 0–100, scaled to the indicator's weight). */
@@ -281,7 +316,7 @@ export function checklist(db, userId) {
         const cap = SUBCAPS.find(([p]) => ind.code.startsWith(p));
         if (cap) { const used = sub.get(cap[0]) || 0; pts = Math.min(pts, Math.max(0, cap[1] - used)); sub.set(cap[0], used + pts); }
         crit += pts;
-        return { ...ind, claims: mine, estimated: Math.round(pts * 100) / 100,
+        return { ...ind, evidence_short: ind.evidence.map(shortOf), claims: mine, estimated: Math.round(pts * 100) / 100,
           suggestions: (suggestions.get(ind.code) || []).filter((s) => !claimed.has(`${s.type}:${s.id}`)) };
       });
       const capped = Math.min(crit, c.max);
@@ -377,49 +412,175 @@ export function removeClaim(db, userId, id) {
 
 export { INDICATORS };
 
-// ── Word / PDF checklist for assembling the evidence folders ──
-const MARK = { secured: '✔ Secured', missing: '✘ Missing', pending: '… Pending', na: '— N/A', unset: '☐ Not checked' };
+// ── Exports: Word / PDF (landscape grids) and Excel (a tracker workbook) ──
+const MARK = { secured: '✔', missing: '✘', pending: '…', na: '—', unset: '☐' };
+const MARK_WORD = { secured: 'Secured', missing: 'Missing', pending: 'Pending', na: 'N/A', unset: 'Not checked' };
+const numTxt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0$/, ''));
+const claimPts = (ind, cl) => (ind.points == null ? 0 : ind.unit === 'rating' ? (ind.points * cl.quantity) / 100 : ind.points * cl.quantity);
+
 export async function exportChecklist(db, userId, { format = 'docx' } = {}, { pdfRenderer } = {}) {
-  if (!['docx', 'pdf'].includes(format)) throw new HttpError(422, 'Choose Word or PDF');
+  if (!['docx', 'pdf', 'xlsx'].includes(format)) throw new HttpError(422, 'Choose Word, PDF or Excel');
+  const c = checklist(db, userId);
+  if (!c.counts.claims && !c.counts.planned) throw new HttpError(422, 'Claim at least one record in the Credentials Tracker first.');
+  const prof = db.prepare('SELECT full_name, current_position, current_institution FROM professional_profiles WHERE user_id = ?').get(userId) || {};
+  const today = new Date().toISOString().slice(0, 10);
+  const claimed = (k) => k.criteria.flatMap((cr) => cr.indicators.filter((i) => i.claims.length).map((i) => ({ cr, i })));
+  const goals = c.kras.flatMap((k) => k.criteria.flatMap((cr) => cr.indicators.flatMap((i) => i.claims.filter((x) => x.status === 'planned').map((x) => ({ i, x })))));
+  if (format === 'xlsx') return exportWorkbook(db, userId, c, prof, claimed, goals, today);
+
   const { heading, para, tableOf } = await import('../richdoc.js');
   const { render } = await import('../research/exports.js');
-  const c = checklist(db, userId);
-  if (!c.counts.claims && !c.counts.planned) throw new HttpError(422, 'Claim at least one record in the checklist first.');
-  const prof = db.prepare('SELECT full_name, current_position, current_institution FROM professional_profiles WHERE user_id = ?').get(userId) || {};
   const labelled = (k, v) => ({ type: 'paragraph', content: [{ type: 'text', text: `${k}: `, marks: [{ type: 'bold' }] }, { type: 'text', text: v }] });
   const content = [
-    heading('Credentials Checklist for Faculty Position Reclassification', 1, 'center'),
-    { type: 'paragraph', attrs: { textAlign: 'center' }, content: [{ type: 'text', text: 'DBM-CHED JC No. 01, s. 2026 (Enhanced IG of JC No. 3, s. 2022) · Annex A', marks: [{ type: 'italic' }] }] },
+    heading('Credentials Tracker — Faculty Position Reclassification', 1, 'center'),
+    { type: 'paragraph', attrs: { textAlign: 'center' }, content: [{ type: 'text', text: 'DBM-CHED Joint Circular No. 01, s. 2026 (Enhanced IG of JC No. 3, s. 2022) · Annex A: List of Criteria and Documentary Evidences', marks: [{ type: 'italic' }] }] },
     labelled('Name', prof.full_name || '—'),
     ...(prof.current_position || prof.current_institution ? [labelled('Position', [prof.current_position, prof.current_institution].filter(Boolean).join(', '))] : []),
-    labelled('Summary', `${c.counts.claims} claim${c.counts.claims === 1 ? '' : 's'} · estimated ${c.total} of 400 points · documents ${c.counts.docs_secured} secured, ${c.counts.docs_missing} missing, ${c.counts.docs_pending} pending, ${c.counts.docs_unchecked} not yet checked`),
-    para('Estimated points are computed from your own claims; the evaluation committees decide what is credited.'),
+    labelled('As of', today),
+    labelled('Documents', `${c.counts.docs_secured} secured · ${c.counts.docs_missing} missing · ${c.counts.docs_pending} pending · ${c.counts.docs_unchecked} not yet checked (of ${c.counts.docs_total})`),
+    heading('Summary of estimated points', 2),
+    tableOf([
+      [{ text: 'Key Result Area', width: 28 }, { text: 'Criterion', width: 44 }, { text: 'Maximum', width: 14, align: 'center' }, { text: 'Estimated', width: 14, align: 'center' }],
+      ...c.kras.flatMap((k) => [
+        ...k.criteria.map((cr, n) => [{ text: n === 0 ? `KRA ${k.code} — ${k.title}` : '', bold: n === 0 }, { text: `${cr.code.split('.').pop()}. ${cr.title}${cr.bonus ? ' (bonus)' : ''}` }, { text: String(cr.max), align: 'center' }, { text: numTxt(cr.estimated), align: 'center' }]),
+        [{ text: '' }, { text: `Total for KRA ${k.code} (maximum ${k.max})`, bold: true, align: 'right' }, { text: String(k.max), align: 'center', bold: true }, { text: numTxt(k.estimated), align: 'center', bold: true }],
+      ]),
+      [{ text: 'All KRAs', bold: true, colspan: 2, align: 'right' }, { text: '400', align: 'center', bold: true }, { text: numTxt(c.total), align: 'center', bold: true }],
+    ]),
+    para(`Planned goals would add ${numTxt(c.projected)} points when completed. Estimates come from the claims recorded here; the evaluation committees decide what is credited.`),
+    para('Key: ✔ secured · ✘ missing · … pending · — not applicable · ☐ not yet checked.'),
   ];
   for (const k of c.kras) {
-    const claimed = k.criteria.flatMap((cr) => cr.indicators.filter((i) => i.claims.length));
-    if (!claimed.length) continue;
-    content.push(heading(`KRA ${k.code} — ${k.title} (estimated ${k.estimated} of ${k.max})`, 2));
-    for (const cr of k.criteria) {
-      const inds = cr.indicators.filter((i) => i.claims.length);
-      if (!inds.length) continue;
-      content.push(heading(`Criterion ${cr.code.split('.').pop()} — ${cr.title} (max ${cr.max}${cr.bonus ? ', bonus' : ''})`, 3));
-      for (const ind of inds) {
-        const rows = [[{ text: 'Claimed record', width: 34 }, { text: 'Required document', width: 46 }, { text: 'Status', width: 20, align: 'center' }]];
-        for (const cl of ind.claims) {
-          cl.docs.forEach((d, i) => rows.push([
-            ...(i === 0 ? [{ text: `${cl.title}${cl.date ? ` (${cl.date})` : ''}${cl.status === 'planned' ? ' — planned' : ''}`, bold: true, rowspan: cl.docs.length }] : []),
-            { text: d.label }, { text: MARK[d.status] || '', align: 'center' },
-          ]));
-        }
-        content.push(para(`${ind.code.replace(/^[IV]+\./, '')} ${ind.title}${ind.points != null ? ` — ${ind.points} pt${ind.points === 1 ? '' : 's'}${ind.unit === 'each' ? '' : ind.unit === 'rating' ? ' (scaled by rating)' : ` per ${ind.unit}`}` : ''}`, { bold: true }));
-        content.push(tableOf(rows));
-      }
+    const list = claimed(k);
+    if (!list.length) continue;
+    content.push(heading(`KRA ${k.code} — ${k.title} (estimated ${numTxt(k.estimated)} of ${k.max})`, 2));
+    let lastCr = null;
+    for (const { cr, i } of list) {
+      if (cr !== lastCr) { content.push(heading(`Criterion ${cr.code.split('.').pop()} — ${cr.title} (maximum ${cr.max}${cr.bonus ? ', bonus' : ''}; estimated ${numTxt(cr.estimated)})`, 3)); lastCr = cr; }
+      content.push(para(`${i.code.replace(/^[IV]+\./, '')}  ${i.title}${i.points != null ? ` — ${i.points} point${i.points === 1 ? '' : 's'}${i.unit === 'each' ? ' each' : i.unit === 'rating' ? ' × rating ÷ 100' : ` per ${i.unit}`}` : ''}`, { bold: true }));
+      const docW = Math.max(7, Math.min(12, Math.floor(58 / i.evidence.length)));
+      const recW = 100 - docW * i.evidence.length - 8;
+      content.push(tableOf([
+        [{ text: 'Record', width: recW }, ...i.evidence_short.map((h) => ({ text: h, width: docW, align: 'center' })), { text: 'Points', width: 8, align: 'center' }],
+        ...i.claims.map((cl) => [
+          { text: `${cl.title}${cl.date ? ` (${cl.date})` : ''}${cl.status === 'planned' ? ' — planned' : ''}${i.unit !== 'each' ? ` · ${i.unit === 'rating' ? `${numTxt(cl.quantity)}%` : `${numTxt(cl.quantity)} ${i.unit}${cl.quantity === 1 ? '' : 's'}`}` : ''}` },
+          ...cl.docs.map((d) => ({ text: MARK[d.status], align: 'center', bold: d.status === 'missing' })),
+          { text: cl.status === 'planned' ? `(+${numTxt(claimPts(i, cl))})` : numTxt(claimPts(i, cl)), align: 'center' },
+        ]),
+      ]));
     }
   }
   if (c.actions.length) {
     content.push(heading('Documents to secure next', 2));
-    content.push(tableOf([[{ text: 'Document', width: 44 }, { text: 'For', width: 40 }, { text: 'Indicator', width: 16, align: 'center' }],
-      ...c.actions.map((a) => [{ text: a.document }, { text: a.record }, { text: a.indicator, align: 'center' }])]));
+    content.push(tableOf([[{ text: 'Document', width: 44 }, { text: 'For', width: 36 }, { text: 'Requirement', width: 10, align: 'center' }, { text: 'Status', width: 10, align: 'center' }],
+      ...c.actions.map((a) => [{ text: a.document }, { text: a.record }, { text: a.indicator, align: 'center' }, { text: MARK_WORD[a.status], align: 'center', bold: a.status === 'missing' }])]));
   }
-  return render(db, userId, { doc: { type: 'doc', content }, title: 'DBM-CHED Credentials Checklist', format, type: 'jc_checklist', fileStem: 'DBM-CHED_Credentials_Checklist', pdfRenderer });
+  if (goals.length) {
+    content.push(heading('Planned goals', 2));
+    content.push(tableOf([[{ text: 'Goal', width: 40 }, { text: 'Requirement', width: 46 }, { text: 'Points', width: 14, align: 'center' }],
+      ...goals.map(({ i, x }) => [{ text: `${x.title}${x.note ? ` — ${x.note}` : ''}` }, { text: `${i.code} ${i.title}` }, { text: `+${numTxt(claimPts(i, x))}`, align: 'center' }])]));
+  }
+  content.push(para(`Source: ${SOURCE}.`));
+  return render(db, userId, { doc: { type: 'doc', content }, title: 'Credentials Tracker', format, landscape: true, type: 'jc_checklist', fileStem: 'Credentials_Tracker_DBM-CHED', pdfRenderer });
+}
+
+async function exportWorkbook(db, userId, c, prof, claimed, goals, today) {
+  const ExcelJS = (await import('exceljs')).default;
+  const { saveReport } = await import('../academic/docs.js');
+  const wb = new ExcelJS.Workbook(); wb.creator = 'SYNCHRONIA'; wb.created = new Date();
+  const FONT = 'Calibri';
+  const thin = { style: 'thin', color: { argb: 'FFB9B9C6' } }; const box = { top: thin, left: thin, bottom: thin, right: thin };
+  const fill = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
+  const HEAD = fill('FF3B1F73'); const SUB = fill('FFEDE7F8'); const KRA = fill('FF6D3FD1');
+  const STATUS_FILL = { secured: fill('FFD9F2E2'), missing: fill('FFFBDADA'), pending: fill('FFFFF1CC'), na: fill('FFF1F1F4'), unset: null };
+  const setup = (ws) => { ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } }; ws.headerFooter.oddFooter = '&L&8Credentials Tracker — DBM-CHED JC No. 01, s. 2026&R&8Page &P of &N'; };
+  const title = (ws, t, sub, cols) => {
+    ws.mergeCells(1, 1, 1, cols); Object.assign(ws.getCell(1, 1), { value: t, font: { name: FONT, size: 15, bold: true, color: { argb: 'FFFFFFFF' } }, fill: HEAD, alignment: { vertical: 'middle' } }); ws.getRow(1).height = 26;
+    ws.mergeCells(2, 1, 2, cols); Object.assign(ws.getCell(2, 1), { value: sub, font: { name: FONT, size: 9, italic: true, color: { argb: 'FF555566' } } });
+  };
+
+  // Summary
+  const sum = wb.addWorksheet('Summary'); setup(sum);
+  sum.columns = [{ width: 34 }, { width: 58 }, { width: 12 }, { width: 12 }];
+  title(sum, 'CREDENTIALS TRACKER — FACULTY POSITION RECLASSIFICATION', `DBM-CHED JC No. 01, s. 2026 (Enhanced IG of JC No. 3, s. 2022), Annex A · ${prof.full_name || ''}${prof.current_position ? `, ${prof.current_position}` : ''} · as of ${today}`, 4);
+  const sh = sum.addRow(['Key Result Area', 'Criterion', 'Maximum', 'Estimated']); sh.eachCell((x) => { x.font = { name: FONT, bold: true, size: 10 }; x.fill = SUB; x.border = box; });
+  for (const k of c.kras) {
+    k.criteria.forEach((cr, n) => { const r = sum.addRow([n === 0 ? `KRA ${k.code} — ${k.title}` : '', `${cr.code.split('.').pop()}. ${cr.title}${cr.bonus ? ' (bonus)' : ''}`, cr.max, cr.estimated]); r.eachCell({ includeEmpty: true }, (x, i) => { x.border = box; x.font = { name: FONT, size: 10, bold: i === 1 }; x.alignment = { vertical: 'top', wrapText: true, horizontal: i > 2 ? 'center' : 'left' }; }); });
+    const t = sum.addRow(['', `Total for KRA ${k.code}`, k.max, k.estimated]); t.eachCell({ includeEmpty: true }, (x, i) => { x.border = box; x.font = { name: FONT, size: 10, bold: true }; x.alignment = { horizontal: i > 2 ? 'center' : 'right' }; });
+  }
+  const tot = sum.addRow(['', 'All KRAs', 400, c.total]); tot.eachCell({ includeEmpty: true }, (x, i) => { x.border = box; x.font = { name: FONT, size: 11, bold: true }; x.fill = SUB; x.alignment = { horizontal: i > 2 ? 'center' : 'right' }; });
+  sum.addRow([]);
+  for (const [k, v] of [['Planned goals (when completed)', `+${numTxt(c.projected)} points`], ['Documents secured', `${c.counts.docs_secured} of ${c.counts.docs_total}`], ['Missing', c.counts.docs_missing], ['Pending', c.counts.docs_pending], ['Not yet checked', c.counts.docs_unchecked]]) {
+    const r = sum.addRow([k, v]); r.getCell(1).font = { name: FONT, bold: true, size: 10 }; r.getCell(2).font = { name: FONT, size: 10 };
+  }
+  sum.addRow([]); sum.addRow(['Key: ✔ secured · ✘ missing · … pending · — not applicable · ☐ not yet checked. Estimates come from your own claims; the evaluation committees decide what is credited.']).getCell(1).font = { name: FONT, italic: true, size: 9 };
+
+  // One sheet per KRA: a block per requirement, records × documents
+  for (const k of c.kras) {
+    const list = claimed(k);
+    const ws = wb.addWorksheet(`KRA ${k.code}`); setup(ws);
+    const maxDocs = Math.max(1, ...list.map(({ i }) => i.evidence.length));
+    const cols = 3 + maxDocs + 1;
+    ws.columns = [{ width: 46 }, { width: 12 }, { width: 8 }, ...Array.from({ length: maxDocs + 1 }, () => ({ width: 14 }))];
+    title(ws, `KRA ${k.code} — ${k.title.toUpperCase()}`, `Estimated ${numTxt(k.estimated)} of ${k.max} points`, cols);
+    if (!list.length) { ws.addRow([]); ws.addRow(['Nothing claimed under this KRA yet.']).getCell(1).font = { name: FONT, italic: true, size: 10 }; continue; }
+    let lastCr = null;
+    for (const { cr, i } of list) {
+      if (cr !== lastCr) {
+        ws.addRow([]);
+        const r = ws.addRow([`Criterion ${cr.code.split('.').pop()} — ${cr.title} (maximum ${cr.max}${cr.bonus ? ', bonus' : ''}; estimated ${numTxt(cr.estimated)})`]);
+        ws.mergeCells(r.number, 1, r.number, cols); Object.assign(r.getCell(1), { font: { name: FONT, bold: true, size: 11, color: { argb: 'FFFFFFFF' } }, fill: KRA });
+        lastCr = cr;
+      }
+      const ir = ws.addRow([`${i.code}  ${i.title}`, i.points == null ? 'see guidelines' : `${i.points} ${i.unit === 'each' ? 'each' : i.unit === 'rating' ? '× rating' : `per ${i.unit}`}`]);
+      ws.mergeCells(ir.number, 2, ir.number, cols); ir.getCell(1).font = { name: FONT, bold: true, size: 10 }; ir.getCell(2).font = { name: FONT, size: 10, color: { argb: 'FF555566' } }; ir.getCell(1).alignment = { wrapText: true, vertical: 'top' };
+      ir.height = Math.max(16, Math.ceil(`${i.code}  ${i.title}`.length / 48) * 14);
+      // Points sits right after this requirement's own document columns, so no empty columns open up in the block.
+      const last = 4 + i.evidence.length;
+      const hr = ws.addRow(['Record', 'Date', i.unit === 'each' ? '—' : i.unit === 'rating' ? 'Rating' : i.unit === 'hour' ? 'Hours' : 'Years', ...i.evidence_short, 'Points']);
+      hr.eachCell({ includeEmpty: true }, (x, n) => { if (n <= last) { x.fill = SUB; x.border = box; } x.font = { name: FONT, bold: true, size: 9 }; x.alignment = { horizontal: n === 1 ? 'left' : 'center', vertical: 'middle', wrapText: true }; });
+      i.evidence.forEach((full, n) => { hr.getCell(4 + n).note = full; });
+      hr.height = 28;
+      for (const cl of i.claims) {
+        const r = ws.addRow([`${cl.title}${cl.status === 'planned' ? ' (planned)' : ''}`, cl.date || '', i.unit === 'each' ? '' : cl.quantity, ...cl.docs.map((d) => MARK[d.status]), cl.status === 'planned' ? `+${numTxt(claimPts(i, cl))}` : claimPts(i, cl)]);
+        r.eachCell({ includeEmpty: true }, (x, n) => {
+          if (n > last) return;
+          x.border = box; x.font = { name: FONT, size: 10 }; x.alignment = { horizontal: n === 1 ? 'left' : 'center', vertical: 'top', wrapText: n === 1 };
+          if (n === last) x.font = { name: FONT, size: 10, bold: true };
+          const d = n < last ? cl.docs[n - 4] : null; if (d) { x.fill = STATUS_FILL[d.status] || undefined; x.font = { name: FONT, size: 11, bold: d.status === 'missing', color: { argb: d.status === 'missing' ? 'FFC62828' : d.status === 'secured' ? 'FF1B7A3D' : 'FF333333' } }; }
+        });
+        r.height = Math.max(16, Math.ceil(r.getCell(1).value.length / 46) * 14);
+      }
+    }
+    ws.views = [{ state: 'frozen', ySplit: 2 }];
+  }
+
+  // Documents to secure, and planned goals
+  const todo = wb.addWorksheet('Documents to secure'); setup(todo);
+  todo.columns = [{ width: 56 }, { width: 46 }, { width: 14 }, { width: 12 }];
+  title(todo, 'DOCUMENTS TO SECURE', 'Missing first, then the claims worth most', 4);
+  const th = todo.addRow(['Document', 'For', 'Requirement', 'Status']); th.eachCell((x) => { x.font = { name: FONT, bold: true, size: 10 }; x.fill = SUB; x.border = box; });
+  const rows = c.kras.flatMap((k) => k.criteria.flatMap((cr) => cr.indicators.flatMap((i) => i.claims.filter((x) => x.status === 'claimed').flatMap((x) => x.docs.filter((d) => d.status !== 'secured' && d.status !== 'na').map((d) => ({ d, x, i }))))))
+    .sort((a, b) => (a.d.status === 'missing' ? 0 : a.d.status === 'unset' ? 1 : 2) - (b.d.status === 'missing' ? 0 : b.d.status === 'unset' ? 1 : 2));
+  for (const { d, x, i } of rows) {
+    const r = todo.addRow([d.label, x.title, i.code, MARK_WORD[d.status]]);
+    r.eachCell((y, n) => { y.border = box; y.font = { name: FONT, size: 10, bold: n === 4 && d.status === 'missing', color: n === 4 && d.status === 'missing' ? { argb: 'FFC62828' } : undefined }; y.alignment = { wrapText: true, vertical: 'top', horizontal: n > 2 ? 'center' : 'left' }; });
+    if (STATUS_FILL[d.status]) r.getCell(4).fill = STATUS_FILL[d.status];
+  }
+  if (!rows.length) todo.addRow(['Every claimed document is secured or not applicable.']);
+  todo.autoFilter = { from: { row: 3, column: 1 }, to: { row: 3 + rows.length, column: 4 } };
+  todo.views = [{ state: 'frozen', ySplit: 3 }];
+
+  const gs = wb.addWorksheet('Planned goals'); setup(gs);
+  gs.columns = [{ width: 46 }, { width: 14 }, { width: 56 }, { width: 12 }];
+  title(gs, 'PLANNED GOALS', `+${numTxt(c.projected)} points when completed`, 4);
+  const gh = gs.addRow(['Goal', 'Requirement', 'Indicator', 'Points']); gh.eachCell((x) => { x.font = { name: FONT, bold: true, size: 10 }; x.fill = SUB; x.border = box; });
+  for (const { i, x } of goals) {
+    const r = gs.addRow([`${x.title}${x.note ? ` — ${x.note}` : ''}`, i.code, i.title, claimPts(i, x)]);
+    r.eachCell((y, n) => { y.border = box; y.font = { name: FONT, size: 10 }; y.alignment = { wrapText: true, vertical: 'top', horizontal: n === 2 || n === 4 ? 'center' : 'left' }; });
+  }
+  if (!goals.length) gs.addRow(['No planned goals.']);
+
+  const buffer = Buffer.from(await wb.xlsx.writeBuffer());
+  return saveReport(db, userId, { type: 'jc_checklist', title: 'Credentials Tracker', buffer, format: 'xlsx', fileStem: 'Credentials_Tracker_DBM-CHED', expect: [] });
 }

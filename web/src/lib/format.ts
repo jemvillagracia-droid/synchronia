@@ -1,4 +1,3 @@
-import type { Mode } from './types';
 
 export const t12 = (hhmm?: string | null) => {
   if (!hhmm) return '';
@@ -6,17 +5,6 @@ export const t12 = (hhmm?: string | null) => {
   return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 };
 
-export const MODE_LABEL: Record<Mode, string> = {
-  instructor: 'Instructor',
-  researcher: 'Researcher',
-  faculty_development: 'Faculty Development',
-};
-
-export const MODE_DESC: Record<Mode, string> = {
-  instructor: 'Teaching load, syllabi and assessments lead the Nexus.',
-  researcher: 'Research projects, manuscripts and presentations lead the Nexus.',
-  faculty_development: 'Qualifications, training and portfolio growth lead the Nexus.',
-};
 
 /** snake_case → Title Case, with a few academic acronyms preserved. */
 export function humanize(s: string | null | undefined): string {

@@ -61,6 +61,16 @@ test('ratings scale the indicator’s weight; planned goals are projected, not c
   assert.throws(() => jc.addClaim(db, uid, { indicator: 'I.A.2', type: 'note', note: 'SEF', quantity: 140 }), /rating/);
 });
 
+test('the tracker exports to Word and Excel, verified by re-opening the files', async () => {
+  const w = await jc.exportChecklist(db, uid, { format: 'docx' });
+  assert.ok(w.validation.ok, JSON.stringify(w.validation));
+  const x = await jc.exportChecklist(db, uid, { format: 'xlsx' });
+  assert.ok(x.validation.ok);
+  const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile(path.join(tmp, 'exports', 'reports', x.file_name));
+  assert.deepEqual(wb.worksheets.map((s) => s.name), ['Summary', 'KRA I', 'KRA II', 'KRA III', 'KRA IV', 'Documents to secure', 'Planned goals']);
+  await assert.rejects(() => jc.exportChecklist(db, uid, { format: 'rtf' }), /Word, PDF or Excel/);
+});
+
 test('the reclassification CV follows the four KRAs and the analyzer checks them', () => {
   const r = cv.createCv(db, uid, { name: 'Reclassification CV', cv_type: 'reclassification' });
   const secs = db.prepare('SELECT section_key, heading, visible FROM cv_sections WHERE cv_profile_id = ? ORDER BY sort_order').all(r.id).filter((x) => x.visible);

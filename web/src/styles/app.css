@@ -1913,3 +1913,86 @@ html[data-motion='reduced'] .page, html[data-motion='reduced'] .skeleton { anima
 .jc-doctable li { padding: 6px 0; border-bottom: 1px solid var(--line); }
 .jc-doctable .s { display: block; font-size: 12.5px; color: var(--text-3); }
 .jc-page .tabs { margin-bottom: var(--s-4); }
+
+/* ── Credentials Tracker grids (1.5.0): one grid per criterion; records × documents checkboxes ── */
+.jc-crit h3 { display: flex; align-items: baseline; gap: 10px; }
+.jc-crit-score { margin-left: auto; font-family: var(--font-mono); font-size: 13px; color: var(--text-2); } .jc-crit-score b { color: var(--accent-2); font-size: 15px; }
+.jc-scroll { overflow-x: auto; max-width: 100%; }
+.jc-grid { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 14px; }
+.jc-grid > thead th { text-align: left; font-family: var(--font-cond); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); padding: 6px 8px; border-bottom: 1px solid var(--line-2); background: var(--bg-2); }
+.jc-grid .jc-row > td { padding: 8px; border-top: 1px solid var(--line); vertical-align: top; }
+.jc-grid .jc-ind.has .jc-row > td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.jc-grid .jc-row .num { font-family: var(--font-mono); } .jc-grid .jc-row .num b { color: var(--accent-2); }
+.jc-grid .jc-title { overflow-wrap: break-word; }
+.jc-reqlink { all: unset; cursor: pointer; display: block; margin-top: 2px; font-size: 12px; color: var(--accent-2); } .jc-reqlink:hover { text-decoration: underline; } .jc-reqlink:focus-visible { outline: 2px solid var(--orange); }
+.jc-sugg-n { color: var(--orange); }
+.jc-detail > td { padding: 4px 8px 12px 8px; }
+.jc-matrix { border-collapse: collapse; min-width: 100%; font-size: 13.5px; }
+.jc-matrix th, .jc-matrix td { border: 1px solid var(--line-2); padding: 6px 8px; vertical-align: middle; }
+.jc-matrix thead th { background: var(--bg-2); font-family: var(--font-cond); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); font-weight: 600; line-height: 1.25; }
+.jc-matrix th.doc, .jc-matrix td.doc { text-align: center; width: 92px; min-width: 76px; }
+.jc-matrix th.rec, .jc-matrix td.rec { text-align: left; min-width: 240px; }
+.jc-matrix td.q, .jc-matrix th.q { text-align: center; width: 70px; font-family: var(--font-mono); } .jc-matrix td.q input { width: 62px; text-align: center; }
+.jc-matrix td.act { white-space: nowrap; width: 1%; }
+.jc-matrix tr.planned td { background: color-mix(in srgb, var(--orange) 6%, transparent); }
+.jc-matrix tbody tr:hover td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.jc-reclink { all: unset; cursor: pointer; font-weight: 600; color: var(--text); overflow-wrap: break-word; } .jc-reclink:hover { color: var(--accent-2); text-decoration: underline; } .jc-reclink:focus-visible { outline: 2px solid var(--orange); }
+.jc-matrix .meta { display: block; font-size: 12px; color: var(--text-3); } .jc-matrix .meta.note { font-style: italic; }
+.jc-boxwrap { position: relative; display: inline-flex; }
+.jc-box { all: unset; cursor: pointer; box-sizing: border-box; width: 22px; height: 22px; display: inline-grid; place-items: center; border: 1.5px solid var(--line-3); background: var(--bg-1); color: #fff; font-size: 13px; font-weight: 700; line-height: 1; transition: background-color 120ms ease, border-color 120ms ease, transform 100ms ease; }
+.jc-box:hover { border-color: var(--accent-2); } .jc-box:active { transform: scale(.9); } .jc-box:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.jc-box.secured { background: var(--ok); border-color: var(--ok); color: #04140a; }
+.jc-box.pending { background: #ffb020; border-color: #ffb020; color: #1b1000; }
+.jc-box.missing { border-color: #ff4d4d; color: #ff4d4d; }
+.jc-box.na { border-style: dashed; color: var(--text-3); }
+.jc-box svg { width: 14px; height: 14px; }
+.jc-boxmenu { position: absolute; z-index: 20; top: calc(100% + 4px); left: 50%; translate: -50% 0; display: flex; flex-direction: column; min-width: 150px; background: var(--bg-2); border: 1px solid var(--line-3); box-shadow: var(--shadow-pop); animation: popSoft 120ms ease; }
+.jc-boxmenu button { all: unset; cursor: pointer; padding: 7px 12px; font-size: 13px; text-align: left; } .jc-boxmenu button:hover, .jc-boxmenu button:focus-visible { background: var(--bg-3); }
+.jc-boxmenu button[aria-checked='true'] { color: var(--accent-2); font-weight: 600; }
+.jc-state { font-size: 12px; font-family: var(--font-mono); color: var(--text-3); min-width: 9ch; text-align: right; }
+.jc-state.missing { color: #ff6b6b; } .jc-state.pending { color: #ffb020; }
+.jc-doctable li { display: flex; align-items: center; gap: 12px; }
+.jc-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 12.5px; color: var(--text-2); margin-bottom: var(--s-3); }
+.jc-legend .jc-box { pointer-events: none; width: 16px; height: 16px; font-size: 10px; }
+
+/* ===== 1.5 system interface motion: an Evangelion-style operating system feel =====
+   Compositor-only (transform, opacity, clip-path). Nothing runs continuously except where the screen is live
+   (timer, status lamps). Reduce motion turns every effect here off. */
+.main { position: relative; }
+/* route sweep: a scan line passes over the page each time a page opens */
+.route-sweep { position: sticky; top: 0; height: 0; z-index: 6; pointer-events: none; }
+.route-sweep::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; will-change: transform, opacity;
+  background: linear-gradient(90deg, transparent, var(--accent-2) 20%, #fff 50%, var(--accent-2) 80%, transparent);
+  box-shadow: 0 0 18px 4px color-mix(in srgb, var(--accent) 55%, transparent); opacity: 0; animation: routeSweep 560ms cubic-bezier(.3, .6, .2, 1) both; }
+.route-sweep::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 100vh; will-change: opacity;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 30%); opacity: 0; animation: routeTint 560ms ease-out both; }
+@keyframes routeSweep { 0% { opacity: 1; transform: translateY(0); } 85% { opacity: .9; } 100% { opacity: 0; transform: translateY(calc(100vh - var(--topbar-h))); } }
+@keyframes routeTint { 0% { opacity: 1; } 100% { opacity: 0; } }
+/* decoding titles */
+h1.decoding { color: transparent !important; text-shadow: none !important; }
+.decode-overlay { text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }
+/* panels materialise in sequence: a quick wipe from the left edge */
+/* fill-mode backwards: no clip remains after the reveal, so menus inside panels are never cut off */
+/* (A staggered per-panel reveal was measured to halve the frame rate on machines without a GPU, so pages fade in as one.) */
+@keyframes sysIn { from { opacity: 0; } to { opacity: 1; } }
+.page > :nth-child(3) { animation-delay: 50ms; } .page > :nth-child(4) { animation-delay: 100ms; } .page > :nth-child(5) { animation-delay: 140ms; }
+/* pop-up windows open from a centre line, like a monitor coming on */
+.modal, .palette, .context-pop, .jc-import { animation: winOpen 260ms cubic-bezier(.2, .9, .2, 1) backwards; }
+@keyframes winOpen { 0% { opacity: 0; clip-path: inset(49% 0 49% 0); } 45% { opacity: 1; clip-path: inset(49% 0 49% 0); } 100% { opacity: 1; clip-path: inset(0 0 0 0); } }
+/* buttons: a light sweep crosses on hover */
+.btn { position: relative; overflow: hidden; isolation: isolate; }
+.btn::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, color-mix(in srgb, var(--accent-2) 26%, transparent) 50%, transparent 70%); transform: translateX(-120%); }
+.btn:hover:not(:disabled)::before { transform: translateX(120%); transition: transform 520ms cubic-bezier(.3, .6, .2, 1); }
+/* sidebar: the active item carries a glowing edge */
+.nav .nav-item.active { box-shadow: inset 3px 0 0 var(--orange), 0 0 22px -6px color-mix(in srgb, var(--accent) 80%, transparent); }
+.nav .nav-item .code { transition: color 140ms ease; } .nav .nav-item:hover .code { color: var(--orange); }
+/* (A header shimmer was removed: repainting it inside the fading page doubled frame times.) */
+/* focus: a system-style bracket glow on keyboard focus */
+:focus-visible { transition: outline-offset 120ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  .route-sweep::before, .route-sweep::after, .page > .page-head ~ *, .page .panel, .page .eva-widget, .modal, .palette, .context-pop, .jc-import, .page .panel > .panel-head { animation: none !important; }
+  .btn::before { display: none; }
+}
+html[data-motion='reduced'] :is(.route-sweep::before, .route-sweep::after, .page .panel, .page .eva-widget, .modal, .palette, .context-pop, .page .panel > .panel-head) { animation: none !important; }
+html[data-motion='reduced'] .btn::before { display: none; }

@@ -382,7 +382,7 @@ export const RESOURCES = {
 
 // Text inside these JSON documents is searchable too.
 const SEARCH_JSON = { syllabi: ['content_json'], materials: ['content_json'], tos: ['content_json'], rubrics: ['criteria_json'],
-  meetings: ['agenda_json', 'minutes_json'], turnover_documents: ['notes_json'] };
+  meetings: ['agenda_json', 'minutes_json'] };
 for (const [k, fields] of Object.entries(SEARCH_JSON)) if (RESOURCES[k]) RESOURCES[k].searchJson = fields;
 RESOURCES.syllabi.searchRich = ['document_json'];
 // Research records link to their documents (Word, PDF, Google Drive) — opened in their own applications.

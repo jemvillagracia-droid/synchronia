@@ -42,7 +42,7 @@ export const MODULES: ModuleDef[] = [
     id: 'cv', path: '/cv', label: 'Curriculum Vitae Studio', code: '03', icon: 'cv', phase: 3,
     summary: 'Comprehensive academic CVs drawn directly from the portfolio — never disconnected copies. Two-panel editor with live, page-accurate preview and ATS-readable output.',
     capabilities: [
-      { title: 'Profiles', items: ['Academic, faculty, research, administrative and application CVs', 'Draft and finalized versions — finalized never altered without confirmation'] },
+      { title: 'Profiles', items: ['Academic, faculty, research, DBM-CHED reclassification and application CVs', 'Draft and finalized versions — finalized never altered without confirmation'] },
       { title: 'Templates', items: ['Harvard-inspired academic (not an official Harvard template)', 'Traditional, modern, research, teaching, comprehensive', 'Minimalist ATS single-column'] },
       { title: 'Output', items: ['Genuine editable DOCX', 'Text-based PDF', 'ATS analyzer and extracted-text preview', 'Export history with descriptive filenames'] },
       { title: 'Photographs', items: ['Upload up to 100 MB (JPEG, PNG, WebP)', 'Crop, reposition, multiple portraits', 'Originals preserved, optimized copies for rendering'] },

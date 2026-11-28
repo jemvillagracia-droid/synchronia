@@ -1,5 +1,5 @@
 // Primary navigation: grouped like the SOUL ARCHIVE sidebar, numbered, and linking only to modules that exist.
-// Items that open a tab of a module (e.g. /admin?tab=meetings) are active only on that tab; the module's own item is
+// Items that open a tab of a module (e.g. /settings?tab=data) are active only on that tab; the module's own item is
 // active on its other tabs.
 export interface NavItem { id: string; label: string; to: string; icon: string; action?: 'capture' }
 export interface NavGroup { label: string; items: NavItem[] }

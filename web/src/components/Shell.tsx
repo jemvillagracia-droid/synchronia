@@ -4,6 +4,7 @@ import { BrandMark, Icon } from './Icon';
 import { useApp } from './AppContext';
 import { NAV, isActive, navCode } from '../lib/nav';
 import { setNotificationPrefs } from '../lib/timer';
+import { decodeHeading } from '../lib/decode';
 import { prepareAlarm } from '../lib/alarm';
 import { applyTheme } from '../lib/themes';
 import { TimerChip } from '../pages/TimerPage';
@@ -232,6 +233,13 @@ export function Shell({ children }: { children: ReactNode }) {
 
 
   useEffect(() => { setMobileNav(false); }, [location.pathname]);
+  // Each page's title decodes into place when the page opens (after lazy pages have rendered).
+  useEffect(() => {
+    let tries = 0; let t = 0;
+    const run = () => { const h = document.querySelector<HTMLElement>('main .page-head h1, main h1.display'); if (h) decodeHeading(h); else if (++tries < 10) t = window.setTimeout(run, 60); };
+    t = window.setTimeout(run, 30);
+    return () => window.clearTimeout(t);
+  }, [location.pathname]);
   // Deep links to a record pop-up: ?new=<type> opens a new record of that type, ?open=<type>:<id> an existing one.
   const navigateTo = useNavigate();
   const { openNew: deepNew, openRecord: deepOpen } = useApp();
@@ -288,7 +296,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </button>
         <ProfileMenu />
       </header>
-      <main className="main" id="main" tabIndex={-1}>{children}</main>
+      <main className="main" id="main" tabIndex={-1}><div key={location.pathname} className="route-sweep" aria-hidden />{children}</main>
       <StatusBar />
       <TimerAlerts />
       {contextOpen && (

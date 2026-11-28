@@ -43,7 +43,7 @@ export const FORMS: Record<string, FormLayout> = {
     ],
     labels: { office: 'Office or department', is_current: 'Current position', employment_type: 'Employment type' },
     hints: { location: 'City, Province / Country', responsibilities: 'One per line, each starting with an action verb (Coordinated, Prepared…).', accomplishments: 'Concrete, quantified results; one per line.' },
-    placeholders: { employment_type: 'e.g. Permanent, Contract of Service', position: 'e.g. Administrative Aide IV' },
+    placeholders: { employment_type: 'e.g. Permanent, Contract of Service', position: 'e.g. Instructor I' },
   },
   appointments: {
     sections: [

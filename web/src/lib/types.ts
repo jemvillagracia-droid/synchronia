@@ -75,10 +75,6 @@ export interface Nexus {
     recent: { id: number; title: string; organizer: string | null; start_date: string | null; hours: number | null }[];
   };
   deadlines: { items: Task[]; undated_open: number };
-  admin: {
-    open_tasks: { id: number; title: string; due_date: string | null; priority: string; status: string }[];
-    correspondence_pending: number; follow_ups: number; incoming: number; outgoing: number;
-  };
   recent_records: { type: string; id: number; title: string; updated_at: string; label: string; module: string; is_new: boolean }[];
   accomplishments: { type: string; id: number; title: string; event_date: string | null; verification: string | null; label: string }[];
   recent_cvs: { profiles: number; exports: { id: number; file_name: string; format: string; created_at: string; profile: string }[] };

@@ -15,7 +15,7 @@ const SECTIONS: { title: string; code: string; fields: { name: string; label: st
     title: 'Identity', code: 'ID',
     fields: [
       { name: 'full_name', label: 'Full name' },
-      { name: 'professional_title', label: 'Professional title', hint: 'e.g. Administrative Aide IV' },
+      { name: 'professional_title', label: 'Professional title', hint: 'e.g. Instructor I, RPm, LPT' },
       { name: 'academic_designation', label: 'Academic designation', hint: 'e.g. LPT, MAEd' },
       { name: 'specialization', label: 'Academic specialization' },
       { name: 'research_interests', label: 'Research interests', long: true },

@@ -408,7 +408,7 @@ function PaperSetting() {
           <select className="select" value={prefs.paper_size || 'letter'} onChange={async (e) => { if (await updatePrefs({ paper_size: e.target.value })) toast(`Documents will be exported on ${prefs.paper_sizes![e.target.value]}`, 'ok'); }}>
             {Object.entries(prefs.paper_sizes).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select></label>
-        <p className="faint" style={{ margin: 0, fontSize: 13 }}>Used by reports, minutes, turnover documents, research exports and Intelligence reports, in Word and PDF. Margins and tables adjust to the paper. A syllabus keeps its own page setup, and each CV its own paper size.</p>
+        <p className="faint" style={{ margin: 0, fontSize: 13 }}>Used by reports, research exports and Intelligence reports, in Word and PDF. Margins and tables adjust to the paper. A syllabus keeps its own page setup, and each CV its own paper size.</p>
       </div>
     </section>
   );

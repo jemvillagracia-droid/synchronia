@@ -51,20 +51,34 @@ const ok = (n, c, x = '') => { R.push(!!c); console.log(`${c ? 'PASS' : 'FAIL'} 
   ok('Estimated points and the document summary appear', /\d/.test(await w.locator('.jc-total b').innerText()) && c.counts.docs_missing >= 1);
   await w.getByRole('tab', { name: /^Documents/ }).click(); await w.waitForSelector('.jc-doctable');
   const missing = w.locator('.jc-doctable li', { hasText: 'Program showing the assigned topic' });
-  await missing.getByRole('radio', { name: 'Secured' }).click(); await w.waitForTimeout(800);
+  await missing.getByRole('checkbox').click(); await w.waitForTimeout(800);
   const c2 = (await api('GET', '/portfolio/jc')).body;
-  ok('The Documents tab sets a missing document to Secured in one click', c2.kras[2].criteria[1].indicators.find((i) => i.code === 'III.B.1.5.1').claims[0].docs[1].status === 'secured');
+  ok('The Documents tab ticks a missing document as Secured in one click', c2.kras[2].criteria[1].indicators.find((i) => i.code === 'III.B.1.5.1').claims[0].docs[1].status === 'secured');
   ok('…and it leaves the to-do list', await w.locator('.jc-doctable li', { hasText: 'Program showing the assigned topic' }).count() === 0);
   await w.screenshot({ path: S + '/shots/2-documents.png' });
   await w.getByRole('tab', { name: /^Planned goals/ }).click(); await w.waitForTimeout(300);
   ok('Planned goals lists the doctorate with the points it will add', /Doctor of Philosophy[\s\S]*\+40 pts/i.test(await w.locator('main').innerText()));
   await w.getByRole('tab', { name: 'Requirements by KRA' }).click(); await w.waitForTimeout(300);
   ok('Requirements show only what applies by default', await w.locator('.jc-ind').count() < 20, `${await w.locator('.jc-ind').count()} shown`);
+  await w.locator('#kra-III .jc-head').click(); await w.waitForTimeout(300);
+  const grid = w.locator('#kra-III table.jc-matrix').first();
+  const cols = await grid.locator('thead th.doc').allInnerTexts();
+  ok('Each claimed requirement shows a records × documents checkbox grid', cols.length === 4 && /invitation/i.test(cols[0]), cols.join(' | '));
+  const box = grid.locator('tbody tr').first().locator('td.doc').nth(3).getByRole('checkbox');
+  await box.click({ button: 'right' }); await w.getByRole('menuitemradio', { name: 'Not applicable' }).click(); await w.waitForTimeout(700);
+  const c3 = (await api('GET', '/portfolio/jc')).body;
+  ok('Right-click marks a document Not applicable', c3.kras[2].criteria[1].indicators.find((i) => i.code === 'III.B.1.5.1').claims[0].docs[3].status === 'na');
+  await box.focus(); await w.keyboard.press('p'); await w.waitForTimeout(700);
+  const c4 = (await api('GET', '/portfolio/jc')).body;
+  ok('The P key marks it Pending', c4.kras[2].criteria[1].indicators.find((i) => i.code === 'III.B.1.5.1').claims[0].docs[3].status === 'pending');
   await w.screenshot({ path: S + '/shots/3-requirements.png' });
   await w.getByRole('button', { name: 'Word', exact: true }).click();
   await w.waitForFunction(() => /Exported/.test(document.body.innerText), null, { timeout: 30000 }).catch(() => {});
   const files = fs.existsSync(S + '/downloads') ? fs.readdirSync(S + '/downloads') : [];
-  ok('The checklist exports to Word', files.some((f) => /DBM-CHED_Credentials_Checklist.*\.docx$/.test(f)), files.join(', '));
+  ok('The tracker exports to Word', files.some((f) => /Credentials_Tracker.*\.docx$/.test(f)), files.join(', '));
+  await w.getByRole('button', { name: 'Excel', exact: true }).click(); await w.waitForTimeout(2500);
+  const files2 = fs.existsSync(S + '/downloads') ? fs.readdirSync(S + '/downloads') : [];
+  ok('…and to Excel', files2.some((f) => /Credentials_Tracker.*\.xlsx$/.test(f)), files2.join(', '));
 
   // CV: the reclassification type is the default for a new CV
   const cv = await api('POST', '/cv', { name: 'Reclassification CV', cv_type: 'reclassification' });

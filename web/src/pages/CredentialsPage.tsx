@@ -11,10 +11,10 @@ import { Overlay } from '../components/Overlay';
 import { useSearchParams } from 'react-router-dom';
 
 type DocStatus = 'secured' | 'missing' | 'pending' | 'na' | 'unset';
-interface Doc { index: number; label: string; status: DocStatus }
+interface Doc { index: number; label: string; short: string; status: DocStatus }
 interface Claim { claim_id: number; type: string; id: number | null; title: string; date: string | null; evidence: number; quantity: number; note: string | null; status: 'claimed' | 'planned'; docs: Doc[]; missing?: boolean }
 interface Suggestion { type: string; id: number; title: string; date: string | null; evidence: number; quantity: number; note: string | null }
-interface Indicator { code: string; title: string; points: number | null; unit: 'each' | 'hour' | 'year' | 'rating'; evidence: string[]; claims: Claim[]; suggestions: Suggestion[]; estimated: number }
+interface Indicator { code: string; title: string; points: number | null; unit: 'each' | 'hour' | 'year' | 'rating'; evidence: string[]; evidence_short: string[]; claims: Claim[]; suggestions: Suggestion[]; estimated: number }
 interface Criterion { code: string; title: string; max: number; bonus: boolean; estimated: number; indicators: Indicator[] }
 interface Kra { code: string; title: string; max: number; estimated: number; criteria: Criterion[] }
 interface Action { claim_id: number; indicator: string; kra: string; record: string; document: string; status: DocStatus; value: number }
@@ -59,7 +59,7 @@ export function CredentialsPage() {
     setC((x) => x && { ...x, kras: x.kras.map((k) => ({ ...k, criteria: k.criteria.map((cr) => ({ ...cr, indicators: cr.indicators.map((i) => ({ ...i, claims: i.claims.map((q) => (q.claim_id === cl.claim_id ? { ...q, docs: q.docs.map((y) => (y.index === d.index ? { ...y, status } : y)) } : q)) })) })) })) });
     void call(() => api.put(`/portfolio/jc/claims/${cl.claim_id}`, { docs: { [d.index]: status === 'unset' ? null : status } }));
   }
-  async function exportAs(format: 'docx' | 'pdf') {
+  async function exportAs(format: 'docx' | 'pdf' | 'xlsx') {
     setBusy(format);
     try { const r = await api.post<{ download: string; file_name: string }>('/portfolio/jc/export', { format }); download(r.download, r.file_name); toast(`Exported ${r.file_name}`, 'ok'); }
     catch (e) { toast((e as Error).message, 'error'); } finally { setBusy(''); }
@@ -92,6 +92,7 @@ export function CredentialsPage() {
       <div className="actions">
         <input ref={file} type="file" accept=".xlsx" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void readTracker(f); }} />
         <button className="btn" onClick={() => file.current?.click()} disabled={busy === 'import'}><Icon name="upload" />{busy === 'import' ? 'Reading…' : 'Import tracker (Excel)'}</button>
+        <button className="btn" onClick={() => exportAs('xlsx')} disabled={!!busy}><Icon name="download" />Excel</button>
         <button className="btn" onClick={() => exportAs('docx')} disabled={!!busy}><Icon name="download" />Word</button>
         <button className="btn" onClick={() => exportAs('pdf')} disabled={!!busy}><Icon name="download" />PDF</button>
       </div>
@@ -167,6 +168,12 @@ export function CredentialsPage() {
 
       {tab === 'requirements' && (
         <>
+          <div className="jc-legend" aria-hidden>
+            <span><span className="jc-box secured"><Icon name="check" size={10} /></span> Secured</span><span><span className="jc-box" /> Not yet</span>
+            <span><span className="jc-box pending">…</span> Pending</span><span><span className="jc-box missing">✕</span> Missing</span><span><span className="jc-box na">—</span> N/A</span>
+            <span className="faint">Click a box to tick it · right-click for pending, missing or N/A</span>
+          </div>
+
           <div className="between wrap" style={{ gap: 8, marginBottom: 'var(--s-3)' }}>
             <div className="seg" role="group" aria-label="Which requirements">
               <button aria-pressed={relevant} onClick={() => showAll(false)}>What applies to me</button>
@@ -192,8 +199,14 @@ export function CredentialsPage() {
                     {!crits.length && <div className="faint">Nothing claimed or suggested here yet. Choose “All 83 requirements” to claim something without a portfolio record.</div>}
                     {crits.map((cr) => (
                       <div key={cr.code} className="jc-crit">
-                        <h3>Criterion {cr.code.split('.').pop()} — {cr.title}<span className="faint"> · max {cr.max}{cr.bonus ? ' (bonus)' : ''} · {pts(cr.estimated)} claimed</span></h3>
-                        {cr.indicators.map((ind) => <IndicatorRow key={ind.code} ind={ind} onCall={call} onDoc={setDoc} openRecord={openRecord} />)}
+                        <h3>Criterion {cr.code.split('.').pop()} — {cr.title}<span className="jc-crit-score"><b>{pts(cr.estimated)}</b> / {cr.max}{cr.bonus ? ' bonus' : ''}</span></h3>
+                        <div className="jc-scroll">
+                          <table className="jc-grid">
+                            <colgroup><col style={{ width: '9%' }} /><col /><col style={{ width: '13%' }} /><col style={{ width: '9%' }} /><col style={{ width: '9%' }} /><col style={{ width: '1%' }} /></colgroup>
+                            <thead><tr><th>Code</th><th>Requirement</th><th>Points</th><th>Records</th><th>Estimate</th><th aria-label="Actions" /></tr></thead>
+                            {cr.indicators.map((ind) => <IndicatorRows key={ind.code} ind={ind} onCall={call} onDoc={setDoc} openRecord={openRecord} />)}
+                          </table>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -206,6 +219,12 @@ export function CredentialsPage() {
 
       {tab === 'documents' && (
         <section className="panel">
+          <div style={{ padding: 'var(--s-3) var(--s-4) 0' }}><div className="jc-legend" aria-hidden>
+              <span><span className="jc-box secured"><Icon name="check" size={10} /></span> Secured</span><span><span className="jc-box" /> Not yet</span>
+              <span><span className="jc-box pending">…</span> Pending</span><span><span className="jc-box missing">✕</span> Missing</span><span><span className="jc-box na">—</span> N/A</span>
+              <span className="faint">Click a box to tick it · right-click for pending, missing or N/A</span>
+            </div>
+          </div>
           <header className="panel-head"><span className="code">DOC</span><h2>Documents</h2>
             <div className="seg" role="group" aria-label="Show" style={{ marginLeft: 'auto' }}>
               {([['todo', 'To do'], ['missing', 'Missing'], ['pending', 'Pending'], ['unset', 'Not checked'], ['all', 'All']] as const).map(([k, l]) => <button key={k} aria-pressed={docFilter === k} onClick={() => setDocFilter(k)}>{l}</button>)}
@@ -216,13 +235,9 @@ export function CredentialsPage() {
               <ul className="jc-doclist jc-doctable">
                 {todo.map(({ cl, d }) => (
                   <li key={`${cl.claim_id}-${d.index}`}>
-                    <span className={`jc-dot ${d.status}`} aria-hidden />
+                    <DocBox status={d.status} label={`${d.label} — ${cl.title}`} onSet={(st) => setDoc(cl, d, st)} />
                     <span className="lbl">{d.label}<span className="s">{cl.title} · {cl.ind.code}</span></span>
-                    <span className="seg sm" role="radiogroup" aria-label={`${d.label} — ${cl.title}`}>
-                      {(Object.keys(DOC_LABEL) as (keyof typeof DOC_LABEL)[]).map((st) => (
-                        <button key={st} type="button" role="radio" aria-checked={d.status === st} onClick={() => setDoc(cl, d, d.status === st ? 'unset' : st)}>{DOC_LABEL[st]}</button>
-                      ))}
-                    </span>
+                    <span className={`jc-state ${d.status}`}>{d.status === 'unset' ? 'Not checked' : DOC_LABEL[d.status]}</span>
                   </li>
                 ))}
               </ul>
@@ -255,78 +270,129 @@ export function CredentialsPage() {
   );
 }
 
-function IndicatorRow({ ind, onCall, onDoc, openRecord }: { ind: Indicator; onCall: (fn: () => Promise<unknown>, ok?: string) => Promise<void>; onDoc: (c: Claim, d: Doc, s: DocStatus) => void; openRecord: (type: string, id: number) => void }) {
+/**
+ * A document checkbox. Click: secured ⇄ not yet. Right-click (or the keys P, N, M, Delete while focused): pending,
+ * not applicable, missing, or clear.
+ */
+function DocBox({ status, label, onSet }: { status: DocStatus; label: string; onSet: (s: DocStatus) => void }) {
+  const [menu, setMenu] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!menu) return undefined;
+    const close = (e: Event) => { if (!ref.current?.contains(e.target as Node)) setMenu(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(false); };
+    document.addEventListener('pointerdown', close); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', esc); };
+  }, [menu]);
+  const name = status === 'unset' ? 'not checked' : DOC_LABEL[status].toLowerCase();
+  return (
+    <span className="jc-boxwrap" ref={ref}>
+      <button type="button" role="checkbox" aria-checked={status === 'secured' ? true : status === 'pending' ? 'mixed' : false}
+        className={`jc-box ${status}`} aria-label={`${label}: ${name}`} title={`${label}\n${name} — click to ${status === 'secured' ? 'clear' : 'mark secured'}; right-click for pending, missing or N/A`}
+        onClick={() => onSet(status === 'secured' ? 'unset' : 'secured')}
+        onContextMenu={(e) => { e.preventDefault(); setMenu(true); }}
+        onKeyDown={(e) => {
+          const k = e.key.toLowerCase();
+          const map: Record<string, DocStatus> = { p: 'pending', n: 'na', m: 'missing', s: 'secured', delete: 'unset', backspace: 'unset' };
+          if (map[k]) { e.preventDefault(); onSet(map[k]); }
+          else if (k === 'contextmenu' || (e.shiftKey && k === 'f10')) { e.preventDefault(); setMenu(true); }
+        }}>
+        {status === 'secured' ? <Icon name="check" size={14} /> : status === 'na' ? '—' : status === 'pending' ? '…' : status === 'missing' ? '✕' : ''}
+      </button>
+      {menu && (
+        <span className="jc-boxmenu" role="menu">
+          {([['secured', 'Secured'], ['pending', 'Pending'], ['missing', 'Missing'], ['na', 'Not applicable'], ['unset', 'Clear']] as [DocStatus, string][]).map(([k, l]) => (
+            <button key={k} role="menuitemradio" aria-checked={status === k} onClick={() => { onSet(k); setMenu(false); }}>{l}</button>
+          ))}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function IndicatorRows({ ind, onCall, onDoc, openRecord }: { ind: Indicator; onCall: (fn: () => Promise<unknown>, ok?: string) => Promise<void>; onDoc: (c: Claim, d: Doc, s: DocStatus) => void; openRecord: (type: string, id: number) => void }) {
   const [showDocs, setShowDocs] = useState(false);
   const [adding, setAdding] = useState(false);
   const [note, setNote] = useState(''); const [qty, setQty] = useState(''); const [planned, setPlanned] = useState(false);
   const has = ind.claims.length > 0;
-  const qtyLabel = ind.unit === 'hour' ? 'Hours' : ind.unit === 'year' ? 'Years' : ind.unit === 'rating' ? 'Rating (0–100)' : 'Count';
+  const qtyLabel = ind.unit === 'hour' ? 'Hours' : ind.unit === 'year' ? 'Years' : ind.unit === 'rating' ? 'Rating' : 'Count';
+  const detail = has || ind.suggestions.length > 0 || adding || showDocs;
   return (
-    <div className={`jc-ind ${has ? 'has' : ''}`}>
-      <div className="jc-ind-head">
-        <span className="jc-code">{short(ind.code)}</span>
-        <span className="jc-title">{ind.title}</span>
-        <span className="jc-pts">{ind.points == null ? 'see guidelines' : `${ind.points} pt${ind.points === 1 ? '' : 's'}${UNIT[ind.unit]}`}</span>
-        {ind.estimated > 0 && <span className="tag">{pts(ind.estimated)} pts</span>}
-        <button className="btn btn-sm btn-ghost" aria-expanded={showDocs} onClick={() => setShowDocs((v) => !v)}>Required documents</button>
-        <button className="btn btn-sm" onClick={() => setAdding((v) => !v)}><Icon name="plus" />Claim</button>
-      </div>
-      {showDocs && <ol className="jc-req">{ind.evidence.map((e) => <li key={e}>{e}</li>)}</ol>}
-      {ind.claims.map((cl) => (
-        <div key={cl.claim_id} className={`jc-claim ${cl.status}`}>
-          <div className="jc-claim-head">
-            {cl.id && !cl.missing ? <button className="rowlink" onClick={() => openRecord(cl.type, cl.id as number)}><span className="t">{cl.title}</span></button> : <span className="t">{cl.title}</span>}
-            {cl.date && <span className="faint mono">{cl.date}</span>}
-            {cl.status === 'planned' && <span className="tag orange">Planned goal</span>}
-            {cl.missing && <span className="tag red">Record deleted</span>}
-            {cl.evidence > 0 && <span className="tag">{cl.evidence} file{cl.evidence === 1 ? '' : 's'} linked</span>}
-            {ind.unit !== 'each' && (
-              <label className="jc-qty">{qtyLabel}
-                <input className="input select-sm" inputMode="decimal" defaultValue={cl.quantity} aria-label={`${qtyLabel} for ${cl.title}`}
-                  onBlur={(e) => { const v = Number(e.target.value); if (v && v !== cl.quantity) void onCall(() => api.put(`/portfolio/jc/claims/${cl.claim_id}`, { quantity: v })); }} />
-              </label>
-            )}
-            <button className="btn btn-sm btn-ghost" onClick={() => onCall(() => api.put(`/portfolio/jc/claims/${cl.claim_id}`, { status: cl.status === 'planned' ? 'claimed' : 'planned' }), cl.status === 'planned' ? 'Marked as earned' : 'Moved to planned goals')}>
-              {cl.status === 'planned' ? 'Mark earned' : 'Make planned'}
-            </button>
-            <button className="icon-btn sm" aria-label={`Remove the claim “${cl.title}”`} onClick={() => onCall(() => api.del(`/portfolio/jc/claims/${cl.claim_id}`), 'Claim removed')}><Icon name="close" /></button>
-          </div>
-          {cl.note && <div className="faint jc-note">{cl.note}</div>}
-          <ul className="jc-doclist">
-            {cl.docs.map((d) => (
-              <li key={d.index}>
-                <span className={`jc-dot ${d.status}`} aria-hidden />
-                <span className="lbl">{d.label}</span>
-                <span className="seg sm" role="radiogroup" aria-label={d.label}>
-                  {(Object.keys(DOC_LABEL) as (keyof typeof DOC_LABEL)[]).map((s) => (
-                    <button key={s} type="button" role="radio" aria-checked={d.status === s} onClick={() => onDoc(cl, d, d.status === s ? 'unset' : s)}>{DOC_LABEL[s]}</button>
-                  ))}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-      {ind.suggestions.length > 0 && (
-        <div className="jc-sugg">
-          <span className="faint">From your portfolio:</span>
-          {ind.suggestions.map((s) => (
-            <button key={`${s.type}-${s.id}`} className="chip" onClick={() => onCall(() => api.post('/portfolio/jc/claims', { indicator: ind.code, type: s.type, id: s.id, quantity: s.quantity }), `Claimed “${s.title}”`)} title={s.note || undefined}>
-              <Icon name="plus" />{s.title}{s.date ? ` · ${s.date.slice(0, 4)}` : ''}
-            </button>
-          ))}
-        </div>
+    <tbody className={`jc-ind ${has ? 'has' : ''}`}>
+      <tr className="jc-row">
+        <td className="jc-code">{short(ind.code)}</td>
+        <td className="jc-title">{ind.title}
+          <button className="jc-reqlink" aria-expanded={showDocs} onClick={() => setShowDocs((v) => !v)}>{showDocs ? 'Hide' : 'Required'} documents ({ind.evidence.length})</button>
+        </td>
+        <td className="jc-pts">{ind.points == null ? 'see guidelines' : `${ind.points}${UNIT[ind.unit]}`}</td>
+        <td className="num">{ind.claims.length || ''}{ind.suggestions.length ? <span className="jc-sugg-n" title="Suggested from your portfolio"> +{ind.suggestions.length}</span> : ''}</td>
+        <td className="num">{ind.estimated ? <b>{pts(ind.estimated)}</b> : ''}</td>
+        <td><button className="btn btn-sm" onClick={() => setAdding((v) => !v)} aria-expanded={adding}><Icon name="plus" />Claim</button></td>
+      </tr>
+      {detail && (
+        <tr className="jc-detail"><td colSpan={6}>
+          {showDocs && <ol className="jc-req">{ind.evidence.map((e) => <li key={e}>{e}</li>)}</ol>}
+          {has && (
+            <div className="jc-scroll">
+              <table className="jc-matrix">
+                <thead>
+                  <tr>
+                    <th className="rec">Record</th>
+                    {ind.unit !== 'each' && <th className="q">{qtyLabel}</th>}
+                    {ind.evidence_short.map((h, i) => <th key={i} className="doc" title={ind.evidence[i]}>{h}</th>)}
+                    <th className="q">Pts</th><th aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {ind.claims.map((cl) => {
+                    const done = cl.docs.filter((d) => d.status === 'secured' || d.status === 'na').length;
+                    return (
+                      <tr key={cl.claim_id} className={cl.status}>
+                        <td className="rec">
+                          {cl.id && !cl.missing ? <button className="jc-reclink" onClick={() => openRecord(cl.type, cl.id as number)}>{cl.title}</button> : <span>{cl.title}</span>}
+                          <span className="meta">{[cl.date, cl.status === 'planned' ? 'planned goal' : null, cl.missing ? 'record deleted' : null, cl.evidence ? `${cl.evidence} file${cl.evidence === 1 ? '' : 's'}` : null, `${done}/${cl.docs.length} documents`].filter(Boolean).join(' · ')}</span>
+                          {cl.note && <span className="meta note">{cl.note}</span>}
+                        </td>
+                        {ind.unit !== 'each' && (
+                          <td className="q"><input className="input select-sm" inputMode="decimal" defaultValue={cl.quantity} aria-label={`${qtyLabel} for ${cl.title}`}
+                            onBlur={(e) => { const v = Number(e.target.value); if (v && v !== cl.quantity) void onCall(() => api.put(`/portfolio/jc/claims/${cl.claim_id}`, { quantity: v })); }} /></td>
+                        )}
+                        {cl.docs.map((d) => <td key={d.index} className="doc"><DocBox status={d.status} label={`${d.label} — ${cl.title}`} onSet={(st) => onDoc(cl, d, st)} /></td>)}
+                        <td className="q">{cl.status === 'planned' ? <span className="faint">+{pts(ind.points == null ? 0 : ind.unit === 'rating' ? (ind.points * cl.quantity) / 100 : ind.points * cl.quantity)}</span> : pts(ind.points == null ? 0 : ind.unit === 'rating' ? (ind.points * cl.quantity) / 100 : ind.points * cl.quantity)}</td>
+                        <td className="act">
+                          <button className="btn btn-sm btn-ghost" onClick={() => onCall(() => api.put(`/portfolio/jc/claims/${cl.claim_id}`, { status: cl.status === 'planned' ? 'claimed' : 'planned' }), cl.status === 'planned' ? 'Marked as earned' : 'Moved to planned goals')}>{cl.status === 'planned' ? 'Earned' : 'Planned'}</button>
+                          <button className="icon-btn sm" aria-label={`Remove the claim “${cl.title}”`} onClick={() => onCall(() => api.del(`/portfolio/jc/claims/${cl.claim_id}`), 'Claim removed')}><Icon name="close" /></button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {ind.suggestions.length > 0 && (
+            <div className="jc-sugg">
+              <span className="faint">From your portfolio:</span>
+              {ind.suggestions.map((sg) => (
+                <button key={`${sg.type}-${sg.id}`} className="chip" onClick={() => onCall(() => api.post('/portfolio/jc/claims', { indicator: ind.code, type: sg.type, id: sg.id, quantity: sg.quantity }), `Claimed “${sg.title}”`)} title={sg.note || undefined}>
+                  <Icon name="plus" />{sg.title}{sg.date ? ` · ${sg.date.slice(0, 4)}` : ''}
+                </button>
+              ))}
+              {ind.suggestions.length > 1 && <button className="btn btn-sm" onClick={async () => { for (const sg of ind.suggestions) await api.post('/portfolio/jc/claims', { indicator: ind.code, type: sg.type, id: sg.id, quantity: sg.quantity }).catch(() => {}); await onCall(async () => {}, `Claimed ${ind.suggestions.length} records`); }}>Claim all {ind.suggestions.length}</button>}
+            </div>
+          )}
+          {adding && (
+            <form className="jc-add" onSubmit={(e) => { e.preventDefault(); void onCall(() => api.post('/portfolio/jc/claims', { indicator: ind.code, type: 'note', note, quantity: qty || 1, status: planned ? 'planned' : 'claimed' }), 'Claim added').then(() => { setAdding(false); setNote(''); setQty(''); setPlanned(false); }); }}>
+              <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder={ind.unit === 'rating' ? 'e.g. SET ratings AY 2023–2026 (average)' : 'What you are claiming (without a portfolio record)'} aria-label="What you are claiming" maxLength={500} required autoFocus />
+              {ind.unit !== 'each' && <input className="input select-sm" style={{ width: 120 }} inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value.replace(/[^\d.]/g, ''))} placeholder={qtyLabel} aria-label={qtyLabel} />}
+              <label className="checkline"><input type="checkbox" className="check" checked={planned} onChange={(e) => setPlanned(e.target.checked)} />Planned goal</label>
+              <button className="btn btn-primary btn-sm" disabled={!note.trim()}>Add claim</button>
+              <span className="faint" style={{ fontSize: 12.5 }}>To claim a portfolio record, add it to the Professional Portfolio — it then appears under “From your portfolio”.</span>
+            </form>
+          )}
+        </td></tr>
       )}
-      {adding && (
-        <form className="jc-add" onSubmit={(e) => { e.preventDefault(); void onCall(() => api.post('/portfolio/jc/claims', { indicator: ind.code, type: 'note', note, quantity: qty || 1, status: planned ? 'planned' : 'claimed' }), 'Claim added').then(() => { setAdding(false); setNote(''); setQty(''); setPlanned(false); }); }}>
-          <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder={ind.unit === 'rating' ? 'e.g. SET ratings AY 2023–2026 (average)' : 'What you are claiming (without a portfolio record)'} aria-label="What you are claiming" maxLength={500} required />
-          {ind.unit !== 'each' && <input className="input select-sm" style={{ width: 120 }} inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value.replace(/[^\d.]/g, ''))} placeholder={qtyLabel} aria-label={qtyLabel} />}
-          <label className="checkline"><input type="checkbox" className="check" checked={planned} onChange={(e) => setPlanned(e.target.checked)} />Planned goal</label>
-          <button className="btn btn-primary btn-sm" disabled={!note.trim()}>Add claim</button>
-          <span className="faint" style={{ fontSize: 12.5 }}>To claim a portfolio record, add the record first — it then appears under “From your portfolio”.</span>
-        </form>
-      )}
-    </div>
+    </tbody>
   );
 }
 
