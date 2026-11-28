@@ -209,6 +209,11 @@ export async function archive(db, userId, { includeSecrets = false } = {}) {
   const extra = {
     evidence_links: 'SELECT * FROM evidence_links WHERE user_id = ?',
     document_routes: 'SELECT * FROM document_routes WHERE user_id = ?',
+    // Retired Administrative Operations records (1.5.0): no longer shown, still exported so nothing is lost.
+    correspondence: 'SELECT * FROM administrative_transactions WHERE user_id = ?',
+    secretariat_records: 'SELECT * FROM secretariat_records WHERE user_id = ?',
+    daily_logs: 'SELECT * FROM daily_logs WHERE user_id = ?',
+    turnover_documents: 'SELECT * FROM turnover_documents WHERE user_id = ?',
     outcome_alignments: 'SELECT a.* FROM outcome_alignments a JOIN learning_outcomes o ON o.id = a.course_outcome_id WHERE o.user_id = ?',
     cv_sections: 'SELECT s.* FROM cv_sections s JOIN cv_profiles p ON p.id = s.cv_profile_id WHERE p.user_id = ?',
     cv_entries: 'SELECT e.* FROM cv_entries e JOIN cv_sections s ON s.id = e.cv_section_id JOIN cv_profiles p ON p.id = s.cv_profile_id WHERE p.user_id = ?',

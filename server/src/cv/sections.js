@@ -223,9 +223,28 @@ export const DEFAULT_ORDER = {
   // Academic and professional portfolio CV: every portfolio section, in Harvard order, for a complete record.
   portfolio: ['education', 'appointments', 'employment', 'licenses', 'teaching', 'research', 'publications', 'books', 'presentations',
     'speaking', 'extension', 'awards', 'grants', 'development', 'service', 'committees', 'affiliations', 'achievements', 'research_interests', 'languages', 'skills', 'references'],
+  // DBM-CHED faculty position reclassification (JC No. 01 s. 2026, Enhanced IG of JC No. 3 s. 2022): qualifications, then
+  // the four Key Result Areas in order — I Instruction, II Research, III Extension, IV Professional Development.
+  // Annex K asks for a CV of at most five pages, so supporting detail stays in the evidence folders.
+  reclassification: ['education', 'appointments', 'employment', 'licenses', 'teaching', 'research', 'publications', 'books', 'grants',
+    'extension', 'speaking', 'service', 'committees', 'affiliations', 'development', 'presentations', 'awards', 'references'],
+};
+
+/** Section headings for CV types that name their sections differently (set when the CV is created; editable). */
+export const TYPE_HEADINGS = {
+  reclassification: {
+    teaching: 'KRA I · Instruction — Teaching',
+    research: 'KRA II · Research — Research Projects', publications: 'KRA II · Research — Published Research Outputs',
+    books: 'KRA II · Research — Books and Book Chapters', grants: 'KRA II · Research — Grants and Fellowships',
+    extension: 'KRA III · Extension — Service to the Community', speaking: 'KRA III · Extension — Resource Speakership and Training Conducted',
+    service: 'KRA III · Extension — Service to the Institution', committees: 'KRA III · Extension — Administrative Designations and Committees',
+    affiliations: 'KRA IV · Professional Development — Professional Organizations',
+    development: 'KRA IV · Professional Development — Conferences, Seminars and Workshops Attended',
+    presentations: 'KRA IV · Professional Development — Paper Presentations', awards: 'KRA IV · Professional Development — Awards and Recognition',
+  },
 };
 
 export const DEFAULT_TEMPLATE = {
   academic: 'harvard_academic', faculty: 'faculty_teaching', research: 'research', administrative: 'comprehensive',
-  professional: 'modern_faculty', application: 'harvard_academic', short_bio: 'traditional_academic', portfolio: 'comprehensive',
+  professional: 'modern_faculty', application: 'harvard_academic', short_bio: 'traditional_academic', portfolio: 'comprehensive', reclassification: 'traditional_academic',
 };

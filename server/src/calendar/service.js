@@ -99,11 +99,6 @@ export function events(db, userId, from, to) {
     (r) => ({ date: r.start_date, end_date: r.end_date && r.end_date !== r.start_date ? r.end_date : null, kind: ['speaker', 'facilitator', 'organizer'].includes(r.role) ? 'speaking' : 'training', title: r.title, type: 'trainings', id: r.id }));
   add(q(`SELECT id, title, presentation_date, conference FROM ${T('presentations')} WHERE user_id = ? AND deleted_at IS NULL AND presentation_date BETWEEN ? AND ?`, from, to),
     (r) => ({ date: r.presentation_date, kind: 'speaking', title: `Presenting: ${r.title}`, type: 'presentations', id: r.id, detail: r.conference || '' }));
-  add(q(`SELECT id, subject, reference_no, due_date, status FROM ${T('correspondence')} WHERE user_id = ? AND deleted_at IS NULL AND status NOT IN ('completed','archived') AND due_date BETWEEN ? AND ?`, from, to),
-    (r) => ({ date: r.due_date, kind: 'deadline', title: `Act on: ${r.reference_no ? `${r.reference_no} — ` : ''}${r.subject}`, type: 'correspondence', id: r.id }));
-  add(q(`SELECT r.transaction_id id, r.routed_to, r.due_date, t.subject FROM document_routes r JOIN ${T('correspondence')} t ON t.id = r.transaction_id
-      WHERE r.user_id = ? AND r.status = 'pending' AND r.due_date BETWEEN ? AND ?`, from, to),
-    (r) => ({ date: r.due_date, kind: 'deadline', title: `Due back from ${r.routed_to}: ${r.subject}`, type: 'correspondence', id: r.id }));
   add(q(`SELECT id, license_type, valid_until FROM ${T('licenses')} WHERE user_id = ? AND deleted_at IS NULL AND valid_until BETWEEN ? AND ?`, from, to),
     (r) => ({ date: r.valid_until, kind: 'renewal', title: `Licence valid until: ${r.license_type}`, type: 'licenses', id: r.id }));
   add(q(`SELECT id, title, target_date, status FROM ${T('development_goals')} WHERE user_id = ? AND deleted_at IS NULL AND target_date BETWEEN ? AND ?`, from, to),

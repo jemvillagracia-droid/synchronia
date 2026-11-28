@@ -216,7 +216,7 @@ function StatusStrip({ c, mode }: { c: Command; mode: string }) {
   );
 }
 
-export function CommandDisplay({ c, mode = 'administrative' }: { c: Command; mode?: string }) {
+export function CommandDisplay({ c, mode = 'faculty' }: { c: Command; mode?: string }) {
   const cal = useCalendar();
   return (
     <>

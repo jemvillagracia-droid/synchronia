@@ -71,3 +71,31 @@ test('1.2: statements and signatories entered in Settings move into existing syl
   assert.match(db.prepare('SELECT data_json FROM institution_settings').get().data_json, /Dr\. Dean/, 'the original values stay stored');
   db.close();
 });
+
+test('1.5.0 retires Administrative Operations without losing its records', () => {
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'synchronia-upg-')), 'synchronia.db');
+  const old = new DatabaseSync(file);
+  old.exec('PRAGMA foreign_keys = ON');
+  old.exec("CREATE TABLE schema_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))");
+  for (const f of fs.readdirSync(DIR).filter((f) => f.endsWith('.sql') && f < '024').sort()) {
+    old.exec(fs.readFileSync(path.join(DIR, f), 'utf8'));
+    old.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(f);
+  }
+  const uid = old.prepare('SELECT id FROM users LIMIT 1').get()?.id
+    ?? old.prepare("INSERT INTO users (email, password_hash) VALUES ('owner@local', 'x') RETURNING id").get().id;
+  old.prepare("INSERT OR IGNORE INTO user_profiles (user_id) VALUES (?)").run(uid);
+  old.prepare("UPDATE user_profiles SET academic_mode = 'administrative' WHERE user_id = ?").run(uid);
+  old.prepare("INSERT INTO tasks (user_id, title, module) VALUES (?, 'Route the memo', 'admin')").run(uid);
+  const corr = old.prepare("INSERT INTO administrative_transactions (user_id, direction, subject) VALUES (?, 'incoming', 'Memo on enrolment') RETURNING id").get(uid).id;
+  const fts = old.prepare("INSERT INTO search_index (entity_type, entity_id, user_id, title, body) VALUES ('correspondence', ?, ?, 'Memo on enrolment', '')").run(corr, uid).lastInsertRowid;
+  old.prepare("INSERT INTO search_rows (entity_type, entity_id, fts_rowid) VALUES ('correspondence', ?, ?)").run(corr, fts);
+  old.close();
+
+  const db = openDatabase(file);
+  assert.equal(db.prepare('SELECT academic_mode FROM user_profiles WHERE user_id = ?').get(uid).academic_mode, 'instructor', 'moves to teaching mode');
+  assert.equal(db.prepare("SELECT module FROM tasks WHERE title = 'Route the memo'").get().module, 'general', 'its tasks stay, under General');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM administrative_transactions').get().n, 1, 'the record itself is kept');
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM search_index WHERE entity_type = 'correspondence'").get().n, 0, 'but no longer appears in search');
+  assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
+  db.close();
+});

@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Overlay } from './Overlay';
 import { timer } from '../lib/timer';
+import { alarmPlaying, onAlarmChange } from '../lib/alarm';
 
 /** App-wide System Timer alerts: a warning strip at the warning marks, and a system-down pop-up when time is out. */
 export function TimerAlerts() {
   const [warn, setWarn] = useState<number | null>(null);
   const [down, setDown] = useState(false);
   const navigate = useNavigate();
+  const [music, setMusic] = useState(alarmPlaying());
+  useEffect(() => onAlarmChange(setMusic), []);
+  const close = () => { timer.silence(); setDown(false); };
   useEffect(() => timer.onAlert((a) => {
     if (a.kind === 'down') { setWarn(null); setDown(true); }
     else { setWarn(a.remainingMs); window.setTimeout(() => setWarn((w) => (w === a.remainingMs ? null : w)), 9000); }
@@ -24,7 +28,7 @@ export function TimerAlerts() {
         </div>
       )}
       {down && (
-        <Overlay onClose={() => setDown(false)} label="System down">
+        <Overlay onClose={close} label="System down">
           <div className="modal tmr-down">
             <div className="tmr-down-stripes" aria-hidden />
             <div className="modal-body stack" style={{ textAlign: 'center' }}>
@@ -35,6 +39,7 @@ export function TimerAlerts() {
                 <button className="btn btn-primary" data-autofocus onClick={() => { timer.recharge(5 * 60_000); setDown(false); }}>Recharge — 5 min break</button>
                 <button className="btn" onClick={() => { timer.recharge(15 * 60_000); setDown(false); }}>15 min break</button>
                 <button className="btn" onClick={() => { timer.start(); setDown(false); }}>Restart</button>
+                {music && <button className="btn" onClick={() => timer.silence()}>Silence alarm</button>}
                 <button className="btn btn-ghost" onClick={() => { timer.reset(); setDown(false); }}>Dismiss</button>
               </div>
             </div>

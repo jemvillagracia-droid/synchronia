@@ -20,7 +20,7 @@ let server, base, port, db, cookie = '';
 /** Every route declared in the server source, with its mount prefix. */
 function routes() {
   const mounts = { 'app.js': { '': '' }, 'cv/routes.js': { cvRouter: '/cv', imageRouter: '/images' }, 'academic/routes.js': { academicRouter: '/academic' },
-    'intelligence/routes.js': { intelligenceRouter: '/intelligence' }, 'admin/routes.js': { adminRouter: '/admin' }, 'knowledge/routes.js': { knowledgeRouter: '/knowledge' }, 'calendar/routes.js': { calendarRouter: '/calendar' }, 'portfolio/routes.js': { portfolioImportRouter: '/portfolio' }, 'docimages.js': { docImagesRouter: '/doc-images' }, 'research/routes.js': { researchRouter: '/research' }, 'moodboards.js': { moodboardRouter: '/moodboards' },
+    'intelligence/routes.js': { intelligenceRouter: '/intelligence' }, 'knowledge/routes.js': { knowledgeRouter: '/knowledge' }, 'calendar/routes.js': { calendarRouter: '/calendar' }, 'portfolio/routes.js': { portfolioImportRouter: '/portfolio' }, 'docimages.js': { docImagesRouter: '/doc-images' }, 'research/routes.js': { researchRouter: '/research' }, 'moodboards.js': { moodboardRouter: '/moodboards' },
     'integrations/routes.js': { googleCallbackRouter: '', integrationsRouter: '/integrations' } };
   // Guard: every router mounted in app.js must be listed above.
   const appSrc = fs.readFileSync(new URL('app.js', SRC), 'utf8');

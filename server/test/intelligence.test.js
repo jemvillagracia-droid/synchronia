@@ -66,8 +66,6 @@ before(async () => {
   ids.award = (await mk('awards', { title: 'Best Paper Award', date_received: '2027-03-20', level: 'national', verification: 'user_confirmed' })).id;
   await call('POST', `/records/awards/${ids.award}/evidence`, { provider: 'url', title: 'Certificate', url: 'https://example.edu/cert.pdf' });
   await mk('licenses', { license_type: 'Professional Teacher', issuing_authority: 'PRC', registration_date: '2026-06-20', valid_until: '2026-06-30' });
-  await mk('correspondence', { direction: 'incoming', subject: 'Memo on enrolment', document_date: '2026-08-01' });
-  await mk('correspondence', { direction: 'outgoing', subject: 'Reply to memo', document_date: '2026-08-03' });
   await mk('activities', { kind: 'meeting', title: 'Faculty meeting', event_date: '2026-08-20' });
   await mk('committees', { committee: 'Board Secretariat', assignment_type: 'secretariat', start_date: '2025-01-01', is_current: true });
 });
@@ -75,11 +73,11 @@ after(async () => { server.close(); db.close(); await browser?.close(); fs.rmSyn
 
 const AY = '?from=2026-06-01&to=2027-05-31';
 
-test('catalog lists sections A–E, indicators with their date basis, and nine report types', async () => {
+test('catalog lists sections A–D, indicators with their date basis, and seven report types', async () => {
   const c = (await call('GET', '/intelligence/catalog')).body;
-  assert.deepEqual(c.sections.map((s) => s.code), ['A', 'B', 'C', 'D', 'E']);
+  assert.deepEqual(c.sections.map((s) => s.code), ['A', 'B', 'C', 'D']);
   assert.ok(c.metrics.every((m) => m.basis), 'every indicator says what it is counted by');
-  assert.deepEqual(c.reports.map((r) => r.key), ['annual_academic', 'faculty_development', 'research_productivity', 'extension', 'professional_development', 'portfolio_summary', 'administrative', 'office_accomplishment', 'custom']);
+  assert.deepEqual(c.reports.map((r) => r.key), ['annual_academic', 'faculty_development', 'research_productivity', 'extension', 'professional_development', 'portfolio_summary', 'custom']);
 });
 
 test('analytics count only records in the period, and report undated records instead of guessing', async () => {
@@ -106,11 +104,7 @@ test('analytics count only records in the period, and report undated records ins
   assert.equal(A(a, 'partnerships').count, 1, 'distinct partners, ignoring letter case');
   assert.equal(A(a, 'resource_speaker').count, 1);
   assert.equal(A(a, 'licenses').sources[0].group, 'expired');
-  assert.equal(A(a, 'incoming').count, 1);
-  assert.equal(A(a, 'outgoing').count, 1);
-  assert.equal(A(a, 'meetings_noted').count, 1, 'a meeting noted through Quick Capture');
-  assert.equal(A(a, 'meetings').count, 0, 'no meeting records marked held');
-  assert.equal(A(a, 'secretariat').count, 1, 'a current assignment that began before the period still counts');
+  assert.ok(!a.sections.some((s) => s.key === 'admin'), 'Administrative analytics are retired');
 
   const all = (await call('GET', '/intelligence/analytics')).body;
   assert.equal(A(all, 'courses').count, 2);
@@ -144,8 +138,8 @@ test('filters are validated', async () => {
   for (const q of ['?from=2026-13', '?from=2027-01-01&to=2026-01-01', '?sections=academic,bogus', '?support=maybe']) {
     assert.equal((await call('GET', `/intelligence/analytics${q}`)).status, 422, q);
   }
-  const only = (await call('GET', '/intelligence/analytics?sections=research,admin')).body;
-  assert.deepEqual(only.sections.map((s) => s.code), ['B', 'E']);
+  const only = (await call('GET', '/intelligence/analytics?sections=research,portfolio')).body;
+  assert.deepEqual(only.sections.map((s) => s.code), ['B', 'D']);
 });
 
 test('Word report: summary, detail rows citing [S#] sources, source list, signatures', async () => {
@@ -188,7 +182,7 @@ test('spreadsheet report: Summary, Records and Sources sheets with real dates', 
 });
 
 test('PDF report is a real PDF', { skip: !chromium && 'Playwright Chromium not available' }, async () => {
-  const r = await call('POST', '/intelligence/reports', { type: 'administrative', format: 'pdf' });
+  const r = await call('POST', '/intelligence/reports', { type: 'portfolio_summary', format: 'pdf' });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   const f = await call('GET', r.body.download.replace('/api', ''), undefined, true);
   assert.equal(f.buf.subarray(0, 5).toString(), '%PDF-');

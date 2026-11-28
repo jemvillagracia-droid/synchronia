@@ -174,7 +174,7 @@ export function IntelligencePage() {
   const [from, setFrom] = useState(P[0].from);
   const [to, setTo] = useState(P[0].to);
   const [support, setSupport] = useState('all');
-  const [sections, setSections] = useState<string[]>(['academic', 'research', 'extension', 'portfolio', 'admin']);
+  const [sections, setSections] = useState<string[]>(['academic', 'research', 'extension', 'portfolio']);
   const [cat, setCat] = useState<Catalog | null>(null);
   const [data, setData] = useState<Analytics | null>(null);
   const [error, setError] = useState('');

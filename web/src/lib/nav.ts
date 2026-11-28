@@ -5,41 +5,29 @@ export interface NavItem { id: string; label: string; to: string; icon: string; 
 export interface NavGroup { label: string; items: NavItem[] }
 
 export const NAV: NavGroup[] = [
+  // Main compartments only: anything that is a tab inside one of these (Literature Review, Extension, Faculty
+  // Development, Professional Timeline, Backup and Recovery) is reached from its compartment, not listed twice.
   { label: 'Command Center', items: [
     { id: 'nexus', label: 'Central Nexus', to: '/', icon: 'nexus' },
     { id: 'calendar', label: 'Academic Calendar', to: '/calendar', icon: 'calendar' },
     { id: 'timer', label: 'System Timer', to: '/timer', icon: 'clock' },
-    { id: 'capture', label: 'Quick Capture', to: '', icon: 'bolt', action: 'capture' },
     { id: 'moodboard', label: 'Idea Moodboard', to: '/moodboard', icon: 'panel' },
   ] },
-  { label: 'Academic Operations', items: [
+  { label: 'Teaching and Research', items: [
     { id: 'academic', label: 'Academic Workspace', to: '/academic', icon: 'academic' },
     { id: 'research', label: 'Research Development', to: '/research', icon: 'research' },
-    { id: 'extension', label: 'Extension and Engagement', to: '/academic?tab=extension', icon: 'people' },
   ] },
   { label: 'Professional Development', items: [
     { id: 'portfolio', label: 'Professional Portfolio', to: '/portfolio', icon: 'portfolio' },
+    { id: 'credentials', label: 'Credentials Tracker', to: '/credentials', icon: 'clipboard' },
     { id: 'cv', label: 'Curriculum Vitae Studio', to: '/cv', icon: 'cv' },
-    { id: 'development', label: 'Faculty Development', to: '/academic?tab=development', icon: 'growth' },
-    { id: 'timeline', label: 'Professional Timeline', to: '/portfolio/timeline', icon: 'timeline' },
   ] },
   { label: 'Intelligence', items: [
     { id: 'intelligence', label: 'Reports and Analytics', to: '/intelligence', icon: 'intelligence' },
-  ] },
-  { label: 'Administrative Operations', items: [
-    { id: 'admin', label: 'Administrative Overview', to: '/admin', icon: 'admin' },
-    { id: 'correspondence', label: 'Correspondence', to: '/admin?tab=correspondence', icon: 'mail' },
-    { id: 'meetings', label: 'Meetings', to: '/admin?tab=meetings', icon: 'people' },
-    { id: 'secretariat', label: 'Secretariat', to: '/admin?tab=secretariat', icon: 'clipboard' },
-    { id: 'log', label: 'Office Activities', to: '/admin?tab=log', icon: 'list' },
-  ] },
-  { label: 'Knowledge Management', items: [
     { id: 'knowledge', label: 'Knowledge and References', to: '/knowledge', icon: 'knowledge' },
-    { id: 'literature', label: 'Literature Review', to: '/research?tab=literature', icon: 'book' },
   ] },
   { label: 'System', items: [
     { id: 'settings', label: 'Settings', to: '/settings', icon: 'settings' },
-    { id: 'backup', label: 'Backup and Recovery', to: '/settings?tab=data', icon: 'database' },
   ] },
 ];
 

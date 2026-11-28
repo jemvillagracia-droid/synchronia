@@ -9,7 +9,6 @@ import { nexus, notifications, search, capture, normaliseLayout, profileRow, por
 import { decrypt } from './secrets.js';
 import { cvRouter, imageRouter } from './cv/routes.js';
 import { intelligenceRouter } from './intelligence/routes.js';
-import { adminRouter } from './admin/routes.js';
 import { knowledgeRouter } from './knowledge/routes.js';
 import { calendarRouter } from './calendar/routes.js';
 import { portfolioImportRouter } from './portfolio/routes.js';
@@ -28,7 +27,7 @@ const PROFILE_FIELDS = {
   address: 500, website: 500, specialization: 500, research_interests: 2000, current_position: 200,
   current_office: 200, current_institution: 200, career_goal: 200,
 };
-const MODES = ['administrative', 'instructor', 'researcher', 'faculty_development'];
+const MODES = ['instructor', 'researcher', 'faculty_development'];
 
 const THEMES = ['violet', 'violet-green', 'crimson-orange', 'orange-white', 'blue-white', 'black-silver', 'pink-green', 'steel-grey', 'light', 'sepia'];
 
@@ -114,6 +113,8 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
       reduce_motion: !!p.reduce_motion,
       notify_desktop: p.notify_desktop !== 0,
       notify_sound: p.notify_sound !== 0,
+      alarm_style: p.alarm_style === 'beep' ? 'beep' : 'battle',
+      alarm_volume: Number.isInteger(p.alarm_volume) ? Math.max(0, Math.min(100, p.alarm_volume)) : 70,
       theme: THEMES.includes(p.theme) ? p.theme : 'violet',
       paper_size: PAPERS[p.paper_size] ? p.paper_size : 'letter',
       paper_sizes: Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.label])),
@@ -145,6 +146,15 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
     if ('theme' in b) {
       if (!THEMES.includes(b.theme)) throw new HttpError(422, 'Unknown theme', { theme: `One of: ${THEMES.join(', ')}` });
       sets.push('theme = ?'); params.push(b.theme); changes.theme = b.theme;
+    }
+    if ('alarm_style' in b) {
+      if (!['battle', 'beep'].includes(b.alarm_style)) throw new HttpError(422, 'Unknown alarm sound', { alarm_style: 'One of: battle, beep' });
+      sets.push('alarm_style = ?'); params.push(b.alarm_style); changes.alarm_style = b.alarm_style;
+    }
+    if ('alarm_volume' in b) {
+      const v = Number(b.alarm_volume);
+      if (!Number.isInteger(v) || v < 0 || v > 100) throw new HttpError(422, 'Volume must be 0 to 100', { alarm_volume: 'A whole number from 0 to 100' });
+      sets.push('alarm_volume = ?'); params.push(v);
     }
     for (const k of ['context_panel_open', 'sidebar_collapsed', 'reduce_motion', 'notify_desktop', 'notify_sound']) {
       if (k in b) { sets.push(`${k} = ?`); params.push(b[k] ? 1 : 0); if (k === 'reduce_motion') changes.reduce_motion = !!b[k]; }
@@ -278,7 +288,6 @@ export function createApp(db, { accessToken, pdfRenderer, dataDir = null, health
   // ── Curriculum Vitae Studio and photograph library ───────
   api.use('/cv', cvRouter(db, { pdfRenderer }));
   api.use('/intelligence', intelligenceRouter(db, { pdfRenderer }));
-  api.use('/admin', adminRouter(db));
   api.use('/knowledge', knowledgeRouter(db));
   api.use('/calendar', calendarRouter(db));
   api.use('/doc-images', docImagesRouter(db));

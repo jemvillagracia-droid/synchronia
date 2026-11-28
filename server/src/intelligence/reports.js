@@ -43,16 +43,6 @@ export const REPORT_TYPES = {
     description: 'Every portfolio category: qualifications, licences, positions, trainings, awards, service and accomplishments.',
     metrics: ALL('portfolio'),
   },
-  administrative: {
-    label: 'Administrative Accomplishment Report', short: 'Administrative accomplishment',
-    description: 'Correspondence handled, meetings, reports prepared, secretariat work and completed administrative tasks.',
-    metrics: ALL('admin'),
-  },
-  office_accomplishment: {
-    label: 'Office Accomplishment Report', short: 'Office accomplishment',
-    description: 'The daily activity log with outputs, correspondence processed and routed, meetings and minutes, secretariat records and completed tasks.',
-    metrics: ['daily_log', 'incoming', 'outgoing', 'routed', 'correspondence_completed', 'meetings', 'minutes_prepared', 'secretariat_records', 'reports_prepared', 'admin_done'],
-  },
   custom: {
     label: 'Accomplishment Report', short: 'Custom period-based report',
     description: 'Any combination of sections for any period.',

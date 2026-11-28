@@ -217,10 +217,24 @@ export function qualityChecklist(model, editorView, ats) {
       if (e.org && !e.location && ['education', 'employment', 'appointments'].includes(s.key)) harvard.push(`Add a location (City, Province/Country) for ${e.org} (${s.heading})`);
     }
   }
-  if (['academic', 'faculty', 'research', 'application'].includes(model.meta.cv_type) && model.sections[0] && model.sections[0].key !== 'education') {
+  if (['academic', 'faculty', 'research', 'application', 'reclassification'].includes(model.meta.cv_type) && model.sections[0] && model.sections[0].key !== 'education') {
     harvard.push(`Education is customarily the first section of an academic CV (currently “${model.sections[0].heading}”)`);
   }
   if (h.photo) harvard.push('Harvard-style CVs omit photographs');
+
+  // DBM-CHED reclassification: every KRA represented, within Annex K's five-page limit.
+  if (model.meta.cv_type === 'reclassification') {
+    const jc = [];
+    const has = (keys) => model.sections.some((x) => keys.includes(x.key) && (x.entries || []).length);
+    for (const [kra, keys] of [['KRA I · Instruction', ['teaching']], ['KRA II · Research, Innovation and Creative Work', ['research', 'publications', 'books', 'grants']],
+      ['KRA III · Extension Services', ['extension', 'speaking', 'service', 'committees']], ['KRA IV · Professional Development', ['affiliations', 'development', 'presentations', 'awards']]]) {
+      if (!has(keys)) jc.push(`${kra}: no entries yet — add the records you will claim, or note why it does not apply`);
+    }
+    const entries = model.sections.reduce((n, x) => n + (x.entries || []).length, 0);
+    if (entries > 70) jc.push(`${entries} entries: Annex K limits the CV to five pages — keep the strongest, most recent entries and leave the rest to the evidence folders`);
+    add('jc', 'DBM-CHED reclassification (JC No. 01 s. 2026)', jc.length ? 'incomplete' : 'complete',
+      jc.length ? 'To align this CV with the DBM-CHED credentials checklist:' : 'All four KRAs are represented. Keep the CV to at most five pages (Annex K).', jc);
+  }
   const st = styleFor(model);
   if (st.size < 10 || st.size > 12) harvard.push(`Body text at ${st.size} pt; 10–12 pt is conventional`);
   const m = model.settings.margins;

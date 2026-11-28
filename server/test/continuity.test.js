@@ -222,18 +222,17 @@ test('timeline: events from records, teaching grouped by term, event date vs rec
   assert.equal((await call('GET', '/knowledge/timeline?categories=bogus')).status, 422);
 });
 
-test('unified search reaches syllabus content, minutes and generated documents, with a module filter', async () => {
+test('unified search reaches syllabus content, meeting notes and generated documents, with a module filter', async () => {
   const c = db.prepare("SELECT id FROM courses WHERE code = 'EDUC 101'").get();
   const s = ok(await call('POST', '/records/syllabi', { course_id: c.id, version_label: 'v1' }), 201);
   ok(await call('PUT', `/academic/syllabi/${s.id}/content`, { description: 'Philosophical foundations', weeks: [{ week: '1', content: 'Montessori and Dewey compared' }] }));
-  const m = ok(await call('POST', '/records/meetings', { title: 'Faculty meeting', meeting_date: '2026-08-01', status: 'held' }), 201);
-  ok(await call('PUT', `/admin/meetings/${m.id}/minutes`, { minutes: { items: [{ topic: 'Grading', discussion: 'Agreed on the rubric for practicum portfolios' }] } }));
+  ok(await call('POST', '/records/meetings', { title: 'Faculty meeting', meeting_date: '2026-08-01', status: 'held', remarks: 'Agreed on the rubric for practicum portfolios' }), 201);
   ok(await call('POST', '/intelligence/reports', { type: 'research_productivity', format: 'docx' }), 201);
   assert.equal(ok(await call('GET', '/search?q=Dewey')).results[0].type, 'syllabi');
   assert.equal(ok(await call('GET', '/search?q=practicum')).results[0].type, 'meetings');
   const doc = ok(await call('GET', '/search?q=Research Productivity')).results.find((r) => r.type === 'reports');
   assert.equal(doc.label, 'Generated Document');
-  assert.ok(ok(await call('GET', '/search?q=Montessori&module=admin')).results.length === 0);
+  assert.ok(ok(await call('GET', '/search?q=Montessori&module=research')).results.length === 0);
   assert.ok(ok(await call('GET', '/search?q=Montessori&module=academic')).results.length === 1);
 });
 

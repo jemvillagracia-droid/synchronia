@@ -43,7 +43,7 @@ test('replacing an entry uses the keyed lookup, not a scan of the index', () => 
   const plan = db.prepare('EXPLAIN QUERY PLAN SELECT fts_rowid FROM search_rows WHERE entity_type = ? AND entity_id = ?').all('trainings', 1).map((r) => r.detail).join(' ');
   assert.match(plan, /SEARCH search_rows USING PRIMARY KEY/);
   // Saves stay flat as the index grows: the last 2,000 of 6,000 take about as long as the first 2,000.
-  const batch = (k) => { const t0 = performance.now(); tx(db, () => { for (let i = 0; i < 2000; i++) repo.create(db, uid, 'tasks', { title: `Follow up item ${k}-${i}`, due_date: '2025-01-01', status: 'open', priority: 'normal', module: 'admin' }); }); return performance.now() - t0; };
+  const batch = (k) => { const t0 = performance.now(); tx(db, () => { for (let i = 0; i < 2000; i++) repo.create(db, uid, 'tasks', { title: `Follow up item ${k}-${i}`, due_date: '2025-01-01', status: 'open', priority: 'normal', module: 'general' }); }); return performance.now() - t0; };
   const first = batch(1); batch(2); const last = batch(3);
   assert.ok(last < first * 2.5, `saves slowed as the index grew (${first.toFixed(0)} ms → ${last.toFixed(0)} ms)`);
   consistent();

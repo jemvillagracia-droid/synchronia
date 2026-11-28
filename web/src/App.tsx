@@ -1,10 +1,5 @@
-import { CalendarPage } from './pages/CalendarPage';
-import { KnowledgePage } from './pages/KnowledgePage';
-import { TimelinePage } from './pages/TimelinePage';
-import { AdminPage } from './pages/admin/AdminPage';
-import { IntelligencePage } from './pages/IntelligencePage';
-import { useCallback, useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
+import { Suspense, lazy, useCallback, useEffect, useState, type ComponentType } from 'react';
+import { BrowserRouter, Route, Routes, Link, Navigate } from 'react-router-dom';
 import { api, onUnauthorized } from './lib/api';
 import type { User } from './lib/types';
 import { MODULES } from './lib/modules';
@@ -16,21 +11,44 @@ import { RecordDrawer } from './components/RecordDrawer';
 import { BrandMark } from './components/Icon';
 import { NexusPage } from './pages/Nexus';
 import { ModulePage } from './pages/ModulePage';
-import { ProfilePage } from './pages/ProfilePage';
-import { SettingsPage } from './pages/SettingsPage';
-import { PortfolioOverview, PortfolioCategoryPage } from './pages/PortfolioPage';
-import { CvStudio } from './pages/cv/CvStudio';
-import { CvEditor } from './pages/cv/CvEditor';
-import { AcademicPage } from './pages/academic/AcademicPage';
 import { AskTextHost } from './components/AskText';
-import { TimerPage } from './pages/TimerPage';
-import { MoodboardList, MoodboardPage } from './pages/MoodboardPage';
-import { SyllabusPage } from './pages/academic/SyllabusPage';
-import { ResearchPage } from './pages/research/ResearchPage';
-import { ProjectPage } from './pages/research/ProjectPage';
-import { InstrumentPage } from './pages/research/InstrumentPage';
-import { CoursePage } from './pages/academic/CoursePage';
 import { desktop } from './lib/desktop';
+
+// Pages load as separate chunks (the first screen opens sooner), and all of them are fetched once the app is idle,
+// so moving between pages never waits on a download.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function page<K extends string>(load: () => Promise<Record<K, ComponentType<any>>>, name: K) {
+  return lazy(() => load().then((m) => ({ default: m[name] })));
+}
+const CalendarPage = page(() => import('./pages/CalendarPage'), 'CalendarPage');
+const KnowledgePage = page(() => import('./pages/KnowledgePage'), 'KnowledgePage');
+const TimelinePage = page(() => import('./pages/TimelinePage'), 'TimelinePage');
+const IntelligencePage = page(() => import('./pages/IntelligencePage'), 'IntelligencePage');
+const CredentialsPage = page(() => import('./pages/CredentialsPage'), 'CredentialsPage');
+const ProfilePage = page(() => import('./pages/ProfilePage'), 'ProfilePage');
+const SettingsPage = page(() => import('./pages/SettingsPage'), 'SettingsPage');
+const CvStudio = page(() => import('./pages/cv/CvStudio'), 'CvStudio');
+const CvEditor = page(() => import('./pages/cv/CvEditor'), 'CvEditor');
+const AcademicPage = page(() => import('./pages/academic/AcademicPage'), 'AcademicPage');
+const TimerPage = page(() => import('./pages/TimerPage'), 'TimerPage');
+const SyllabusPage = page(() => import('./pages/academic/SyllabusPage'), 'SyllabusPage');
+const ResearchPage = page(() => import('./pages/research/ResearchPage'), 'ResearchPage');
+const ProjectPage = page(() => import('./pages/research/ProjectPage'), 'ProjectPage');
+const InstrumentPage = page(() => import('./pages/research/InstrumentPage'), 'InstrumentPage');
+const CoursePage = page(() => import('./pages/academic/CoursePage'), 'CoursePage');
+const PortfolioOverview = page(() => import('./pages/PortfolioPage'), 'PortfolioOverview');
+const PortfolioCategoryPage = page(() => import('./pages/PortfolioPage'), 'PortfolioCategoryPage');
+const MoodboardList = page(() => import('./pages/MoodboardPage'), 'MoodboardList');
+const MoodboardPage = page(() => import('./pages/MoodboardPage'), 'MoodboardPage');
+const PRELOAD = [() => import('./pages/CalendarPage'), () => import('./pages/CredentialsPage'), () => import('./pages/IntelligencePage'), () => import('./pages/KnowledgePage'), () => import('./pages/MoodboardPage'), () => import('./pages/PortfolioPage'), () => import('./pages/ProfilePage'), () => import('./pages/SettingsPage'), () => import('./pages/TimelinePage'), () => import('./pages/TimerPage'), () => import('./pages/academic/AcademicPage'), () => import('./pages/academic/CoursePage'), () => import('./pages/academic/SyllabusPage'), () => import('./pages/cv/CvEditor'), () => import('./pages/cv/CvStudio'), () => import('./pages/research/InstrumentPage'), () => import('./pages/research/ProjectPage'), () => import('./pages/research/ResearchPage')];
+function preloadPages() {
+  const run = () => { for (const p of PRELOAD) void p().catch(() => {}); };
+  const w = window as Window & { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number };
+  if (w.requestIdleCallback) w.requestIdleCallback(run, { timeout: 2500 }); else window.setTimeout(run, 1200);
+}
+function PageLoading() {
+  return <div className="page" aria-busy="true"><div className="skeleton" style={{ height: 28, width: 280, marginBottom: 16 }} /><div className="skeleton" style={{ height: 220 }} /></div>;
+}
 
 function NotFound() {
   return (
@@ -76,6 +94,7 @@ export function App() {
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => onUnauthorized(() => setAuth({ user: null })), []);
+  useEffect(() => { if (auth?.user) preloadPages(); }, [auth?.user]);
 
   if (bootError) return <div className="page"><div className="alert">{bootError} Restart SYNCHRONIA.</div></div>;
   if (!auth) return <Boot />;
@@ -87,11 +106,14 @@ export function App() {
         {({ toasts, capture, setCapture, search, setSearch, record, setRecord }) => (
           <>
             <Shell>
+              <Suspense fallback={<PageLoading />}>
               <Routes>
                 <Route path="/" element={<NexusPage />} />
                 <Route path="/portfolio" element={<PortfolioOverview />} />
                 <Route path="/portfolio/profile" element={<ProfilePage />} />
                 <Route path="/portfolio/timeline" element={<TimelinePage />} />
+                <Route path="/credentials" element={<CredentialsPage />} />
+                <Route path="/portfolio/credentials" element={<Navigate to="/credentials" replace />} />
                 <Route path="/portfolio/:category" element={<PortfolioCategoryPage />} />
                 <Route path="/academic" element={<AcademicPage />} />
                 <Route path="/academic/courses/:id" element={<CoursePage />} />
@@ -102,16 +124,16 @@ export function App() {
                 <Route path="/cv" element={<CvStudio />} />
                 <Route path="/cv/:id" element={<CvEditor />} />
                 <Route path="/intelligence" element={<IntelligencePage />} />
-                <Route path="/admin" element={<AdminPage />} />
                 <Route path="/knowledge" element={<KnowledgePage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/timer" element={<TimerPage />} />
                 <Route path="/moodboard" element={<MoodboardList />} />
                 <Route path="/moodboard/:id" element={<MoodboardPage />} />
-                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence', 'admin', 'knowledge', 'research'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
+                {MODULES.filter((m) => !['nexus', 'portfolio', 'cv', 'academic', 'intelligence', 'knowledge', 'research'].includes(m.id)).map((m) => <Route key={m.id} path={m.path} element={<ModulePage mod={m} />} />)}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </Shell>
             {capture && <QuickCapture onClose={() => setCapture(false)} />}
             {search && <SearchPalette onClose={() => setSearch(false)} />}

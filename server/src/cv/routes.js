@@ -20,7 +20,7 @@ const FORMATS = {
   docx_ats: { ext: 'docx', mode: 'ats', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
   pdf_ats: { ext: 'pdf', mode: 'ats', mime: 'application/pdf' },
 };
-const TYPE_LABEL = { academic: 'Academic', faculty: 'Faculty', research: 'Research', administrative: 'Administrative', professional: 'Professional', application: 'Application', short_bio: 'ShortBio' };
+const TYPE_LABEL = { academic: 'Academic', faculty: 'Faculty', research: 'Research', administrative: 'Administrative', professional: 'Professional', application: 'Application', short_bio: 'ShortBio', portfolio: 'Portfolio', reclassification: 'Reclassification' };
 
 /**
  * pdfRenderer(html, { footerTemplate, title }) → Promise<Buffer>

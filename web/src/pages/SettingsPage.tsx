@@ -2,16 +2,59 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { desktop } from '../lib/desktop';
 import { api, dataChanged, onDataChanged } from '../lib/api';
-import { fmtDateTime, humanize, MODE_DESC, MODE_LABEL } from '../lib/format';
-import type { Mode } from '../lib/types';
+import { fmtDateTime, humanize } from '../lib/format';
 import { useApp } from '../components/AppContext';
 import { Icon } from '../components/Icon';
 import { download } from '../lib/download';
 import { InstitutionSettings } from './InstitutionSettings';
 import { THEMES, applyTheme } from '../lib/themes';
+import { alarmPlaying, onAlarmChange, playBattleLoop, playCue, stopAlarm } from '../lib/alarm';
 
 type Tab = 'workspace' | 'appearance' | 'documents' | 'data' | 'application';
 const TABS: [Tab, string][] = [['workspace', 'Workspace and navigation'], ['appearance', 'Appearance'], ['documents', 'Document export'], ['data', 'Backup and recovery'], ['application', 'Security and privacy']];
+
+/** Alarm sound: the original battle march (loops until you respond) or simple beeps, with volume and a preview. */
+function AlarmSound() {
+  const { prefs, updatePrefs, toast } = useApp();
+  const [vol, setVol] = useState(prefs?.alarm_volume ?? 70);
+  const [music, setMusic] = useState(alarmPlaying());
+  useEffect(() => onAlarmChange(setMusic), []);
+  useEffect(() => () => stopAlarm(0.2), []);
+  useEffect(() => { setVol(prefs?.alarm_volume ?? 70); }, [prefs?.alarm_volume]);
+  if (!prefs) return null;
+  const style = prefs.alarm_style || 'battle';
+  const off = prefs.notify_sound === false;
+  async function preview() {
+    if (music) { stopAlarm(); return; }
+    if (style === 'battle') { if (!(await playBattleLoop(vol, 60))) toast('The alarm sound could not be played on this computer', 'error'); }
+    else if (!(await playCue('warning', vol))) toast('The alarm sound could not be played on this computer', 'error');
+  }
+  return (
+    <div className="alarm-set" aria-disabled={off}>
+      <div className="seg" role="radiogroup" aria-label="Alarm sound">
+        {([['battle', 'Battle march'], ['beep', 'Simple beeps']] as const).map(([k, l]) => (
+          <button key={k} type="button" role="radio" aria-checked={style === k} disabled={off}
+            onClick={async () => { stopAlarm(0.2); if (await updatePrefs({ alarm_style: k })) toast(`Alarm sound: ${l.toLowerCase()}`, 'ok'); }}>{l}</button>
+        ))}
+      </div>
+      <label className="alarm-vol"><span>Volume</span>
+        <input type="range" min={0} max={100} step={5} value={vol} disabled={off} aria-valuetext={`${vol}%`}
+          onChange={(e) => setVol(Number(e.target.value))}
+          onPointerUp={() => { if (vol !== prefs.alarm_volume) void updatePrefs({ alarm_volume: vol }); }}
+          onKeyUp={() => { if (vol !== prefs.alarm_volume) void updatePrefs({ alarm_volume: vol }); }} />
+        <b className="mono">{vol}%</b>
+      </label>
+      <button type="button" className="btn btn-sm" onClick={preview} disabled={off} aria-pressed={music}>
+        <Icon name={music ? 'close' : 'play'} />{music ? 'Stop' : 'Preview'}
+      </button>
+      <p className="faint" style={{ margin: 0, fontSize: 13, flexBasis: '100%' }}>
+        {style === 'battle'
+          ? '“Operation Sortie”, an original battle march made for SYNCHRONIA: a short brass call at the warnings, and at “system down” the full march, looping until you choose recharge, restart, silence or dismiss (it stops by itself after 5 minutes).'
+          : 'Short beeps at the warnings and at “system down”.'}
+      </p>
+    </div>
+  );
+}
 
 function Workspace() {
   const { prefs, updatePrefs, toast } = useApp();
@@ -27,33 +70,15 @@ function Workspace() {
           <label className="checkline"><input type="checkbox" className="check" checked={prefs.notify_sound !== false}
             onChange={async (e) => { if (await updatePrefs({ notify_sound: e.target.checked })) toast(e.target.checked ? 'Timer sounds turned on' : 'Timer sounds turned off', 'ok'); }} />
             Sounds for System Timer warnings and “system down”</label>
+          <AlarmSound />
           <p className="faint" style={{ margin: 0, fontSize: 13 }}>These cover the System Timer: warnings at 5 and 1 minute, “system down” when time runs out, and “recharge complete”. Alerts inside SYNCHRONIA (the warning strip and the system-down pop-up) always show. The timer page’s own Sound button still mutes a single session.</p>
-        </div>
-      </section>
-      <section className="panel">
-        <header className="panel-head"><span className="code">ROLE</span><h2>Academic mode</h2></header>
-        <div className="panel-body stack">
-          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            Your professional role. Change it when you transfer offices or receive a faculty appointment. It sets the
-            default order of the Central Nexus and is shown in the top bar.
-          </p>
-          <div className="cap-grid">
-            {(Object.keys(MODE_LABEL) as Mode[]).map((m) => (
-              <button key={m} className="cap" style={{ textAlign: 'left', cursor: 'pointer', borderColor: prefs.academic_mode === m ? 'var(--orange-line)' : undefined, background: prefs.academic_mode === m ? 'var(--orange-dim)' : undefined }}
-                aria-pressed={prefs.academic_mode === m}
-                onClick={async () => { if (await updatePrefs({ academic_mode: m })) { dataChanged(); toast(`Academic mode: ${MODE_LABEL[m]}`, 'ok'); } }}>
-                <h3 style={{ color: prefs.academic_mode === m ? 'var(--orange)' : undefined }}>{MODE_LABEL[m]}</h3>
-                <span className="muted" style={{ fontSize: 13 }}>{MODE_DESC[m]}</span>
-              </button>
-            ))}
-          </div>
         </div>
       </section>
       <section className="panel">
         <header className="panel-head"><span className="code">LAY</span><h2>Layout</h2></header>
         <div className="panel-body stack">
           <div className="between wrap">
-            <div><div>Central Nexus widgets</div><div className="faint" style={{ fontSize: 13 }}>{prefs.layout_customised ? 'Customised order and visibility' : 'Using the default for your academic mode'}</div></div>
+            <div><div>Central Nexus widgets</div><div className="faint" style={{ fontSize: 13 }}>{prefs.layout_customised ? 'Customised order and visibility' : 'Using the default layout'}</div></div>
             <button className="btn btn-sm" disabled={!prefs.layout_customised} onClick={async () => { if (await updatePrefs({ dashboard_layout: null })) { dataChanged(); toast('Layout reset', 'ok'); } }}><Icon name="restore" />Reset</button>
           </div>
           <label className="checkline"><input type="checkbox" className="check" checked={prefs.sidebar_collapsed} onChange={(e) => updatePrefs({ sidebar_collapsed: e.target.checked })} />Collapse the navigation sidebar to icons (names show on hover)</label>

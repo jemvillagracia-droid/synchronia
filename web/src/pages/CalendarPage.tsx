@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, dataChanged, onDataChanged } from '../lib/api';
-import { fmtDate, fmtLongDate } from '../lib/format';
+import { fmtDate, fmtLongDate, t12 } from '../lib/format';
 import { CalData, Holiday, KIND_LABEL, MONTHS, eventsOn, holidayLabel, monthGrid, todayIso, weekdayHeaders } from '../lib/calendar';
 import { useApp } from '../components/AppContext';
 import { Icon } from '../components/Icon';
 import { Field } from '../components/Field';
 import { AutoText } from '../components/AutoText';
-import { t12 } from './admin/AdminWorkspaces';
 import { SchoolCalendarImport } from '../components/SchoolCalendarImport';
 
 const longDay = (iso: string) => fmtLongDate(new Date(`${iso}T00:00:00`));

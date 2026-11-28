@@ -12,7 +12,6 @@ export const WIDGETS = [
   { id: 'research', title: 'Research Productivity' },
   { id: 'extension', title: 'Extension Activities' },
   { id: 'pd', title: 'Professional Development' },
-  { id: 'admin', title: 'Administrative Queue' },
   { id: 'recent_records', title: 'Recently Updated Records' },
   { id: 'accomplishments', title: 'Recent Accomplishments' },
   { id: 'recent_cvs', title: 'Generated CV Documents' },
@@ -21,14 +20,13 @@ export const WIDGETS = [
 
 /** Default widget order shifts with the user's role, until they customise it. */
 const MODE_PRIORITY = {
-  administrative: ['profile', 'admin', 'deadlines', 'development', 'recent_records', 'pd', 'accomplishments'],
   instructor: ['profile', 'teaching', 'deadlines', 'development', 'pd', 'research'],
   researcher: ['profile', 'research', 'deadlines', 'development', 'extension', 'pd'],
   faculty_development: ['profile', 'development', 'pd', 'deadlines', 'teaching', 'research'],
 };
 
-export function defaultLayout(mode = 'administrative') {
-  const first = MODE_PRIORITY[mode] || MODE_PRIORITY.administrative;
+export function defaultLayout(mode = 'instructor') {
+  const first = MODE_PRIORITY[mode] || MODE_PRIORITY.instructor;
   const ids = [...first, ...WIDGETS.map((w) => w.id).filter((id) => !first.includes(id))];
   return ids.map((id) => ({ id, visible: true }));
 }
@@ -71,7 +69,7 @@ export function profileRow(db, userId) {
 export function nexus(db, userId) {
   const t = today();
   const prefs = db.prepare('SELECT * FROM user_profiles WHERE user_id = ?').get(userId);
-  const mode = prefs?.academic_mode || 'administrative';
+  const mode = MODE_PRIORITY[prefs?.academic_mode] ? prefs.academic_mode : 'instructor';
   let stored = null;
   try { stored = prefs?.dashboard_layout ? JSON.parse(prefs.dashboard_layout) : null; } catch { stored = null; }
 
@@ -149,15 +147,6 @@ export function nexus(db, userId) {
     .all(userId, horizon).map((d) => ({ ...d, is_deadline: !!d.is_deadline, overdue: d.due_date < t }));
   const undatedOpen = count(db, 'tasks', userId, "AND status IN ('open','in_progress') AND due_date IS NULL");
 
-  // Administrative queue
-  const admin = {
-    open_tasks: db.prepare(`SELECT id, title, due_date, priority, status FROM tasks WHERE user_id = ? AND deleted_at IS NULL
-        AND module = 'admin' AND status IN ('open','in_progress') ORDER BY due_date IS NULL, due_date LIMIT 6`).all(userId),
-    correspondence_pending: count(db, 'administrative_transactions', userId, "AND status IN ('received','routed','in_progress','for_follow_up')"),
-    follow_ups: count(db, 'administrative_transactions', userId, "AND status = 'for_follow_up'"),
-    incoming: count(db, 'administrative_transactions', userId, "AND direction = 'incoming'"),
-    outgoing: count(db, 'administrative_transactions', userId, "AND direction = 'outgoing'"),
-  };
 
   // Recently updated portfolio & academic records
   const recentSources = Object.values(RESOURCES).filter((r) => r.group || ['courses', 'syllabi', 'materials', 'assessments', 'extension_projects'].includes(r.key));
@@ -214,7 +203,7 @@ export function nexus(db, userId) {
     },
     teaching, research, extension, pd,
     deadlines: { items: deadlines, undated_open: undatedOpen },
-    admin, recent_records, accomplishments, recent_cvs, captures, recent_changes,
+    recent_records, accomplishments, recent_cvs, captures, recent_changes,
   };
 }
 
@@ -229,13 +218,6 @@ export function notifications(db, userId) {
       level: task.due_date < t ? 'critical' : task.due_date === t ? 'warning' : 'info',
       title: task.title,
       detail: task.due_date < t ? `Overdue since ${task.due_date}` : task.due_date === t ? 'Due today' : `Due ${task.due_date}`,
-    });
-  }
-  for (const c of db.prepare(`SELECT id, subject, due_date FROM administrative_transactions WHERE user_id = ? AND deleted_at IS NULL
-      AND status NOT IN ('completed','archived') AND due_date IS NOT NULL AND due_date <= ? ORDER BY due_date`).all(userId, soon)) {
-    items.push({
-      id: `corr-${c.id}`, type: 'correspondence', entity_id: c.id, level: c.due_date < t ? 'critical' : 'warning',
-      title: c.subject, detail: c.due_date < t ? `Follow-up overdue since ${c.due_date}` : `Follow-up due ${c.due_date}`,
     });
   }
   for (const c of db.prepare("SELECT id, name, version FROM cv_profiles WHERE user_id = ? AND status = 'draft' AND deleted_at IS NULL").all(userId)) {
@@ -387,7 +369,7 @@ function commandDisplay(db, userId, t) {
   const LIMITS = { caution: 5, danger: 10 };
   const workload = db.prepare(`SELECT module, COUNT(*) n FROM tasks WHERE user_id = ? AND ${open} GROUP BY module`).all(userId);
   const wl = Object.fromEntries(workload.map((w) => [w.module, w.n]));
-  const areas = [['teaching', 'Teaching'], ['research', 'Research'], ['admin', 'Administrative'], ['portfolio', 'Portfolio and CV'], ['general', 'General']]
+  const areas = [['teaching', 'Teaching'], ['research', 'Research'], ['portfolio', 'Portfolio and CV'], ['general', 'General']]
     .map(([k, label]) => ({ key: k, label, open: (wl[k] || 0) + (k === 'portfolio' ? (wl.cv || 0) : 0) + (k === 'research' ? (wl.extension || 0) + (wl.development || 0) : 0) }));
 
   // MAGI subsystems

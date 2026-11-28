@@ -26,7 +26,6 @@ export const SECTIONS = [
   { key: 'research', code: 'B', label: 'Research analytics' },
   { key: 'extension', code: 'C', label: 'Extension analytics' },
   { key: 'portfolio', code: 'D', label: 'Professional portfolio analytics' },
-  { key: 'admin', code: 'E', label: 'Administrative analytics' },
 ];
 
 const created = 'substr(t.created_at, 1, 10)';
@@ -107,30 +106,6 @@ export const METRICS = [
   { key: 'development_goals', section: 'portfolio', label: 'Development goals', resource: 'development_goals', period: event(`COALESCE(t.target_date, ${created})`),
     breakdown: 'status', basis: 'Target date, or the date the goal was recorded' },
   { key: 'accomplishments', section: 'portfolio', label: 'Accomplishments', resource: 'portfolio_entries', period: event('t.event_date'), breakdown: 'category', basis: 'Date of the accomplishment' },
-
-  // E. Administrative
-  { key: 'incoming', section: 'admin', label: 'Incoming correspondence', resource: 'correspondence', where: "t.direction = 'incoming'",
-    period: event('COALESCE(t.document_date, t.logged_date)'), breakdown: 'status', basis: 'Document date, or the date it was logged' },
-  { key: 'outgoing', section: 'admin', label: 'Outgoing correspondence', resource: 'correspondence', where: "t.direction = 'outgoing'",
-    period: event('COALESCE(t.document_date, t.logged_date)'), breakdown: 'status', basis: 'Document date, or the date it was logged' },
-  { key: 'routed', section: 'admin', label: 'Documents routed', resource: 'document_routes', period: event('t.routed_date'), breakdown: 'status',
-    titleSql: "(SELECT IFNULL(x.reference_no || ' — ', '') || x.subject FROM administrative_transactions x WHERE x.id = t.transaction_id) || ' → ' || t.routed_to",
-    basis: 'Date each routing step was made' },
-  { key: 'correspondence_completed', section: 'admin', label: 'Correspondence acted on and completed', resource: 'correspondence', where: "t.status IN ('completed','archived') AND t.completed_date IS NOT NULL",
-    period: event('t.completed_date'), breakdown: 'direction', basis: 'Date marked completed' },
-  { key: 'meetings', section: 'admin', label: 'Meetings attended', resource: 'meetings', where: "t.status = 'held'", period: event('t.meeting_date'), breakdown: 'role', basis: 'Meeting date (meetings marked held)' },
-  { key: 'minutes_prepared', section: 'admin', label: 'Minutes prepared', resource: 'meetings', where: "t.status = 'held' AND t.minutes_status IN ('draft','for_approval','approved')",
-    period: event('t.meeting_date'), breakdown: 'minutes_status', basis: 'Meeting date (meetings with minutes recorded)' },
-  { key: 'meetings_noted', section: 'admin', label: 'Other meetings noted (Quick Capture)', resource: 'activities', where: "t.kind = 'meeting'", period: event('t.event_date'), basis: 'Date noted' },
-  { key: 'secretariat_records', section: 'admin', label: 'Secretariat records issued', resource: 'secretariat_records', where: "t.status IN ('signed','disseminated','archived')",
-    period: event('t.record_date'), breakdown: 'record_type', basis: 'Record date (signed, disseminated or archived records)' },
-  { key: 'daily_log', section: 'admin', label: 'Daily activity log entries', resource: 'daily_logs', period: event('t.log_date'),
-    sums: [['quantity', 'outputs']], breakdown: 'category', basis: 'Log date' },
-  { key: 'reports_prepared', section: 'admin', label: 'Reports and documents prepared', resource: 'reports', period: event(created), breakdown: 'report_type', basis: 'Date the document was generated in SYNCHRONIA' },
-  { key: 'secretariat', section: 'admin', label: 'Secretariat and administrative responsibilities', resource: 'committees',
-    where: "t.assignment_type IN ('secretariat', 'administrative')", period: span('t.start_date', 't.end_date', 't.is_current'), basis: 'Assignment held during the period' },
-  { key: 'admin_done', section: 'admin', label: 'Administrative tasks completed', resource: 'tasks',
-    where: "t.module = 'admin' AND t.status = 'done'", period: event('substr(t.completed_at, 1, 10)'), basis: 'Date the task was marked done' },
 ];
 
 export const SUPPORT = {
@@ -142,7 +117,6 @@ export const SUPPORT = {
 
 const SPECIAL = {
   reports: { key: 'reports', table: 'reports', label: 'Generated document', fields: {}, title: 'title', noDelete: true },
-  document_routes: { key: 'document_routes', table: 'document_routes', label: 'Routing step', fields: {}, title: 'routed_to', noDelete: true },
 };
 const resourceOf = (key) => SPECIAL[key] || getResource(key);
 

@@ -1,4 +1,4 @@
-export type Mode = 'administrative' | 'instructor' | 'researcher' | 'faculty_development';
+export type Mode = 'instructor' | 'researcher' | 'faculty_development';
 
 export interface User { id: number; email: string }
 
@@ -12,6 +12,8 @@ export interface Preferences {
   reduce_motion?: boolean;
   notify_desktop?: boolean;
   notify_sound?: boolean;
+  alarm_style?: 'battle' | 'beep';
+  alarm_volume?: number;
   theme?: string;
   paper_size?: string;
   paper_sizes?: Record<string, string>;

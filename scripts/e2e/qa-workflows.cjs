@@ -193,7 +193,7 @@ const launch = async () => {
   const narrow = [];
   for (const [vw, vh] of [[768, 1024], [390, 844]]) {
     await w.setViewportSize({ width: vw, height: vh });
-    for (const r of ['/', '/calendar', '/research', '/portfolio', '/cv', '/admin', '/settings', '/timer', '/portfolio/development']) {
+    for (const r of ['/', '/calendar', '/research', '/portfolio', '/cv', '/academic', '/settings', '/timer', '/portfolio/development']) {
       await go(r); await w.waitForTimeout(700);
       const o = await w.evaluate(() => ({ sw: document.scrollingElement.scrollWidth, iw: innerWidth, main: (() => { const m = document.querySelector('#main'); return m ? m.scrollWidth - m.clientWidth : 0; })() }));
       if (o.sw > o.iw + 1) narrow.push(`${vw}px ${r}: page scrolls sideways (${o.sw} > ${o.iw})`);

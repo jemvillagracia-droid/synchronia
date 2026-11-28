@@ -340,7 +340,7 @@ export const RESOURCES = {
     table: 'activities', label: 'Activity', module: 'nexus', title: 'title', subtitle: ['kind'], date: 'event_date',
     fields: {
       kind: oneOf(['activity', 'idea', 'research_note', 'accomplishment', 'meeting'], req), title: text(req), body: long(),
-      event_date: date(), module: oneOf(['general', 'teaching', 'research', 'extension', 'development', 'portfolio', 'admin']),
+      event_date: date(), module: oneOf(['general', 'teaching', 'research', 'extension', 'development', 'portfolio']),
       source: oneOf(['manual', 'quick_capture']),
     },
   },
@@ -349,24 +349,12 @@ export const RESOURCES = {
     fields: {
       title: text(req), notes: long(), due_date: date(), is_deadline: bool(),
       priority: oneOf(['low', 'normal', 'high', 'urgent']), status: oneOf(['open', 'in_progress', 'done', 'cancelled']),
-      module: oneOf(['general', 'teaching', 'research', 'extension', 'development', 'portfolio', 'cv', 'admin']),
+      module: oneOf(['general', 'teaching', 'research', 'extension', 'development', 'portfolio', 'cv']),
       linked_entity_type: text(), linked_entity_id: int(),
     },
   },
-  correspondence: {
-    table: 'administrative_transactions', label: 'Correspondence', module: 'admin',
-    title: 'subject', subtitle: ['direction', 'counterpart'], date: 'document_date',
-    fields: {
-      direction: oneOf(['incoming', 'outgoing'], req), reference_no: text(), subject: text(req), counterpart: text(),
-      doc_type: oneOf(['memorandum', 'letter', 'resolution', 'report', 'request', 'invitation', 'endorsement', 'notice', 'other']),
-      office: text(), document_date: date(), logged_date: date(), due_date: date(),
-      status: oneOf(['received', 'routed', 'in_progress', 'for_follow_up', 'completed', 'archived']),
-      action_required: long(), action_taken: long(), completed_date: date(),
-      routing_json: json(), remarks: long(),
-    },
-  },
   meetings: {
-    table: 'meetings', label: 'Meeting', module: 'admin', title: 'title', subtitle: ['body', 'status'], date: 'meeting_date',
+    table: 'meetings', label: 'Meeting', module: 'nexus', title: 'title', subtitle: ['body', 'status'], date: 'meeting_date',
     fields: {
       title: text(req), body: text(), committee_id: ref('committees'),
       meeting_type: oneOf(['regular', 'special', 'committee', 'consultation', 'planning', 'other']),
@@ -374,29 +362,6 @@ export const RESOURCES = {
       role: oneOf(['secretary', 'presiding_officer', 'member', 'attendee', 'resource_person']),
       status: oneOf(['scheduled', 'held', 'postponed', 'cancelled']), presiding: text(), attendees: long(), absent: long(),
       agenda_json: json(), minutes_json: json(), minutes_status: oneOf(['none', 'draft', 'for_approval', 'approved']), remarks: long(),
-    },
-  },
-  secretariat_records: {
-    table: 'secretariat_records', label: 'Secretariat Record', module: 'admin', title: 'title', subtitle: ['record_no', 'status'], date: 'record_date',
-    fields: {
-      record_type: oneOf(['resolution', 'minutes', 'notice_of_meeting', 'certification', 'memorandum', 'referendum', 'excerpt', 'other'], req),
-      record_no: text(), title: text(req), issuing_body: text(), meeting_id: ref('meetings'), record_date: date(),
-      status: oneOf(['draft', 'for_signature', 'signed', 'disseminated', 'archived']), signatories: long(), disseminated_to: long(), remarks: long(),
-    },
-  },
-  daily_logs: {
-    table: 'daily_logs', label: 'Daily Log Entry', module: 'admin', title: 'activity', subtitle: ['category', 'output'], date: 'log_date',
-    fields: {
-      log_date: date(req), start_time: time(), end_time: time(), activity: text({ required: true, max: 2000 }),
-      category: oneOf(['correspondence', 'meeting', 'secretariat', 'records', 'clerical', 'coordination', 'reports', 'teaching', 'research', 'extension', 'other']),
-      output: text(), quantity: int({ min: 0, max: 100000 }), remarks: long(),
-    },
-  },
-  turnover_documents: {
-    table: 'turnover_documents', label: 'Turnover Document', module: 'admin', title: 'title', subtitle: ['office', 'status'], date: 'effective_date',
-    fields: {
-      title: text(req), office: text(), position: text(), successor_name: text(), successor_position: text(), effective_date: date(),
-      noted_by: text(), noted_by_title: text(), status: oneOf(['draft', 'final']), notes_json: json(),
     },
   },
   file_references: {

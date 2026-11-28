@@ -2,11 +2,11 @@
 import { RESOURCES } from '../resources.js';
 import { HttpError, audit, update as updateRecord } from '../repo.js';
 import { tx, inChunks } from '../db.js';
-import { SECTIONS, SECTION_BY_KEY, DEFAULT_ORDER, DEFAULT_TEMPLATE } from './sections.js';
+import { SECTIONS, SECTION_BY_KEY, DEFAULT_ORDER, DEFAULT_TEMPLATE, TYPE_HEADINGS } from './sections.js';
 import { TEMPLATES } from './templates.js';
 
 const now = () => new Date().toISOString();
-const CV_TYPES = ['academic', 'faculty', 'research', 'administrative', 'professional', 'application', 'short_bio', 'portfolio'];
+const CV_TYPES = ['academic', 'faculty', 'research', 'administrative', 'professional', 'application', 'short_bio', 'portfolio', 'reclassification'];
 
 export const DEFAULT_SETTINGS = {
   page_size: 'letter',            // letter | a4 | folio (8.5 × 13 in) | legal | a5 | b5
@@ -140,7 +140,7 @@ export function createCv(db, userId, body = {}) {
     const sorted = [...order.map((k) => SECTION_BY_KEY[k]), ...SECTIONS.filter((s) => !order.includes(s.key))];
     sorted.forEach((def, i) => {
       const s = db.prepare('INSERT INTO cv_sections (cv_profile_id, section_key, heading, sort_order, visible, is_custom, settings_json) VALUES (?, ?, ?, ?, ?, 0, ?)')
-        .run(cvId, def.key, def.heading, i, order.includes(def.key) ? 1 : 0, JSON.stringify({ sort: 'auto', page_break_before: false }));
+        .run(cvId, def.key, TYPE_HEADINGS[cvType]?.[def.key] || def.heading, i, order.includes(def.key) ? 1 : 0, JSON.stringify({ sort: 'auto', page_break_before: false }));
       const sid = Number(s.lastInsertRowid);
       if (def.source === 'profile') {
         db.prepare("INSERT INTO cv_entries (cv_section_id, source_type, source_id, sort_order, included) VALUES (?, 'profile', ?, 0, 1)").run(sid, p.id || 0);

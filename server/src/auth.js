@@ -28,7 +28,7 @@ export function ensureOwner(db) {
     // No password: access is granted by the desktop app's per-launch key.
     const u = db.prepare("INSERT INTO users (email, password_hash) VALUES ('owner@synchronia.local', '!desktop')").run();
     const id = Number(u.lastInsertRowid);
-    db.prepare('INSERT INTO user_profiles (user_id) VALUES (?)').run(id);
+    db.prepare("INSERT INTO user_profiles (user_id, academic_mode) VALUES (?, 'instructor')").run(id);
     db.prepare('INSERT INTO professional_profiles (user_id) VALUES (?)').run(id);
     indexProfile(db, id);
     return { id, email: 'owner@synchronia.local' };

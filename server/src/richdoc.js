@@ -90,7 +90,7 @@ export const tableOf = (rows, { header = true } = {}) => ({
     type: 'tableRow',
     content: r.map((c) => {
       const cell = typeof c === 'object' && c !== null ? c : { text: c };
-      const attrs = { ...(cell.colspan > 1 ? { colspan: cell.colspan } : {}), ...(cell.width ? { colwidth: [cell.width] } : {}) };
+      const attrs = { ...(cell.colspan > 1 ? { colspan: cell.colspan } : {}), ...(cell.rowspan > 1 ? { rowspan: cell.rowspan } : {}), ...(cell.width ? { colwidth: [cell.width] } : {}) };
       return { type: header && ri === 0 ? 'tableHeader' : 'tableCell', ...(Object.keys(attrs).length ? { attrs } : {}),
         content: [para(cell.text ?? '', { bold: !!cell.bold, align: cell.align })] };
     }),

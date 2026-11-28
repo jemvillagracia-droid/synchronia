@@ -18,11 +18,11 @@ const KINDS = [
 ] as const;
 type Kind = (typeof KINDS)[number]['id'];
 
-const TASK_MODULES = ['general', 'teaching', 'research', 'extension', 'development', 'portfolio', 'cv', 'admin'];
-const ACTIVITY_MODULES = ['general', 'teaching', 'research', 'extension', 'development', 'portfolio', 'admin'];
+const TASK_MODULES = ['general', 'teaching', 'research', 'extension', 'development', 'portfolio', 'cv'];
+const ACTIVITY_MODULES = ['general', 'teaching', 'research', 'extension', 'development', 'portfolio'];
 const MODULE_LABEL: Record<string, string> = {
   general: 'General', teaching: 'Teaching', research: 'Research', extension: 'Extension', development: 'Faculty development',
-  portfolio: 'Portfolio', cv: 'CV', admin: 'Administrative',
+  portfolio: 'Portfolio', cv: 'CV',
 };
 
 /** The moodboard of the place being worked on (a research project, course or syllabus), else the general board. */

@@ -46,6 +46,7 @@ const P: Record<string, JSX.Element> = {
   alert: <><path d="M12 3.5 22 20.5H2z" /><path d="M12 10v4.5M12 17.2v.3" /></>,
   sliders: <><path d="M4 6.5h9M17 6.5h3M4 12h3M11 12h9M4 17.5h11M19 17.5h1" /><path d="M15 4.5v4M9 10v4M17 15.5v4" /></>,
   history: <><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6" /><path d="M3.5 4.5V9H8M12 7.5V12l3 2" /></>,
+  play: <path d="M7.5 4.5v15l12-7.5z" />,
   bolt: <path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z" />,
   link: <><path d="M10 14a4 4 0 0 0 5.7 0l3.5-3.5a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3.5 3.5a4 4 0 0 0 5.7 5.7l1-1" /></>,
 };

@@ -195,7 +195,7 @@ function UnifiedSearch() {
     const t = setTimeout(() => { api.get<any>(`/search?q=${encodeURIComponent(q)}&limit=100${module ? `&module=${module}` : ''}`).then(setData); }, 220);
     return () => clearTimeout(t);
   }, [q, module]);
-  const mods = [['', 'Everything'], ['portfolio', 'Portfolio'], ['academic', 'Academic'], ['cv', 'CV'], ['intelligence', 'Documents'], ['admin', 'Administrative'], ['knowledge', 'References'], ['nexus', 'Notes and tasks']];
+  const mods = [['', 'Everything'], ['portfolio', 'Portfolio'], ['academic', 'Academic'], ['cv', 'CV'], ['intelligence', 'Documents'], ['knowledge', 'References'], ['nexus', 'Notes and tasks']];
   const hl = (s: string) => s.split(/(\[\[.*?\]\])/g).map((part, i) => (part.startsWith('[[') ? <mark key={i}>{part.slice(2, -2)}</mark> : part));
   return (
     <div className="stack">

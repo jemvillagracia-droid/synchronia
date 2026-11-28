@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError, dataChanged, onDataChanged } from '../../lib/api';
 import { fmtDateTime, humanize, plural } from '../../lib/format';
-import { CV_TYPES, FORMAT_LABEL, type Analysis, type CvCatalog, type CvEntry, type CvSection, type CvSettings, type CvView } from '../../lib/cv';
+import { CV_TYPES, NEW_CV_TYPES, FORMAT_LABEL, type Analysis, type CvCatalog, type CvEntry, type CvSection, type CvSettings, type CvView } from '../../lib/cv';
 import { VERIFICATION_INFO } from '../../lib/forms';
 import { useApp } from '../../components/AppContext';
 import { Icon } from '../../components/Icon';
@@ -341,7 +341,7 @@ function DesignPanel({ cv, catalog, readOnly, mutate }: { cv: CvView; catalog: C
       <section className="form-grid">
         <Field label="CV type">
           <select className="select" value={cv.cv_type} onChange={(e) => mutate(api.patch(`/cv/${cv.id}`, { cv_type: e.target.value }))}>
-            {Object.entries(CV_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {Object.entries(cv.cv_type in NEW_CV_TYPES ? NEW_CV_TYPES : { ...NEW_CV_TYPES, [cv.cv_type]: CV_TYPES[cv.cv_type] || cv.cv_type }).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </Field>
         <Field label="Page size">

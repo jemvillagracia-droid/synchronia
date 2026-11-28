@@ -4,12 +4,13 @@ import { BrandMark, Icon } from './Icon';
 import { useApp } from './AppContext';
 import { NAV, isActive, navCode } from '../lib/nav';
 import { setNotificationPrefs } from '../lib/timer';
+import { prepareAlarm } from '../lib/alarm';
 import { applyTheme } from '../lib/themes';
 import { TimerChip } from '../pages/TimerPage';
 import { TimerAlerts } from './TimerAlerts';
-import { api, onDataChanged, dataChanged } from '../lib/api';
-import { MODE_LABEL, MODE_DESC, initials, relTime, dueLabel } from '../lib/format';
-import type { Mode, Notification, RecordRow } from '../lib/types';
+import { api, onDataChanged } from '../lib/api';
+import { initials, relTime, dueLabel } from '../lib/format';
+import type { Notification, RecordRow } from '../lib/types';
 import { Overlay } from './Overlay';
 import { StatusBar } from './StatusBar';
 
@@ -105,7 +106,7 @@ function Notifications() {
                 {items.map((n) => (
                   <li key={n.id}>
                     <span className={`tag ${n.level === 'critical' ? 'red' : n.level === 'warning' ? 'orange' : 'violet'}`} style={{ width: 8, padding: 0, height: 8 }} aria-hidden />
-                    <button className="rowlink" onClick={() => { setOpen(false); if (n.type === 'tasks' || n.type === 'correspondence') openRecord(n.type, n.entity_id); }}>
+                    <button className="rowlink" onClick={() => { setOpen(false); if (n.type === 'tasks') openRecord(n.type, n.entity_id); }}>
                       <span className="t">{n.title}</span>
                       <span className="s">{n.detail}</span>
                     </button>
@@ -114,47 +115,6 @@ function Notifications() {
               </ul>
             )}
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ModeSwitch() {
-  const { prefs, updatePrefs, toast } = useApp();
-  const [open, setOpen] = useState(false);
-  const ref = useClickAway(open, () => setOpen(false));
-  if (!prefs) return null;
-  async function pick(m: Mode) {
-    setOpen(false);
-    if (m === prefs!.academic_mode) return;
-    if (!(await updatePrefs({ academic_mode: m }))) return;
-    dataChanged();
-    toast(`Academic mode: ${MODE_LABEL[m]}`, 'ok');
-  }
-  return (
-    <div style={{ position: 'relative' }} ref={ref}>
-      <button className="mode-chip" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={`Academic mode: ${MODE_LABEL[prefs.academic_mode]}. Change mode`}>
-        <span className="dot" aria-hidden />
-        <span className="txt">{MODE_LABEL[prefs.academic_mode]}</span>
-        <Icon name="down" size={12} />
-      </button>
-      {open && (
-        <div className="popover" role="dialog" aria-label="Academic mode" style={{ width: 340 }}>
-          <div className="popover-head"><span className="label">Current academic mode</span></div>
-          <ul className="menu">
-            {(Object.keys(MODE_LABEL) as Mode[]).map((m) => (
-              <li key={m}>
-                <button onClick={() => pick(m)} aria-pressed={m === prefs.academic_mode} style={{ alignItems: 'flex-start' }}>
-                  <span style={{ width: 16, paddingTop: 2, color: 'var(--orange)' }}>{m === prefs.academic_mode ? <Icon name="check" /> : null}</span>
-                  <span>
-                    <span style={{ display: 'block', color: 'var(--text)' }}>{MODE_LABEL[m]}</span>
-                    <span style={{ display: 'block', fontSize: 12, color: 'var(--text-3)', whiteSpace: 'normal' }}>{MODE_DESC[m]}</span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </div>
@@ -287,7 +247,8 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
   // Settings › Appearance: turn off non-essential motion.
   useEffect(() => { document.documentElement.dataset.motion = prefs?.reduce_motion ? 'reduced' : 'normal'; }, [prefs?.reduce_motion]);
-  useEffect(() => { if (prefs) setNotificationPrefs({ desktop: prefs.notify_desktop !== false, sound: prefs.notify_sound !== false }); }, [prefs?.notify_desktop, prefs?.notify_sound]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { prepareAlarm(); }, []);
+  useEffect(() => { if (prefs) setNotificationPrefs({ desktop: prefs.notify_desktop !== false, sound: prefs.notify_sound !== false, alarm: prefs.alarm_style || 'battle', volume: prefs.alarm_volume ?? 70 }); }, [prefs?.notify_desktop, prefs?.notify_sound, prefs?.alarm_style, prefs?.alarm_volume]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (prefs) applyTheme(prefs.theme); }, [prefs?.theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -320,7 +281,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <button className="btn btn-accent btn-sm hide-mobile" onClick={openCapture}><Icon name="plus" />Capture</button>
         <button className="icon-btn show-mobile" onClick={openCapture} aria-label="Quick Capture" style={{ color: 'var(--orange)' }}><Icon name="plus" /></button>
         <TimerChip />
-        <ModeSwitch />
+        
         <Notifications />
         <button className="icon-btn hide-mobile" onClick={toggleContext} aria-label={contextOpen ? 'Hide context' : 'Show context: pending tasks and recent changes'} aria-pressed={contextOpen}>
           <Icon name="panel" />

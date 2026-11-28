@@ -2,6 +2,7 @@
 // across pages and survives a restart of the app. Alerts fire at the warning marks and when time runs out.
 import { useSyncExternalStore } from 'react';
 import { desktop } from './desktop';
+import { playBattleLoop, playCue, stopAlarm } from './alarm';
 
 export type TimerMode = 'idle' | 'running' | 'paused' | 'down';
 export interface TimerState {
@@ -37,14 +38,17 @@ export const timer = {
   },
   setLabel(label: string) { set({ label: label.slice(0, 120) }); },
   start() {
+    stopAlarm();
     const rem = state.mode === 'down' || state.mode === 'idle' && state.remainingMs <= 0 ? state.durationMs : state.remainingMs;
     set({ mode: 'running', endsAt: Date.now() + rem, remainingMs: rem, warned: WARN_AT.filter((w) => rem <= w) });
   },
   pause() { if (state.mode === 'running') set({ mode: 'paused', remainingMs: remaining(), endsAt: null }); },
-  reset() { set({ mode: 'idle', remainingMs: state.durationMs, endsAt: null, warned: [], recharge: false }); },
+  reset() { stopAlarm(); set({ mode: 'idle', remainingMs: state.durationMs, endsAt: null, warned: [], recharge: false }); },
   /** After "system down": a short break, shown as recharging. */
-  recharge(ms = 5 * 60_000) { set({ mode: 'running', recharge: true, durationMs: ms, remainingMs: ms, endsAt: Date.now() + ms, warned: WARN_AT, label: 'Recharging' }); },
-  toggleMute() { set({ muted: !state.muted }); },
+  recharge(ms = 5 * 60_000) { stopAlarm(); set({ mode: 'running', recharge: true, durationMs: ms, remainingMs: ms, endsAt: Date.now() + ms, warned: WARN_AT, label: 'Recharging' }); },
+  toggleMute() { if (!state.muted) stopAlarm(); set({ muted: !state.muted }); },
+  /** Silences the alarm music without changing the timer. */
+  silence() { stopAlarm(); },
 };
 
 /** Keeps checking the clock (a few times a second is enough for alerts; the display animates on its own). */
@@ -55,36 +59,48 @@ function tick() {
     if (rem <= w && rem > 0 && !state.warned.includes(w)) {
       set({ warned: [...state.warned, w] });
       alertSubs.forEach((f) => f({ kind: 'warning', remainingMs: w }));
-      beep(2); notify(`${w / 60_000} minute${w === 60_000 ? '' : 's'} remaining`, state.label || 'System Timer');
+      sound('warning'); notify(`${w / 60_000} minute${w === 60_000 ? '' : 's'} remaining`, state.label || 'System Timer');
     }
   }
   if (rem <= 0) {
     const wasRecharge = state.recharge;
     set({ mode: wasRecharge ? 'idle' : 'down', remainingMs: wasRecharge ? state.durationMs : 0, endsAt: null, recharge: false });
-    if (wasRecharge) { beep(1); notify('Recharge complete', 'Systems restored. Ready to start again.'); }
-    else { alertSubs.forEach((f) => f({ kind: 'down' })); beep(4); notify('SYSTEM DOWN — recharge required', `${state.label || 'Active time'} has run out.`); }
+    if (wasRecharge) { sound('restored'); notify('Recharge complete', 'Systems restored. Ready to start again.'); }
+    else { alertSubs.forEach((f) => f({ kind: 'down' })); sound('down'); notify('SYSTEM DOWN — recharge required', `${state.label || 'Active time'} has run out.`); }
   }
 }
 if (typeof window !== 'undefined') window.setInterval(tick, 250);
 
 /** Settings › Notifications, mirrored here so the timer can honour them at any moment. */
 const NOTIFY_KEY = 'synchronia-notify';
-export function setNotificationPrefs(p: { desktop: boolean; sound: boolean }) { try { localStorage.setItem(NOTIFY_KEY, JSON.stringify(p)); } catch { /* defaults apply */ } }
-function notificationPrefs(): { desktop: boolean; sound: boolean } { try { return { desktop: true, sound: true, ...JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}') }; } catch { return { desktop: true, sound: true }; } }
+export interface NotifyPrefs { desktop: boolean; sound: boolean; alarm: 'battle' | 'beep'; volume: number }
+const NOTIFY_DEFAULTS: NotifyPrefs = { desktop: true, sound: true, alarm: 'battle', volume: 70 };
+export function setNotificationPrefs(p: Partial<NotifyPrefs>) { try { localStorage.setItem(NOTIFY_KEY, JSON.stringify({ ...notificationPrefs(), ...p })); } catch { /* defaults apply */ } }
+export function notificationPrefs(): NotifyPrefs { try { return { ...NOTIFY_DEFAULTS, ...JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}') }; } catch { return NOTIFY_DEFAULTS; } }
+
+/** Warning call, the looping battle march at "system down", or the systems-restored cue (beeps if chosen or if a sound cannot play). */
+function sound(kind: 'warning' | 'down' | 'restored') {
+  const p = notificationPrefs();
+  if (state.muted || !p.sound) return;
+  const beeps = kind === 'warning' ? 2 : kind === 'down' ? 4 : 1;
+  if (p.alarm === 'beep') { beep(beeps, p.volume); return; }
+  const played = kind === 'down' ? playBattleLoop(p.volume) : playCue(kind, p.volume);
+  void played.then((ok) => { if (!ok) beep(beeps, p.volume); });
+}
 function notify(title: string, body: string) {
   if (!document.hasFocus() && notificationPrefs().desktop) desktop?.notify?.(title, body).catch(() => {});
 }
 
 let audio: AudioContext | null = null;
-function beep(n: number) {
-  if (state.muted || !notificationPrefs().sound) return;
+function beep(n: number, volume = 70) {
+  const peak = Math.max(0.001, 0.12 * (volume / 100) ** 2);
   try {
     audio ||= new AudioContext();
     for (let i = 0; i < n; i++) {
       const o = audio.createOscillator(); const g = audio.createGain();
       o.type = 'square'; o.frequency.value = 880;
       g.gain.setValueAtTime(0.0001, audio.currentTime + i * 0.28);
-      g.gain.exponentialRampToValueAtTime(0.08, audio.currentTime + i * 0.28 + 0.02);
+      g.gain.exponentialRampToValueAtTime(peak, audio.currentTime + i * 0.28 + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + i * 0.28 + 0.2);
       o.connect(g).connect(audio.destination); o.start(audio.currentTime + i * 0.28); o.stop(audio.currentTime + i * 0.28 + 0.22);
     }

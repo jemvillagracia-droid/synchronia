@@ -1,14 +1,18 @@
 import type { Mode } from './types';
 
+export const t12 = (hhmm?: string | null) => {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+};
+
 export const MODE_LABEL: Record<Mode, string> = {
-  administrative: 'Administrative',
   instructor: 'Instructor',
   researcher: 'Researcher',
   faculty_development: 'Faculty Development',
 };
 
 export const MODE_DESC: Record<Mode, string> = {
-  administrative: 'Current clerical and secretariat responsibilities lead; academic preparation runs alongside.',
   instructor: 'Teaching load, syllabi and assessments lead the Nexus.',
   researcher: 'Research projects, manuscripts and presentations lead the Nexus.',
   faculty_development: 'Qualifications, training and portfolio growth lead the Nexus.',

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { api, dataChanged, onDataChanged } from '../lib/api';
-import { fmtDate, fmtNum, dueLabel, humanize, relTime, MODE_LABEL } from '../lib/format';
+import { fmtDate, fmtNum, dueLabel, humanize, relTime } from '../lib/format';
 import type { LayoutItem, Nexus } from '../lib/types';
 import { useApp } from '../components/AppContext';
 import { Icon } from '../components/Icon';
@@ -9,11 +9,11 @@ import { CommandDisplay } from '../components/CommandDisplay';
 
 const SIZE: Record<string, string> = {
   profile: 'w-8', development: 'w-4', deadlines: 'w-4', teaching: 'w-4', research: 'w-4', extension: 'w-4', pd: 'w-4',
-  admin: 'w-4', recent_records: 'w-6', accomplishments: 'w-6', recent_cvs: 'w-4', captures: 'w-8',
+  recent_records: 'w-6', accomplishments: 'w-6', recent_cvs: 'w-4', captures: 'w-8',
 };
 const CODE: Record<string, string> = {
   profile: 'PRF', development: 'DEV', deadlines: 'DLN', teaching: 'TCH', research: 'RSC', extension: 'EXT', pd: 'CPD',
-  admin: 'ADM', recent_records: 'UPD', accomplishments: 'ACC', recent_cvs: 'CVS', captures: 'CAP',
+  recent_records: 'UPD', accomplishments: 'ACC', recent_cvs: 'CVS', captures: 'CAP',
 };
 
 const STATUS_COLORS = ['var(--violet)', 'var(--violet-2)', 'var(--orange)', '#c9772a', 'var(--ok)', 'var(--text-3)', 'var(--red)', '#6a59b8'];
@@ -64,7 +64,6 @@ export function NexusPage() {
     api.get<Nexus>('/nexus').then((d) => { setData(d); setLayout(d.layout); setError(''); }).catch((e) => setError(e.message));
   }, []);
   useEffect(() => { load(); return onDataChanged(load); }, [load]);
-  useEffect(() => { if (prefs && data && !editing) load(); /* mode change re-orders defaults */ }, [prefs?.academic_mode]); // eslint-disable-line
 
   async function persist(next: LayoutItem[]) {
     setLayout(next);
@@ -89,7 +88,7 @@ export function NexusPage() {
   async function resetLayout() {
     if (!(await updatePrefs({ dashboard_layout: null }))) return;
     load();
-    toast('Layout reset to the default for your academic mode', 'ok');
+    toast('Layout reset to the default', 'ok');
   }
 
   async function completeTask(id: number) {
@@ -286,31 +285,7 @@ export function NexusPage() {
       );
     },
 
-    admin: () => {
-      const a = data.admin;
-      return (
-        <div className="stack">
-          <div className="stat-row">
-            <Stat v={a.correspondence_pending} k="Pending docs" />
-            <Stat v={a.follow_ups} k="Follow-ups" />
-            <Stat v={a.open_tasks.length} k="Admin tasks" />
-          </div>
-          {a.open_tasks.length === 0 ? <div className="faint" style={{ fontSize: 12 }}>No open administrative tasks. Capture one with area “Administrative”.</div> : (
-            <ul className="list">
-              {a.open_tasks.map((t) => (
-                <li key={t.id}>
-                  <input type="checkbox" className="check" aria-label={`Mark “${t.title}” done`} onChange={() => completeTask(t.id)} />
-                  <button className="rowlink" onClick={() => openRecord('tasks', t.id)}>
-                    <span className="t">{t.title}</span><span className="s">{t.due_date ? dueLabel(t.due_date) : 'No due date'}</span>
-                  </button>
-                  {(t.priority === 'high' || t.priority === 'urgent') && <span className={`tag ${t.priority === 'urgent' ? 'red' : 'orange'}`}>{t.priority}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      );
-    },
+
 
     recent_records: () => (
       data.recent_records.length === 0 ? <Empty title="No records yet.">Portfolio and academic records you add or edit will appear here.</Empty> : (
@@ -392,7 +367,7 @@ export function NexusPage() {
           <div className="crumb"><span className="bar" /><span className="label">Command Center · Central Nexus</span></div>
           <h1 className="display">{greetingName ? `${greeting}, ${greetingName}.` : 'Central Nexus'}</h1>
           <div className="sub">
-            {fmtDate(data.today)} · <span style={{ color: 'var(--orange)' }}>{MODE_LABEL[data.mode]} mode</span> · Synchronize knowledge, achievement, and purpose into a coherent academic identity.
+            {fmtDate(data.today)} · <span style={{ color: 'var(--orange)' }}>Faculty credentials</span> · Synchronize knowledge, achievement, and purpose into a coherent academic identity.
           </div>
         </div>
         <div className="actions">
@@ -410,7 +385,7 @@ export function NexusPage() {
         </div>
       </div>
 
-      {data.command && <CommandDisplay c={data.command} mode={data.mode} />}
+      {data.command && <CommandDisplay c={data.command} mode="faculty" />}
 
       {editing && (
         <div className="panel accent-violet" style={{ marginBottom: 'var(--s-4)' }}>

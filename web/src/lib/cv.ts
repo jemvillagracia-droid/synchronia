@@ -53,6 +53,9 @@ export interface Photo {
 export const CV_TYPES: Record<string, string> = {
   academic: 'Academic CV', faculty: 'Faculty CV', research: 'Research-oriented CV', administrative: 'Administrative CV',
   professional: 'Professional CV', application: 'Customized application CV', short_bio: 'Short professional biography', portfolio: 'Academic and professional portfolio CV',
+  reclassification: 'DBM-CHED reclassification CV (by KRA)',
 };
+/** CV types offered for new CVs (Administrative CV is retired; existing ones still open and export). */
+export const NEW_CV_TYPES = Object.fromEntries(Object.entries(CV_TYPES).filter(([k]) => k !== 'administrative'));
 export const FORMAT_LABEL: Record<string, string> = { docx: 'Word (DOCX)', pdf: 'PDF', docx_ats: 'ATS Word (DOCX)', pdf_ats: 'ATS PDF' };
 export const fmtBytes = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);

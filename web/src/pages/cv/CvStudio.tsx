@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, ApiError, onDataChanged } from '../../lib/api';
 import { fmtDateTime, relTime } from '../../lib/format';
-import { CV_TYPES, FORMAT_LABEL, fmtBytes, type CvCatalog, type CvExport, type CvListItem, type CvView } from '../../lib/cv';
+import { CV_TYPES, NEW_CV_TYPES, FORMAT_LABEL, fmtBytes, type CvCatalog, type CvExport, type CvListItem, type CvView } from '../../lib/cv';
 import { Overlay } from '../../components/Overlay';
 import { Field } from '../../components/Field';
 import { Icon } from '../../components/Icon';
@@ -13,7 +13,7 @@ function NewCvDialog({ catalog, onClose }: { catalog: CvCatalog; onClose: () => 
   const navigate = useNavigate();
   const { toast } = useApp();
   const [name, setName] = useState('');
-  const [type, setType] = useState('academic');
+  const [type, setType] = useState('reclassification');
   const [tpl, setTpl] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -41,7 +41,7 @@ function NewCvDialog({ catalog, onClose }: { catalog: CvCatalog; onClose: () => 
           </Field>
           <Field label="CV type" error={errors.cv_type} hint="Sets which sections are shown and their order. You can change everything later.">
             <select className="select" value={type} onChange={(e) => setType(e.target.value)}>
-              {Object.entries(CV_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              {Object.entries(NEW_CV_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </Field>
           <Field label="Template" hint="Switch templates any time without losing content.">

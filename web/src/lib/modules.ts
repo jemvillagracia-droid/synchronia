@@ -53,19 +53,10 @@ export const MODULES: ModuleDef[] = [
     id: 'intelligence', path: '/intelligence', label: 'Intelligence', code: '04', icon: 'intelligence', phase: 5,
     summary: 'Analytics and reports generated only from actual records, with source-record traceability. User-entered information is always distinguished from verified evidence.',
     capabilities: [
-      { title: 'Analytics', items: ['Academic, research and extension productivity', 'Portfolio and administrative analytics', 'Date and category filtering'] },
+      { title: 'Analytics', items: ['Academic, research and extension productivity', 'Portfolio analytics', 'Date and category filtering'] },
       { title: 'Reports', items: ['Annual academic accomplishment report', 'Faculty and professional development reports', 'Research and extension reports', 'DOCX, PDF and spreadsheet output'] },
     ],
     resources: [],
-  },
-  {
-    id: 'admin', path: '/admin', label: 'Administrative Operations', code: '05', icon: 'admin', phase: 6,
-    summary: 'A streamlined workspace for current clerical responsibilities — kept deliberately secondary to the academic workspace, and reconfigurable when your role changes.',
-    capabilities: [
-      { title: 'Registry', items: ['Incoming and outgoing correspondence', 'Document routing', 'Follow-up tracker'] },
-      { title: 'Operations', items: ['Meeting management and secretariat records', 'Daily activity log', 'Office accomplishment reports', 'Turnover documentation'] },
-    ],
-    resources: ['correspondence'],
   },
   {
     id: 'knowledge', path: '/knowledge', label: 'Knowledge and References', code: '06', icon: 'knowledge', phase: 7,
