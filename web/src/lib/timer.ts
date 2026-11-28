@@ -39,6 +39,7 @@ export const timer = {
   setLabel(label: string) { set({ label: label.slice(0, 120) }); },
   start() {
     stopAlarm();
+    if (state.mode !== 'running') sound('engage');
     const rem = state.mode === 'down' || state.mode === 'idle' && state.remainingMs <= 0 ? state.durationMs : state.remainingMs;
     set({ mode: 'running', endsAt: Date.now() + rem, remainingMs: rem, warned: WARN_AT.filter((w) => rem <= w) });
   },
@@ -47,6 +48,8 @@ export const timer = {
   /** After "system down": a short break, shown as recharging. */
   recharge(ms = 5 * 60_000) { stopAlarm(); set({ mode: 'running', recharge: true, durationMs: ms, remainingMs: ms, endsAt: Date.now() + ms, warned: WARN_AT, label: 'Recharging' }); },
   toggleMute() { if (!state.muted) stopAlarm(); set({ muted: !state.muted }); },
+  /** Plays the warning call now (Test sound on the timer page). Resolves false if this computer cannot play it. */
+  testSound: () => { const p = notificationPrefs(); return p.alarm === 'beep' ? Promise.resolve((beep(2, p.volume), true)) : playCue('warning', p.volume); },
   /** Silences the alarm music without changing the timer. */
   silence() { stopAlarm(); },
 };
@@ -79,10 +82,11 @@ export function setNotificationPrefs(p: Partial<NotifyPrefs>) { try { localStora
 export function notificationPrefs(): NotifyPrefs { try { return { ...NOTIFY_DEFAULTS, ...JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}') }; } catch { return NOTIFY_DEFAULTS; } }
 
 /** Warning call, the looping battle march at "system down", or the systems-restored cue (beeps if chosen or if a sound cannot play). */
-function sound(kind: 'warning' | 'down' | 'restored') {
+function sound(kind: 'warning' | 'down' | 'restored' | 'engage') {
   const p = notificationPrefs();
   if (state.muted || !p.sound) return;
   const beeps = kind === 'warning' ? 2 : kind === 'down' ? 4 : 1;
+  if (kind === 'engage' && p.alarm === 'beep') { beep(1, p.volume); return; }
   if (p.alarm === 'beep') { beep(beeps, p.volume); return; }
   const played = kind === 'down' ? playBattleLoop(p.volume) : playCue(kind, p.volume);
   void played.then((ok) => { if (!ok) beep(beeps, p.volume); });
@@ -96,6 +100,7 @@ function beep(n: number, volume = 70) {
   const peak = Math.max(0.001, 0.12 * (volume / 100) ** 2);
   try {
     audio ||= new AudioContext();
+    if (audio.state === 'suspended') void audio.resume().catch(() => {});
     for (let i = 0; i < n; i++) {
       const o = audio.createOscillator(); const g = audio.createGain();
       o.type = 'square'; o.frequency.value = 880;

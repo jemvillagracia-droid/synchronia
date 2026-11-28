@@ -1964,9 +1964,9 @@ html[data-motion='reduced'] .page, html[data-motion='reduced'] .skeleton { anima
 .route-sweep::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; will-change: transform, opacity;
   background: linear-gradient(90deg, transparent, var(--accent-2) 20%, #fff 50%, var(--accent-2) 80%, transparent);
   box-shadow: 0 0 18px 4px color-mix(in srgb, var(--accent) 55%, transparent); opacity: 0; animation: routeSweep 560ms cubic-bezier(.3, .6, .2, 1) both; }
-.route-sweep::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 100vh; will-change: opacity;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 30%); opacity: 0; animation: routeTint 560ms ease-out both; }
-@keyframes routeSweep { 0% { opacity: 1; transform: translateY(0); } 85% { opacity: .9; } 100% { opacity: 0; transform: translateY(calc(100vh - var(--topbar-h))); } }
+.route-sweep::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 30vh; will-change: opacity;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent); opacity: 0; animation: routeTint 560ms ease-out both; }
+@keyframes routeSweep { 0% { opacity: 1; transform: translateY(0); } 85% { opacity: .9; } 100% { opacity: 0; transform: translateY(calc(100vh - var(--topbar-h) - 40px)); } }
 @keyframes routeTint { 0% { opacity: 1; } 100% { opacity: 0; } }
 /* decoding titles */
 h1.decoding { color: transparent !important; text-shadow: none !important; }
@@ -1996,3 +1996,27 @@ h1.decoding { color: transparent !important; text-shadow: none !important; }
 }
 html[data-motion='reduced'] :is(.route-sweep::before, .route-sweep::after, .page .panel, .page .eva-widget, .modal, .palette, .context-pop, .page .panel > .panel-head) { animation: none !important; }
 html[data-motion='reduced'] .btn::before { display: none; }
+
+/* ── System Timer fills the whole work area at any window size (1.5.1) ──
+   The page is exactly the height of the area under the top bar; the display takes all the space left by the controls,
+   and the digits size themselves from the display's width AND height, so the timer shrinks with the window. */
+.main:has(> .timer-page) { overflow: hidden; scrollbar-gutter: auto; }
+.timer-page { padding: 0 !important; height: 100%; display: flex; flex-direction: column; }
+.timer-page > .tmr { flex: 1 1 auto; min-height: 0; height: 100%; justify-content: stretch; align-items: stretch;
+  padding: clamp(10px, 2.2vh, 26px) clamp(12px, 2.2vw, 32px) clamp(8px, 1.6vh, 18px); gap: clamp(6px, 1.4vh, 14px); }
+.tmr > .tmr-frame, .tmr > .tmr-controls, .tmr > .tmr-note, .tmr.is-full > .tmr-frame, .tmr.is-full > .tmr-controls { max-width: none; width: 100%; }
+.tmr > .tmr-frame { flex: 1 1 auto; min-height: 0; margin-top: clamp(4px, 1vh, 12px); display: flex; flex-direction: column; justify-content: space-evenly; container-type: size; overflow: hidden; }
+.tmr .tmr-digits, .tmr.is-full .tmr-digits { font-size: clamp(28px, min(17.5cqw, 36cqh), 560px); margin: 0; }
+.tmr .tmr-cap-1 { font-size: clamp(11px, min(1.6cqw, 3cqh), 18px); } .tmr .tmr-cap-2 { font-size: clamp(14px, min(2.4cqw, 4.5cqh), 30px); }
+.tmr .tmr-status b { font-size: clamp(16px, min(3.2cqw, 6cqh), 40px); }
+.tmr .tmr-segs { height: clamp(8px, 2.4cqh, 20px); flex: none; }
+.tmr .tmr-wave { height: clamp(28px, 11cqh, 120px); flex: none; margin-top: 0; }
+.tmr .tmr-modes { margin-top: 0; flex: none; } .tmr .tmr-mode { padding: clamp(3px, 0.8cqh, 8px) 4px; font-size: clamp(11px, min(1.4cqw, 2.6cqh), 16px); }
+.tmr > .tmr-controls { flex: none; }
+.tmr > .tmr-note { flex: none; }
+.tmr .tmr-tag { display: none; }
+@media (max-height: 820px) { .tmr > .tmr-note { display: none; } }
+@media (max-height: 640px) { .tmr .tmr-wave { display: none; } .tmr .tmr-top { flex-wrap: nowrap; } }
+.tmr.is-full { height: 100vh; }
+/* Sub-pages and tabs of the same area switch instantly; the page fade belongs to moving between areas. */
+.main:not([data-area-change]) .page { animation: none; }

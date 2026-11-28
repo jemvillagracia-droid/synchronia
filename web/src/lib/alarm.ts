@@ -1,7 +1,7 @@
 // Plays the System Timer's alarm sounds: the original battle march "Operation Sortie" (scripts/alarm/score.ts,
 // rendered to lossless files so it loops sample-exactly), a short warning call and a "systems restored" cue.
 const BASE = `${import.meta.env.BASE_URL}sounds/`;
-const FILES = { loop: 'battle-loop.flac', warning: 'warning.flac', restored: 'restored.flac' } as const;
+const FILES = { loop: 'battle-loop.flac', warning: 'warning.flac', restored: 'restored.flac', engage: 'engage.flac' } as const;
 type Cue = keyof typeof FILES;
 
 let ctx: AudioContext | null = null;
@@ -12,8 +12,19 @@ const emit = () => listeners.forEach((f) => f(!!playing));
 
 function audio() {
   ctx ||= new AudioContext({ latencyHint: 'playback' });
-  if (ctx.state === 'suspended') void ctx.resume();
+  if (ctx.state === 'suspended') void ctx.resume().catch(() => {});
   return ctx;
+}
+/** Waits until the audio engine is actually running (a suspended engine plays silently). */
+async function running() {
+  const a = audio();
+  if (a.state !== 'running') { try { await Promise.race([a.resume(), new Promise((r) => setTimeout(r, 800))]); } catch { /* reported below */ } }
+  return a.state === 'running' ? a : null;
+}
+/** Unlocks audio on the first click or key press, so a later alarm can always sound. */
+function unlockOnce() {
+  const go = () => { void running(); window.removeEventListener('pointerdown', go, true); window.removeEventListener('keydown', go, true); };
+  window.addEventListener('pointerdown', go, true); window.addEventListener('keydown', go, true);
 }
 function load(cue: Cue) {
   return (buffers[cue] ||= fetch(BASE + FILES[cue]).then((r) => { if (!r.ok) throw new Error(`Sound ${FILES[cue]} missing`); return r.arrayBuffer(); })
@@ -28,6 +39,7 @@ export const alarmPlaying = () => !!playing;
 
 /** Decodes the sounds ahead of time (when the browser is idle) so an alarm starts instantly. */
 export function prepareAlarm() {
+  unlockOnce();
   const go = () => { for (const c of Object.keys(FILES) as Cue[]) void load(c).catch(() => {}); };
   const w = window as Window & { requestIdleCallback?: (f: () => void) => number };
   if (w.requestIdleCallback) w.requestIdleCallback(go); else window.setTimeout(go, 1500);
@@ -37,7 +49,7 @@ export function prepareAlarm() {
 export async function playBattleLoop(volume = 70, maxSeconds = 300) {
   stopAlarm(0.05);
   try {
-    const a = audio(); const buf = await load('loop');
+    const a = await running(); if (!a) return false; const buf = await load('loop');
     const src = a.createBufferSource(); src.buffer = buf; src.loop = true; src.loopStart = 0; src.loopEnd = buf.duration;
     const gain = a.createGain(); const t = a.currentTime;
     gain.gain.setValueAtTime(0.0001, t); gain.gain.exponentialRampToValueAtTime(gainOf(volume), t + 0.05);
@@ -58,9 +70,9 @@ export function stopAlarm(fade = 0.6) {
   emit();
 }
 
-export async function playCue(cue: 'warning' | 'restored', volume = 70) {
+export async function playCue(cue: 'warning' | 'restored' | 'engage', volume = 70) {
   try {
-    const a = audio(); const buf = await load(cue);
+    const a = await running(); if (!a) return false; const buf = await load(cue);
     const src = a.createBufferSource(); src.buffer = buf; const g = a.createGain(); g.gain.value = gainOf(volume);
     src.connect(g); g.connect(a.destination); src.start();
     return true;

@@ -229,6 +229,16 @@ export async function renderWarning(): Promise<AudioBuffer> {
   return normalise(await ctx.startRendering(), 0.8);
 }
 
+/** Engage: the timer has started — a quick rising call with a timpani hit. */
+export async function renderEngage(): Promise<AudioBuffer> {
+  const ctx = new OfflineAudioContext(2, Math.round(2.2 * SR), SR);
+  const { bus } = makeBus(ctx);
+  const at = (b: number) => 0.02 + b * BEAT;
+  for (const [b, l, m] of [[0, 0.25, 62], [0.25, 0.25, 69], [0.5, 1.25, 74]] as [number, number, number][]) { brass(ctx, bus, at(b), l * BEAT, m, 0.14, 0, 1.15); brass(ctx, bus, at(b), l * BEAT, m - 12, 0.06, 0, 0.9); }
+  snare(ctx, bus, at(0), 0.25); snare(ctx, bus, at(0.25), 0.3); timpani(ctx, bus, at(0.5), 38, 0.6); cymbal(ctx, bus, at(0.5), 0.07);
+  return normalise(await ctx.startRendering(), 0.7);
+}
+
 /** Systems restored: a rising D-major resolution. */
 export async function renderRestored(): Promise<AudioBuffer> {
   const ctx = new OfflineAudioContext(2, Math.round(3.4 * SR), SR);

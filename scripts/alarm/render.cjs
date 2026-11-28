@@ -12,7 +12,7 @@ const ROOT = path.join(__dirname, '..', '..'); const OUT = path.join(ROOT, 'web'
   await p.setContent('<html></html>'); await p.addScriptTag({ path: `${tmp}/score.js` });
   const files = await p.evaluate(async () => {
     const pcm = (buf) => { const L = buf.getChannelData(0), R = buf.getChannelData(1); const out = new Int16Array(buf.length * 2); for (let i = 0; i < buf.length; i++) { out[2 * i] = Math.max(-1, Math.min(1, L[i])) * 32767; out[2 * i + 1] = Math.max(-1, Math.min(1, R[i])) * 32767; } return Array.from(new Uint8Array(out.buffer)); };
-    return { 'battle-loop': pcm(await Score.renderBattleLoop()), warning: pcm(await Score.renderWarning()), restored: pcm(await Score.renderRestored()) };
+    return { 'battle-loop': pcm(await Score.renderBattleLoop()), warning: pcm(await Score.renderWarning()), restored: pcm(await Score.renderRestored()), engage: pcm(await Score.renderEngage()) };
   });
   await b.close();
   fs.mkdirSync(OUT, { recursive: true });

@@ -17,9 +17,12 @@ const ok = (n, c, x = '') => { R.push(!!c); console.log(`${c ? 'PASS' : 'FAIL'} 
   // Sidebar: Research Development
   await w.getByRole('link', { name: 'Research Development' }).click(); await w.waitForSelector('#quick-idea');
   ok('Sidebar opens the Research Development workspace', /\/research$/.test(w.url()));
+  ok('New project replaces Capture', await w.getByRole('button', { name: 'New project' }).count() === 1);
   await w.fill('#quick-idea', 'Blended learning readiness in rural schools'); await w.keyboard.press('Enter');
-  await w.waitForSelector('.res-card', { timeout: 10000 });
-  ok('Quick capture saves an idea with only its title', (await w.locator('.res-card').count()) === 1);
+  await w.waitForSelector('#stage', { timeout: 10000 });
+  ok('New project with a working title creates the project and opens it', /\/research\/projects\/\d+$/.test(w.url()));
+  await w.goBack(); await w.waitForSelector('.res-card', { timeout: 10000 });
+  ok('It is listed in the workspace', (await w.locator('.res-card').count()) === 1);
   await w.screenshot({ path: S + '/shots/dashboard.png' });
   await w.locator('.res-card').first().click(); await w.waitForSelector('#stage');
   const pid = Number(w.url().match(/projects\/(\d+)/)[1]);

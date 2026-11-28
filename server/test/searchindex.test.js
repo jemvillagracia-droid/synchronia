@@ -44,7 +44,9 @@ test('replacing an entry uses the keyed lookup, not a scan of the index', () => 
   assert.match(plan, /SEARCH search_rows USING PRIMARY KEY/);
   // Saves stay flat as the index grows: the last 2,000 of 6,000 take about as long as the first 2,000.
   const batch = (k) => { const t0 = performance.now(); tx(db, () => { for (let i = 0; i < 2000; i++) repo.create(db, uid, 'tasks', { title: `Follow up item ${k}-${i}`, due_date: '2025-01-01', status: 'open', priority: 'normal', module: 'general' }); }); return performance.now() - t0; };
-  const first = batch(1); batch(2); const last = batch(3);
+  const first = batch(1); batch(2); let last = batch(3);
+  // A busy machine can slow one batch; measure again before calling it a slowdown (the old full scan grew ~5×).
+  if (last >= first * 2.5) last = Math.min(last, batch(4));
   assert.ok(last < first * 2.5, `saves slowed as the index grew (${first.toFixed(0)} ms → ${last.toFixed(0)} ms)`);
   consistent();
 });

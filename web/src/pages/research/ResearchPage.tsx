@@ -45,27 +45,28 @@ export function ResearchPage() {
   );
 }
 
-/** Save an idea with nothing but its working title; details can follow later. */
+/** New project: with a working title, create it and open it; with nothing typed, open the full new-project form. */
 function QuickIdea() {
-  const { toast } = useApp();
+  const { toast, openNew } = useApp();
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
   async function add(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) { openNew('research_projects', { stage: 'idea' }); return; }
     setBusy(true);
     try {
       const p = await api.post<{ id: number }>('/records/research_projects', { title: title.trim(), stage: 'idea' });
       setTitle(''); dataChanged();
-      toast('Idea saved. Add details whenever you are ready.', 'ok', [{ label: 'Open', run: () => navigate(`/research/projects/${p.id}`) }]);
+      toast('Project created', 'ok');
+      navigate(`/research/projects/${p.id}`);
     } catch (err) { toast((err as Error).message, 'error'); } finally { setBusy(false); }
   }
   return (
     <form className="row" onSubmit={add} style={{ gap: 6 }}>
-      <label className="sr-only" htmlFor="quick-idea">New research idea</label>
-      <input id="quick-idea" className="input" style={{ width: 'min(340px, 60vw)' }} value={title} maxLength={500} onChange={(e) => setTitle(e.target.value)} placeholder="New research idea — working title" />
-      <button className="btn btn-primary" disabled={busy || !title.trim()}><Icon name="bolt" />Capture</button>
+      <label className="sr-only" htmlFor="quick-idea">Working title of a new research project</label>
+      <input id="quick-idea" className="input" style={{ width: 'min(340px, 60vw)' }} value={title} maxLength={500} onChange={(e) => setTitle(e.target.value)} placeholder="Working title (optional)" />
+      <button className="btn btn-primary" disabled={busy}><Icon name="plus" />New project</button>
     </form>
   );
 }

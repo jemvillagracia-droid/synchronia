@@ -158,6 +158,8 @@ if (!app.requestSingleInstanceLock()) {
         sandbox: true,
         nodeIntegration: false,
         spellcheck: true,
+        // The System Timer must be able to sound its alarm when time runs out, without a click first.
+        autoplayPolicy: 'no-user-gesture-required',
         devTools: isDev,
       },
     });

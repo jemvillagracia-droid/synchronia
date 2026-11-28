@@ -96,6 +96,7 @@ export function TimerPage() {
   const stage = useRef<HTMLDivElement>(null);
   const [full, setFull] = useState(false);
   const [custom, setCustom] = useState('');
+  const [soundProblem, setSoundProblem] = useState(false);
   useEffect(() => { const f = () => setFull(!!document.fullscreenElement); document.addEventListener('fullscreenchange', f); return () => document.removeEventListener('fullscreenchange', f); }, []);
   // Keys: Space start/pause, F full screen, R reset; Escape always leaves full screen (the window does not on its own).
   useEffect(() => {
@@ -154,8 +155,10 @@ export function TimerPage() {
           <span className="tmr-sep" />
           <input className="input select-sm" style={{ width: 'min(260px, 60vw)' }} value={s.label} maxLength={120} onChange={(e) => timer.setLabel(e.target.value)} placeholder="What is this time for?" aria-label="Timer label" />
           <button className="btn btn-sm" onClick={() => timer.toggleMute()} aria-pressed={s.muted}>{s.muted ? 'Sound off' : 'Sound on'}</button>
+          <button className="btn btn-sm" onClick={async () => { if (!(await timer.testSound())) setSoundProblem(true); else setSoundProblem(false); }}>Test sound</button>
           <button className="btn btn-sm" onClick={toggleFull}><Icon name={full ? 'collapse' : 'expand'} />{full ? 'Exit full screen' : 'Full screen'}</button>
         </div>
+        {soundProblem && <p className="alert tmr-note" role="alert">No sound could be played. Check that this computer’s volume is up and an output device is connected, and that Settings › Notifications › Sounds is on.</p>}
         {!full && <p className="faint tmr-note">Keys: Space start or pause · F full screen · R reset · Esc leave full screen. Warnings at 5 minutes and 1 minute; when time runs out, SYNCHRONIA calls a system-down alert wherever you are in the app (and a Windows notification if it is in the background). Plan the session in the <Link to="/calendar">calendar</Link>.</p>}
       </div>
     </div>
